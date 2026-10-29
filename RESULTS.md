@@ -393,3 +393,55 @@ prefill(pp512 × 3, AR 1회 = 512 × 2560 bf16 = 2.59 MB 양방향), 서버 통�
   TP 는 부분합을 두 노드에서 더하므로 반올림 순서가 달라짐(추론, PPL 은 같은 수준이었음).
 - IQ4(한 대에 들어감)에서는 1노드 + MTP 가 가장 빠르다. 2노드 TP + MTP 의 쓸모는 한 대에 안 들어가는 Q8_0(c).
 - 종료 순서 수정: 스크립트가 RPC 서버를 llama-server 와 같이 내려 llama-server 가 종료 중 메모리 조회에서 멈추던 것(측정 뒤라 결과 영향 없음) → llama-server 먼저.
+
+## 2026-10-29 21:28–21:40 — 밀집 부분 4 bit 실험 (halogen 과의 차이 가설 확인)
+가설: halogen(평균 4.16 bit)과 우리(UD-IQ4_XS)의 기본 디코드 차이(37 vs 22, ×1.68)는 토큰당 읽는 양(우리 5.84 GB — 밀집 부분 Q8_0)에서 온다.
+- 변환: `llama-quantize --allow-requantize --pure --tensor-type-file quant/dense-iq4nl.types`(텐서마다 정확한 이름 패턴, 1224개).
+  밀집 Q8_0 496개(attn_q/k/v/output/gate/qkv, ssm_out, ffn_*_shexp, hc_*_down/up, output_hc_*, ple_key/value) → IQ4_NL, 나머지는 원래 형식 그대로 복사
+  (전문가 IQ3_S/IQ4_NL/IQ4_XS/Q8_0, output Q6_K, token_embd Q8_0, PLE 표 IQ4_NL). imatrix 없음.
+  → `UD-IQ4_XS-dense4/Qwen3.8-Flash-Next-UD-IQ4_XS-dense4.gguf`(91.9 GB). 토큰당 읽는 양 **5.84 → 4.05 GB**(`tools/bytes_per_token.py`).
+- 1노드 디코드(tg128 × 5, 번갈아): 원본 22.53 / 23.02, **dense4 28.90 / 29.20 (+27%)**. 대역폭에 묶였다면 +44% 였어야 함 → 실효 134 → 117 GB/s(작은 커널 고정 비용 비중↑, 추론).
+- **품질: PPL 2.1682 → 2.4387 ± 0.0483 (+12.5%)** — 너무 큼. 보정(imatrix) 없이 Q8_0 에서 다시 양자화한 영향 + 민감한 부분(추정: hyper-connection, GDN 투영) 포함.
+- 판단: '읽는 양이 속도를 정한다'는 방향은 맞음(+27%). 다만 halogen 은 품질을 지키며 줄였을 것이므로(사양상 바이트 동일·품질 주장, 미확인) 우리도 그룹별 영향 확인 + imatrix 보정이 필요.
+- 다음 실험 계획(디스크 필요): 그룹별(A: attn/GDN 투영만, B: hc+공유 전문가만) 변형, imatrix 보정 변형.
+  A 여유 256 GB(Q8_0 다운로드 중, 완료 후 ≈74 GB) → 변형 파일(각 ≈92 GB)을 더 둘 수 없음.
+
+### 그룹별 변형(1노드, tg128 × 5, PPL 은 eval_ppl.sh 1node; 원본 22.5–23.0 tok/s, PPL 2.1682 ± 0.0405)
+사용자 허락(2026-10-29): A 디스크 부족으로 변형 파일(`UD-IQ4_XS-dense4/` 안, 내가 만든 것)만 실험마다 지우고 새로 만듦(`quant/run_variant.sh`).
+
+| 변형 | 바꾼 텐서 | 토큰당 | tg128 | PPL | ΔPPL |
+|---|---|---:|---:|---:|---:|
+| 원본 | — | 5.84 GB | 22.8 | 2.1682 | — |
+| A Q5_K | attn+GDN 투영 156개 → Q5_K | 4.84 GB | 24.82 (+9%) | 2.2196 | +2.4% |
+| A IQ4_NL | attn+GDN 투영 156개 → IQ4_NL | 4.50 GB | 25.73 (+13%) | 2.2561 | +4.1% |
+| A IQ4_NL + imatrix | 위 + 보정(`eval/make_calib_text.sh`, 평가 글과 겹치지 않음, 6만 토큰) | 4.50 GB | 25.68 | 2.2672 | +4.6% |
+| B IQ4_NL | hc+공유 전문가+PLE 340개 → IQ4_NL | 5.39 GB | 23.07 (+1%) | 2.3363 | +7.8% |
+| 전체 IQ4_NL | 496개 | 4.05 GB | 29.0 (+27%) | 2.4387 | +12.5% |
+
+- hyper-connection 쪽(B)은 속도 이득이 거의 없는데 손실이 큼 → Q8_0 유지가 맞음.
+- attn+GDN 투영(A)이 바꿀 만한 곳. imatrix 는 효과 없음(오차 범위 안) — 보정 글이 짧거나, Q8_0 에서 다시 양자화하는 한계(추론).
+- 결론: llama.cpp 의 일반 4/5-bit 형식으로는 '읽는 양 줄이기'의 품질 비용이 크다. halogen 이 같은 속도에서 품질을 얼마나 지키는지는 미확인
+  (halogen 의 '바이트 동일'은 MTP 켬/끔 비교이지 원 정밀도 대비가 아님).
+- 지금 디스크에 남은 변형: `UD-IQ4_XS-dense4/Qwen3.8-Flash-Next-UD-IQ4_XS-dA-attngdn-q5k.gguf`.
+
+### halogen 의 품질·속도 자료(개발사 공개 문서, 2026-10-29 접근 — 우리가 검증한 값 아님)
+출처: 체크포인트 README(`hf-models/halogen-qwen3.8-flash-next/README.md`, HF peonist-ai/halogen-qwen3.8-flash-next),
+github.com/peonist-ai/halogen-flash-server `docs/quality.md`, `docs/gguf.md`.
+- v2 체크포인트 비트 배분: 전문가와 나머지 4-bit, **혼합(mixing) 층 6-bit**, MTP 머리 밀집 투영 8-bit, 평균 4.16 bpw. **BF16 원본에서 직접** 양자화.
+  이전 w4b: 비전문가 텐서 723개를 활성값 기반(activation-aware)으로 다시 양자화, **o_proj 12개는 8-bit**(비전문가 손실 대부분이 여기 몰려 있었다고 함).
+- 품질 근거: BF16 transformers 대비 greedy 토큰 일치(정답 토큰 강제, 6 프롬프트 × 32 단계) 182/192. PPL 절대값은 공개 안 함. BF16 모델은 메모리에 안 들어가 직접 비교 못 함을 명시.
+- **같은 unsloth UD-IQ4_XS GGUF 를 halogen 이 돌린 측정(docs/gguf.md, 0.14.1)**:
+
+| | halogen 자체 체크포인트(w4b) | unsloth UD-IQ4_XS on halogen |
+|---|---:|---:|
+| 디코드, 직렬, 짧은 문맥 | 35.4 tok/s | 25.4 (−28%) |
+| 디코드, 초안 머리 + 프롬프트 조회, 코딩 에이전트 | 55–57 | 42–45 |
+| prefill 8k / 32k | 1,502 / 1,499 | 1,485 / 1,465 |
+| PPL(세 말뭉치) | GGUF 보다 0.7–2.1% **좋음** | (0.12.1 표: 32K 토큰 5.577) |
+| BF16 대비 토큰 일치 | 182/192 | 184/192 |
+
+  문서 자체의 설명: unsloth 파일은 밀집 층을 8-bit 로 두어 토큰당 ≈2 GB 를 더 읽고, 그게 느린 직렬 디코드의 원인. 0.12.1 표: GGUF 직렬 26.0–27.1, 초안 머리 27.9–30.2(채택 45%).
+- 해석:
+  - halogen 의 4-bit 체크포인트는 '손실이 큰 것'이 아니라, 개발사 측정으로는 우리가 쓰는 UD-IQ4_XS 와 품질이 같거나 PPL 이 약간 더 좋다.
+  - 우리 실험의 +12.5% 손실은 Q8_0 에서 보정 없이 IQ4_NL 로 다시 만들고 민감한 혼합 층(hc)까지 4-bit 로 내린 탓(추론, 혼합 층 6-bit 배분과 일치).
+  - 1.68× 차이 분해(개발사 수치 + 우리 수치): 형식(읽는 양) ≈1.39×(35.4 vs 25.4) × 엔진 ≈1.15×(같은 GGUF: halogen 25.4–27.1 vs 우리 22.5–23.0).

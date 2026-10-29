@@ -1,7 +1,24 @@
-# engine2n — Qwen3.8-Flash-Next 2노드 TP 엔진 (llama.cpp + tbv RDMA)
+# llm-engine-for-libtbvcoll — 자체 LLM 엔진 (2× HP ZBook Ultra G1a, USB4 RDMA)
 
-다중 노드는 **텐서 병렬(TP)만** 쓴다. llama.cpp 본선 `e09a78a` 의 `--split-mode tensor` + RPC 서버 두 개(A, B)에,
-서버 사이 all-reduce 와 명령 전송을 tbv(USB4 RDMA) 위로 돌리고, 그 경로를 우리 패치로 고쳤다.
+Strix Halo(gfx1151) 노트북 두 대를 Thunderbolt/USB4 RDMA(tbv, libtbvcoll)로 묶어 큰 MoE 모델을 돌리는 자체 엔진 작업 저장소.
+첫 대상은 Qwen3.8-Flash-Next(qwen4exp). 지금 바탕은 llama.cpp 본선 `e09a78a` + 우리 패치다.
+
+원칙: **다중 노드는 텐서 병렬(TP)만** 쓴다(층 분할·PP 는 중간 단계로도 쓰지 않음). 하드웨어·전원·펌웨어 설정은 바꾸지 않는다(소프트웨어만).
+tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) 저장소에 있다. 이 저장소의 앞 7개 커밋은 그 저장소 `engine2n/` 의 이력을 그대로 옮긴 것.
+
+## 지금까지 (2026-10-29, Flash-Next, 자세한 값은 RESULTS.md)
+
+| 구성 | 디코드 tok/s | 비고 |
+|---|---:|---|
+| 1노드, unsloth UD-IQ4_XS | 22–23 | 토큰당 가중치 5.84 GB(밀집 부분 Q8_0) |
+| 1노드 + MTP 추측 디코딩 | **36** | +62%, 출력은 3/6 프롬프트에서 MTP 없을 때와 중간부터 갈라짐 |
+| 2노드 TP(RDMA, 발행 겹치기 2, 서버 HIP 그래프 끔) | 23–24 | IQ4 는 한 대에 들어가 TP 이득이 작음. TP 는 Q8_0 용 |
+| 2노드 TP + MTP | **33.8** | +49%, 출력은 2노드 MTP 없음과 6/6 동일 |
+| (참고) halogen, 자체 4.16 bit 체크포인트 | 35.4 / 초안 55–57 | 개발사 측정. 같은 GGUF 를 halogen 이 돌리면 25.4 |
+
+- halogen 과의 차이 ≈1.68× = 체크포인트 비트 배분 ≈1.39× × 엔진 ≈1.15×. halogen 은 BF16 에서 활성값 기반으로 4-bit(혼합 층 6-bit, o_proj 8-bit)를 만들어
+  개발사 측정 PPL 이 UD-IQ4_XS 보다 0.7–2.1% 좋다. 우리가 Q8_0 에서 보정 없이 밀집 부분을 4-bit 로 다시 만들면 PPL +4~+12.5%(`quant/`).
+- 다음: Q8_0 GGUF(받는 중)를 원본 삼아 halogen 과 비슷한 비트 배분을 llama.cpp 형식으로 만들기 → 1노드/2노드 TP + MTP 로 속도·PPL 비교.
 
 - 설계: [DESIGN.md](DESIGN.md) (v1, TP). 폐기된 층 분할(PP) 설계는 [DESIGN_v0_pp.md](DESIGN_v0_pp.md), `run_2node.sh` 에 기록용으로만 남김.
 - 측정 기록: [RESULTS.md](RESULTS.md)
@@ -25,8 +42,8 @@
 ## 준비
 ```
 git clone https://github.com/ggml-org/llama.cpp && git -C llama.cpp checkout e09a78a
-git -C llama.cpp apply ../patches/llama-e09a78a-engine2n-t5.patch     # engine2n/ 에서
-./build_llama.sh                     # rocm/vllm-dev:rocm7.2.1 컨테이너에서 HIP gfx1151 + RPC + RDMA 빌드
+git -C llama.cpp apply ../patches/llama-e09a78a-engine2n-t5.patch     # 저장소 최상위에서
+./build_llama.sh                     # rocm/vllm-dev:rocm7.2.1 컨테이너에서 HIP gfx1151 + RPC + RDMA 빌드(+ llama-quantize, llama-imatrix)
 ./eval/make_ppl_text.sh
 ./get_models.sh iq4                  # Qwen3.8-Flash-Next UD-IQ4_XS (93.7 GB, sha256 확인)
 ```
@@ -45,3 +62,21 @@ python3 -I tools/gguf_merge_mtp.py <MTP/mtp-...-shared-Q8_0.gguf> <UD-IQ4_XS/...
 ```
 주의: B 를 rank 0 으로 둔다 — A 서버를 TB 주소로 등록하면 클라이언트↔A 서버가 tbv 루프백으로 협상되는데 tbv 는 같은 노드 안 QP 를 못 잇는다.
 tbv 는 `9a35117`(여러 프레임 SEND 의 RNR 대기) 이상이어야 한다.
+
+## 양자화 실험 (`quant/`)
+```
+python3 -I tools/gguf_head.py <조각.gguf> | grep '  T ' > quant/orig.tensors        # 텐서 목록
+python3 -I tools/make_types.py <형식> <그룹,...> < quant/orig.tensors > quant/X.types   # 그룹: attn, gdn, hc, shexp, ple
+[IMATRIX=quant/imatrix-orig.gguf] quant/run_variant.sh quant/X.types <태그>         # 변환 → 1노드 디코드 → PPL
+python3 -I tools/gguf_head.py <변형.gguf> | python3 -I tools/bytes_per_token.py 512 10   # 토큰당 읽는 양
+./eval/make_calib_text.sh                                                          # imatrix 보정 글(평가 글과 겹치지 않음)
+```
+`quant/run_variant.sh` 는 변형 디렉터리(`UD-IQ4_XS-dense4/`) 안의 이전 변형 파일만 지우고 새로 만든다(디스크 부족으로 사용자 허락, 2026-10-29).
+
+## 구성
+- `run_*.sh`, `eval_ppl.sh`, `build_llama.sh`, `get_models.sh` + `models_manifest.json`: 빌드·모델 받기·측정 실행기
+- `patches/`: llama.cpp `e09a78a` 에 대한 우리 변경 전체(diff)
+- `tools/`: 측정·분석(`spec_bench.py`, `cmp_runs.py`, `kgroups.py`, GGUF 도구), `tools/probe/`: 노드·GPU 점검
+- `eval/`: 평가 프롬프트, 평가·보정 글 생성 스크립트
+- `quant/`: 밀집 부분 비트 배분 실험의 형식 파일·로그
+

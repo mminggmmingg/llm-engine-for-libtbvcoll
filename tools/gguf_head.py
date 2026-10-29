@@ -17,7 +17,7 @@ print('version', ver, 'tensors', nt, 'kv', nkv)
 for _ in range(nkv):
     k = s(); t = rd('I'); v = val(t)
     if not k.startswith('tokenizer') and flt in k: print(' ', k, '=', v)
-TN = {0:'F32',1:'F16',8:'Q8_0',14:'Q6_K',20:'IQ4_NL',21:'IQ3_S',23:'IQ4_XS',30:'BF16'}
+TN = {0:'F32',1:'F16',8:'Q8_0',12:'Q4_K',13:'Q5_K',14:'Q6_K',20:'IQ4_NL',21:'IQ3_S',23:'IQ4_XS',30:'BF16'}
 for _ in range(nt):
     name = s(); nd = rd('I'); dims = [rd('Q') for _ in range(nd)]; ty = rd('I'); off = rd('Q')
     if flt in name or not flt: print('  T', name, TN.get(ty, ty), dims)

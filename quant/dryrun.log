@@ -1,0 +1,1583 @@
+ggml_cuda_init: found 1 ROCm devices (Total VRAM: 114688 MiB):
+  Device 0: AMD Radeon Graphics, gfx1151 (0x1151), VMM: no, Wave Size: 32, VRAM: 114688 MiB
+version: 0.8.0-dev (build 50, commit e09a78a)
+built with Clang 22.0.0 for Linux x86_64
+llama_quantize: calculating quantization size for '/data/parksThink/hf-models/qwen38-flash-next-gguf/UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf' as IQ4_NL using 16 threads
+llama_model_loader: additional 2 GGUFs metadata loaded.
+llama_model_loader: loaded meta data with 67 key-value pairs and 1224 tensors from /data/parksThink/hf-models/qwen38-flash-next-gguf/UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf (version GGUF V3 (latest))
+llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+llama_model_loader: - kv   0:                       general.architecture str              = qwen4exp
+llama_model_loader: - kv   1:                               general.type str              = model
+llama_model_loader: - kv   2:                     general.sampling.top_k i32              = 20
+llama_model_loader: - kv   3:                     general.sampling.top_p f32              = 0.950000
+llama_model_loader: - kv   4:                      general.sampling.temp f32              = 1.000000
+llama_model_loader: - kv   5:                               general.name str              = Qwen3.8 Flash Next
+llama_model_loader: - kv   6:                        general.description str              = A Preview of the Qwen4 Architecture
+llama_model_loader: - kv   7:                         general.size_label str              = 512x56B
+llama_model_loader: - kv   8:                       qwen4exp.block_count u32              = 48
+llama_model_loader: - kv   9:                    qwen4exp.context_length u32              = 262144
+llama_model_loader: - kv  10:                  qwen4exp.embedding_length u32              = 2560
+llama_model_loader: - kv  11:              qwen4exp.attention.head_count u32              = 24
+llama_model_loader: - kv  12:           qwen4exp.attention.head_count_kv u32              = 2
+llama_model_loader: - kv  13:           qwen4exp.rope.dimension_sections arr[i32,4]       = [11, 11, 10, 0]
+llama_model_loader: - kv  14:                    qwen4exp.rope.freq_base f32              = 10000000.000000
+llama_model_loader: - kv  15:  qwen4exp.attention.layer_norm_rms_epsilon f32              = 0.000001
+llama_model_loader: - kv  16:                      qwen4exp.expert_count u32              = 512
+llama_model_loader: - kv  17:                 qwen4exp.expert_used_count u32              = 10
+llama_model_loader: - kv  18:              qwen4exp.attention.key_length u32              = 256
+llama_model_loader: - kv  19:            qwen4exp.attention.value_length u32              = 256
+llama_model_loader: - kv  20:        qwen4exp.expert_feed_forward_length u32              = 640
+llama_model_loader: - kv  21: qwen4exp.expert_shared_feed_forward_length u32              = 640
+llama_model_loader: - kv  22:                   qwen4exp.ssm.conv_kernel u32              = 4
+llama_model_loader: - kv  23:                    qwen4exp.ssm.state_size u32              = 128
+llama_model_loader: - kv  24:                   qwen4exp.ssm.group_count u32              = 16
+llama_model_loader: - kv  25:                qwen4exp.ssm.time_step_rank u32              = 48
+llama_model_loader: - kv  26:                    qwen4exp.ssm.inner_size u32              = 6144
+llama_model_loader: - kv  27:           qwen4exp.full_attention_interval u32              = 4
+llama_model_loader: - kv  28:              qwen4exp.rope.dimension_count u32              = 64
+llama_model_loader: - kv  29:            qwen4exp.hyper_connection.count u32              = 4
+llama_model_loader: - kv  30:         qwen4exp.hyper_connection.low_rank u32              = 320
+llama_model_loader: - kv  31:      qwen4exp.attention.indexer.head_count u32              = 4
+llama_model_loader: - kv  32:      qwen4exp.attention.indexer.key_length u32              = 128
+llama_model_loader: - kv  33:           qwen4exp.attention.indexer.top_k u32              = 2048
+llama_model_loader: - kv  34:         qwen4exp.attention.compress_ratios arr[i32,48]      = [0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 4, ...
+llama_model_loader: - kv  35:                        qwen4exp.ple.layers arr[i32,1]       = [1]
+llama_model_loader: - kv  36:                    qwen4exp.ple.ngram_size u32              = 3
+llama_model_loader: - kv  37:               qwen4exp.ple.heads_per_ngram u32              = 8
+llama_model_loader: - kv  38:                   qwen4exp.ple.conv_kernel u32              = 4
+llama_model_loader: - kv  39:                  qwen4exp.ple.eos_token_id u32              = 248044
+llama_model_loader: - kv  40:  qwen4exp.embedding_length_per_layer_input u32              = 160
+llama_model_loader: - kv  41:             qwen4exp.ple.layer_multipliers arr[u64,3]       = [23703573157769, 20109073645365, 8052...
+llama_model_loader: - kv  42:                  qwen4exp.ple.head_offsets arr[u64,16]      = [0, 20000003, 40000026, 60000059, 800...
+llama_model_loader: - kv  43:              qwen4exp.ple.head_vocab_sizes arr[u64,16]      = [20000003, 20000023, 20000033, 200000...
+llama_model_loader: - kv  44:                       tokenizer.ggml.model str              = gpt2
+llama_model_loader: - kv  45:                         tokenizer.ggml.pre str              = qwen35
+llama_model_loader: - kv  46:                      tokenizer.ggml.tokens arr[str,248320]  = ["!", "\"", "#", "$", "%", "&", "'", ...
+llama_model_loader: - kv  47:                  tokenizer.ggml.token_type arr[i32,248320]  = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ...
+llama_model_loader: - kv  48:                      tokenizer.ggml.merges arr[str,247587]  = ["Ġ Ġ", "ĠĠ ĠĠ", "i n", "Ġ t",...
+llama_model_loader: - kv  49:                tokenizer.ggml.eos_token_id u32              = 248046
+llama_model_loader: - kv  50:            tokenizer.ggml.padding_token_id u32              = 248044
+llama_model_loader: - kv  51:                tokenizer.ggml.bos_token_id u32              = 248044
+llama_model_loader: - kv  52:               tokenizer.ggml.add_bos_token bool             = false
+llama_model_loader: - kv  53:                    tokenizer.chat_template str              = {%- set image_count = namespace(value...
+llama_model_loader: - kv  54:                qwen4exp.ple.image_token_id u32              = 248056
+llama_model_loader: - kv  55:                       general.quantized_by str              = Unsloth
+llama_model_loader: - kv  56:                           general.repo_url str              = https://huggingface.co/unsloth
+llama_model_loader: - kv  57:                               general.tags arr[str,1]       = ["unsloth"]
+llama_model_loader: - kv  58:               general.quantization_version u32              = 2
+llama_model_loader: - kv  59:                          general.file_type u32              = 30
+llama_model_loader: - kv  60:                      quantize.imatrix.file str              = Qwen3.8-Flash-Next-GGUF/imatrix_unslo...
+llama_model_loader: - kv  61:                   quantize.imatrix.dataset str              = unsloth_calibration_Qwen3.8-Flash-Nex...
+llama_model_loader: - kv  62:             quantize.imatrix.entries_count u32              = 926
+llama_model_loader: - kv  63:              quantize.imatrix.chunks_count u32              = 45
+llama_model_loader: - kv  64:                                   split.no u16              = 0
+llama_model_loader: - kv  65:                        split.tensors.count i32              = 1224
+llama_model_loader: - kv  66:                                split.count u16              = 3
+llama_model_loader: - type  f32:  557 tensors
+llama_model_loader: - type q8_0:  502 tensors
+llama_model_loader: - type q6_K:    1 tensors
+llama_model_loader: - type iq4_nl:   44 tensors
+llama_model_loader: - type iq3_s:   94 tensors
+llama_model_loader: - type iq4_xs:    2 tensors
+llama_model_loader: - type bf16:   24 tensors
+llama_tensor_get_type: output.weight                        - applying manual override: iq4_nl -> q6_K
+llama_tensor_get_type: token_embd.weight                    - applying manual override: iq4_nl -> q8_0
+llama_tensor_get_type: blk.0.ffn_gate_exps.weight           - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.0.ffn_up_exps.weight             - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.0.hc_attn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.0.hc_ffn_inject.weight           - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.0.ssm_alpha.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.0.ssm_beta.weight                - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.1.ffn_gate_exps.weight           - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.1.ffn_up_exps.weight             - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.1.hc_attn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.1.hc_ffn_inject.weight           - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.1.ple_conv1d.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.1.ssm_alpha.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.1.ssm_beta.weight                - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.2.ffn_down_exps.weight           - applying manual override: iq4_nl -> q8_0
+llama_tensor_get_type: blk.2.ffn_gate_exps.weight           - applying manual override: iq4_nl -> iq4_xs
+llama_tensor_get_type: blk.2.ffn_up_exps.weight             - applying manual override: iq4_nl -> iq4_xs
+llama_tensor_get_type: blk.2.hc_attn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.2.hc_ffn_inject.weight           - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.2.ssm_alpha.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.2.ssm_beta.weight                - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.3.ffn_gate_exps.weight           - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.3.ffn_up_exps.weight             - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.3.hc_attn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.3.hc_ffn_inject.weight           - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.4.ffn_down_exps.weight           - applying manual override: iq4_nl -> q8_0
+llama_tensor_get_type: blk.4.ffn_gate_exps.weight           - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.4.ffn_up_exps.weight             - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.4.hc_attn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.4.hc_ffn_inject.weight           - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.4.ssm_alpha.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.4.ssm_beta.weight                - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.5.ffn_gate_exps.weight           - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.5.ffn_up_exps.weight             - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.5.hc_attn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.5.hc_ffn_inject.weight           - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.5.ssm_alpha.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.5.ssm_beta.weight                - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.6.ffn_gate_exps.weight           - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.6.ffn_up_exps.weight             - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.6.hc_attn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.6.hc_ffn_inject.weight           - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.6.ssm_alpha.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.6.ssm_beta.weight                - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.7.ffn_gate_exps.weight           - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.7.ffn_up_exps.weight             - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.7.hc_attn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.7.hc_ffn_inject.weight           - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.8.ffn_gate_exps.weight           - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.8.ffn_up_exps.weight             - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.8.hc_attn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.8.hc_ffn_inject.weight           - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.8.ssm_alpha.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.8.ssm_beta.weight                - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.9.ffn_gate_exps.weight           - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.9.ffn_up_exps.weight             - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.9.hc_attn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.9.hc_ffn_inject.weight           - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.9.ssm_alpha.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.9.ssm_beta.weight                - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.10.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.10.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.10.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.10.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.10.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.10.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.11.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.11.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.11.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.11.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.12.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.12.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.12.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.12.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.12.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.12.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.13.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.13.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.13.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.13.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.13.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.13.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.14.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.14.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.14.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.14.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.14.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.14.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.15.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.15.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.15.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.15.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.16.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.16.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.16.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.16.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.16.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.16.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.17.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.17.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.17.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.17.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.17.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.17.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.18.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.18.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.18.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.18.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.18.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.18.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.19.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.19.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.19.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.19.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.20.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.20.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.20.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.20.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.20.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.20.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.21.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.21.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.21.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.21.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.21.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.21.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.22.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.22.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.22.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.22.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.22.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.22.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.23.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.23.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.23.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.23.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.24.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.24.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.24.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.24.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.24.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.24.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.25.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.25.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.25.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.25.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.25.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.25.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.26.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.26.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.26.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.26.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.26.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.26.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.27.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.27.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.27.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.27.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.28.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.28.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.28.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.28.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.28.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.28.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.29.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.29.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.29.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.29.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.29.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.29.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.30.ffn_down_exps.weight          - applying manual override: iq4_nl -> q8_0
+llama_tensor_get_type: blk.30.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.30.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.30.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.30.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.30.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.30.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.31.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.31.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.31.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.31.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.32.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.32.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.32.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.32.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.32.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.32.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.33.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.33.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.33.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.33.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.33.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.33.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.34.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.34.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.34.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.34.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.34.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.34.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.35.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.35.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.35.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.35.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.36.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.36.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.36.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.36.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.36.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.36.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.37.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.37.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.37.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.37.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.37.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.37.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.38.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.38.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.38.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.38.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.38.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.38.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.39.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.39.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.39.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.39.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.40.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.40.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.40.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.40.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.40.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.40.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.41.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.41.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.41.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.41.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.41.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.41.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.42.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.42.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.42.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.42.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.42.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.42.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.43.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.43.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.43.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.43.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.44.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.44.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.44.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.44.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.44.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.44.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.45.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.45.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.45.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.45.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.45.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.45.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.46.ffn_down_exps.weight          - applying manual override: iq4_nl -> q8_0
+llama_tensor_get_type: blk.46.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.46.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.46.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.46.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.46.ssm_alpha.weight              - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.46.ssm_beta.weight               - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.47.ffn_down_exps.weight          - applying manual override: iq4_nl -> q8_0
+llama_tensor_get_type: blk.47.ffn_gate_exps.weight          - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.47.ffn_up_exps.weight            - applying manual override: iq4_nl -> iq3_s
+llama_tensor_get_type: blk.47.hc_attn_inject.weight         - applying manual override: iq4_nl -> f32
+llama_tensor_get_type: blk.47.hc_ffn_inject.weight          - applying manual override: iq4_nl -> f32
+[   1/1224] output.weight                        - [  2560, 248320,      1,      1], type =   q6_K, size =  497.314 MiB
+[   2/1224] output_hc_down.weight                - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[   3/1224] output_hc_norm.weight                - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[   4/1224] output_hc_up.weight                  - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[   5/1224] per_layer_token_embd.weight          - [   160, 320001536,      1,      1], type = iq4_nl, size = 27465.952 MiB
+[   6/1224] token_embd.weight                    - [  2560, 248320,      1,      1], type =   q8_0, size =  644.141 MiB
+[   7/1224] blk.0.attn_gate.weight               - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[   8/1224] blk.0.attn_qkv.weight                - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[   9/1224] blk.0.ffn_down_exps.weight           - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[  10/1224] blk.0.ffn_down_shexp.weight          - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[  11/1224] blk.0.ffn_gate_exps.weight           - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[  12/1224] blk.0.ffn_gate_inp.weight            - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[  13/1224] blk.0.ffn_gate_inp_shexp.weight      - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[  14/1224] blk.0.ffn_gate_shexp.weight          - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[  15/1224] blk.0.ffn_up_exps.weight             - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[  16/1224] blk.0.ffn_up_shexp.weight            - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[  17/1224] blk.0.hc_attn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[  18/1224] blk.0.hc_attn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[  19/1224] blk.0.hc_attn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[  20/1224] blk.0.hc_attn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[  21/1224] blk.0.hc_ffn_down.weight             - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[  22/1224] blk.0.hc_ffn_inject.weight           - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[  23/1224] blk.0.hc_ffn_norm.weight             - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[  24/1224] blk.0.hc_ffn_up.weight               - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[  25/1224] blk.0.ssm_a                          - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[  26/1224] blk.0.ssm_alpha.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[  27/1224] blk.0.ssm_beta.weight                - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[  28/1224] blk.0.ssm_conv1d.weight              - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[  29/1224] blk.0.ssm_dt.bias                    - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[  30/1224] blk.0.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[  31/1224] blk.0.ssm_out.weight                 - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[  32/1224] blk.1.attn_gate.weight               - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[  33/1224] blk.1.attn_qkv.weight                - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[  34/1224] blk.1.ffn_down_exps.weight           - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[  35/1224] blk.1.ffn_down_shexp.weight          - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[  36/1224] blk.1.ffn_gate_exps.weight           - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[  37/1224] blk.1.ffn_gate_inp.weight            - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[  38/1224] blk.1.ffn_gate_inp_shexp.weight      - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[  39/1224] blk.1.ffn_gate_shexp.weight          - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[  40/1224] blk.1.ffn_up_exps.weight             - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[  41/1224] blk.1.ffn_up_shexp.weight            - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[  42/1224] blk.1.hc_attn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[  43/1224] blk.1.hc_attn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[  44/1224] blk.1.hc_attn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[  45/1224] blk.1.hc_attn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[  46/1224] blk.1.hc_ffn_down.weight             - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[  47/1224] blk.1.hc_ffn_inject.weight           - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[  48/1224] blk.1.hc_ffn_norm.weight             - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[  49/1224] blk.1.hc_ffn_up.weight               - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[  50/1224] blk.1.ple_conv1d.weight              - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[  51/1224] blk.1.ple_key.weight                 - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[  52/1224] blk.1.ple_norm_conv.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[  53/1224] blk.1.ple_norm_key.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[  54/1224] blk.1.ple_norm_query.weight          - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[  55/1224] blk.1.ple_value.weight               - [  2560,   2560,      1,      1], type =   q8_0, size =     6.64 MiB ->     3.52 MiB (iq4_nl)
+[  56/1224] blk.1.ssm_a                          - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[  57/1224] blk.1.ssm_alpha.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[  58/1224] blk.1.ssm_beta.weight                - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[  59/1224] blk.1.ssm_conv1d.weight              - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[  60/1224] blk.1.ssm_dt.bias                    - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[  61/1224] blk.1.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[  62/1224] blk.1.ssm_out.weight                 - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[  63/1224] blk.2.attn_gate.weight               - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[  64/1224] blk.2.attn_qkv.weight                - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[  65/1224] blk.2.ffn_down_exps.weight           - [   640,   2560,    512,      1], type =   q8_0, size =  850.000 MiB
+[  66/1224] blk.2.ffn_down_shexp.weight          - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[  67/1224] blk.2.ffn_gate_exps.weight           - [  2560,    640,    512,      1], type = iq4_xs, size =  425.000 MiB
+[  68/1224] blk.2.ffn_gate_inp.weight            - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[  69/1224] blk.2.ffn_gate_inp_shexp.weight      - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[  70/1224] blk.2.ffn_gate_shexp.weight          - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[  71/1224] blk.2.ffn_up_exps.weight             - [  2560,    640,    512,      1], type = iq4_xs, size =  425.000 MiB
+[  72/1224] blk.2.ffn_up_shexp.weight            - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[  73/1224] blk.2.hc_attn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[  74/1224] blk.2.hc_attn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[  75/1224] blk.2.hc_attn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[  76/1224] blk.2.hc_attn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[  77/1224] blk.2.hc_ffn_down.weight             - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[  78/1224] blk.2.hc_ffn_inject.weight           - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[  79/1224] blk.2.hc_ffn_norm.weight             - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[  80/1224] blk.2.hc_ffn_up.weight               - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[  81/1224] blk.2.ssm_a                          - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[  82/1224] blk.2.ssm_alpha.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[  83/1224] blk.2.ssm_beta.weight                - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[  84/1224] blk.2.ssm_conv1d.weight              - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[  85/1224] blk.2.ssm_dt.bias                    - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[  86/1224] blk.2.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[  87/1224] blk.2.ssm_out.weight                 - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[  88/1224] blk.3.attn_k.weight                  - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[  89/1224] blk.3.attn_k_norm.weight             - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[  90/1224] blk.3.attn_output.weight             - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[  91/1224] blk.3.attn_q.weight                  - [  2560,  12288,      1,      1], type =   q8_0, size =    31.88 MiB ->    16.88 MiB (iq4_nl)
+[  92/1224] blk.3.attn_q_norm.weight             - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[  93/1224] blk.3.attn_v.weight                  - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[  94/1224] blk.3.ffn_down_exps.weight           - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[  95/1224] blk.3.ffn_down_shexp.weight          - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[  96/1224] blk.3.ffn_gate_exps.weight           - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[  97/1224] blk.3.ffn_gate_inp.weight            - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[  98/1224] blk.3.ffn_gate_inp_shexp.weight      - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[  99/1224] blk.3.ffn_gate_shexp.weight          - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 100/1224] blk.3.ffn_up_exps.weight             - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 101/1224] blk.3.ffn_up_shexp.weight            - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 102/1224] blk.3.hc_attn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 103/1224] blk.3.hc_attn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 104/1224] blk.3.hc_attn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 105/1224] blk.3.hc_attn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 106/1224] blk.3.hc_ffn_down.weight             - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 107/1224] blk.3.hc_ffn_inject.weight           - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 108/1224] blk.3.hc_ffn_norm.weight             - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 109/1224] blk.3.hc_ffn_up.weight               - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 110/1224] blk.3.indexer.k_norm.weight          - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 111/1224] blk.3.indexer.k_proj.weight          - [  2560,    128,      1,      1], type =   bf16, size =    0.625 MiB
+[ 112/1224] blk.3.indexer.q_norm.weight          - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 113/1224] blk.3.indexer.q_proj.weight          - [  2560,    512,      1,      1], type =   bf16, size =    2.500 MiB
+[ 114/1224] blk.4.attn_gate.weight               - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 115/1224] blk.4.attn_qkv.weight                - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 116/1224] blk.4.ffn_down_exps.weight           - [   640,   2560,    512,      1], type =   q8_0, size =  850.000 MiB
+[ 117/1224] blk.4.ffn_down_shexp.weight          - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 118/1224] blk.4.ffn_gate_exps.weight           - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 119/1224] blk.4.ffn_gate_inp.weight            - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 120/1224] blk.4.ffn_gate_inp_shexp.weight      - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 121/1224] blk.4.ffn_gate_shexp.weight          - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 122/1224] blk.4.ffn_up_exps.weight             - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 123/1224] blk.4.ffn_up_shexp.weight            - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 124/1224] blk.4.hc_attn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 125/1224] blk.4.hc_attn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 126/1224] blk.4.hc_attn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 127/1224] blk.4.hc_attn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 128/1224] blk.4.hc_ffn_down.weight             - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 129/1224] blk.4.hc_ffn_inject.weight           - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 130/1224] blk.4.hc_ffn_norm.weight             - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 131/1224] blk.4.hc_ffn_up.weight               - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 132/1224] blk.4.ssm_a                          - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 133/1224] blk.4.ssm_alpha.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 134/1224] blk.4.ssm_beta.weight                - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 135/1224] blk.4.ssm_conv1d.weight              - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 136/1224] blk.4.ssm_dt.bias                    - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 137/1224] blk.4.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 138/1224] blk.4.ssm_out.weight                 - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 139/1224] blk.5.attn_gate.weight               - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 140/1224] blk.5.attn_qkv.weight                - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 141/1224] blk.5.ffn_down_exps.weight           - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 142/1224] blk.5.ffn_down_shexp.weight          - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 143/1224] blk.5.ffn_gate_exps.weight           - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 144/1224] blk.5.ffn_gate_inp.weight            - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 145/1224] blk.5.ffn_gate_inp_shexp.weight      - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 146/1224] blk.5.ffn_gate_shexp.weight          - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 147/1224] blk.5.ffn_up_exps.weight             - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 148/1224] blk.5.ffn_up_shexp.weight            - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 149/1224] blk.5.hc_attn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 150/1224] blk.5.hc_attn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 151/1224] blk.5.hc_attn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 152/1224] blk.5.hc_attn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 153/1224] blk.5.hc_ffn_down.weight             - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 154/1224] blk.5.hc_ffn_inject.weight           - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 155/1224] blk.5.hc_ffn_norm.weight             - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 156/1224] blk.5.hc_ffn_up.weight               - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 157/1224] blk.5.ssm_a                          - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 158/1224] blk.5.ssm_alpha.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 159/1224] blk.5.ssm_beta.weight                - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 160/1224] blk.5.ssm_conv1d.weight              - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 161/1224] blk.5.ssm_dt.bias                    - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 162/1224] blk.5.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 163/1224] blk.5.ssm_out.weight                 - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 164/1224] blk.6.attn_gate.weight               - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 165/1224] blk.6.attn_qkv.weight                - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 166/1224] blk.6.ffn_down_exps.weight           - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 167/1224] blk.6.ffn_down_shexp.weight          - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 168/1224] blk.6.ffn_gate_exps.weight           - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 169/1224] blk.6.ffn_gate_inp.weight            - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 170/1224] blk.6.ffn_gate_inp_shexp.weight      - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 171/1224] blk.6.ffn_gate_shexp.weight          - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 172/1224] blk.6.ffn_up_exps.weight             - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 173/1224] blk.6.ffn_up_shexp.weight            - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 174/1224] blk.6.hc_attn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 175/1224] blk.6.hc_attn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 176/1224] blk.6.hc_attn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 177/1224] blk.6.hc_attn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 178/1224] blk.6.hc_ffn_down.weight             - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 179/1224] blk.6.hc_ffn_inject.weight           - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 180/1224] blk.6.hc_ffn_norm.weight             - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 181/1224] blk.6.hc_ffn_up.weight               - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 182/1224] blk.6.ssm_a                          - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 183/1224] blk.6.ssm_alpha.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 184/1224] blk.6.ssm_beta.weight                - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 185/1224] blk.6.ssm_conv1d.weight              - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 186/1224] blk.6.ssm_dt.bias                    - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 187/1224] blk.6.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 188/1224] blk.6.ssm_out.weight                 - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 189/1224] blk.7.attn_k.weight                  - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 190/1224] blk.7.attn_k_norm.weight             - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 191/1224] blk.7.attn_output.weight             - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 192/1224] blk.7.attn_q.weight                  - [  2560,  12288,      1,      1], type =   q8_0, size =    31.88 MiB ->    16.88 MiB (iq4_nl)
+[ 193/1224] blk.7.attn_q_norm.weight             - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 194/1224] blk.7.attn_v.weight                  - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 195/1224] blk.7.ffn_down_exps.weight           - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 196/1224] blk.7.ffn_down_shexp.weight          - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 197/1224] blk.7.ffn_gate_exps.weight           - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 198/1224] blk.7.ffn_gate_inp.weight            - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 199/1224] blk.7.ffn_gate_inp_shexp.weight      - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 200/1224] blk.7.ffn_gate_shexp.weight          - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 201/1224] blk.7.ffn_up_exps.weight             - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 202/1224] blk.7.ffn_up_shexp.weight            - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 203/1224] blk.7.hc_attn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 204/1224] blk.7.hc_attn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 205/1224] blk.7.hc_attn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 206/1224] blk.7.hc_attn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 207/1224] blk.7.hc_ffn_down.weight             - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 208/1224] blk.7.hc_ffn_inject.weight           - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 209/1224] blk.7.hc_ffn_norm.weight             - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 210/1224] blk.7.hc_ffn_up.weight               - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 211/1224] blk.7.indexer.k_norm.weight          - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 212/1224] blk.7.indexer.k_proj.weight          - [  2560,    128,      1,      1], type =   bf16, size =    0.625 MiB
+[ 213/1224] blk.7.indexer.q_norm.weight          - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 214/1224] blk.7.indexer.q_proj.weight          - [  2560,    512,      1,      1], type =   bf16, size =    2.500 MiB
+[ 215/1224] blk.8.attn_gate.weight               - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 216/1224] blk.8.attn_qkv.weight                - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 217/1224] blk.8.ffn_down_exps.weight           - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 218/1224] blk.8.ffn_down_shexp.weight          - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 219/1224] blk.8.ffn_gate_exps.weight           - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 220/1224] blk.8.ffn_gate_inp.weight            - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 221/1224] blk.8.ffn_gate_inp_shexp.weight      - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 222/1224] blk.8.ffn_gate_shexp.weight          - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 223/1224] blk.8.ffn_up_exps.weight             - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 224/1224] blk.8.ffn_up_shexp.weight            - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 225/1224] blk.8.hc_attn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 226/1224] blk.8.hc_attn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 227/1224] blk.8.hc_attn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 228/1224] blk.8.hc_attn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 229/1224] blk.8.hc_ffn_down.weight             - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 230/1224] blk.8.hc_ffn_inject.weight           - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 231/1224] blk.8.hc_ffn_norm.weight             - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 232/1224] blk.8.hc_ffn_up.weight               - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 233/1224] blk.8.ssm_a                          - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 234/1224] blk.8.ssm_alpha.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 235/1224] blk.8.ssm_beta.weight                - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 236/1224] blk.8.ssm_conv1d.weight              - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 237/1224] blk.8.ssm_dt.bias                    - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 238/1224] blk.8.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 239/1224] blk.8.ssm_out.weight                 - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 240/1224] blk.9.attn_gate.weight               - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 241/1224] blk.9.attn_qkv.weight                - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 242/1224] blk.9.ffn_down_exps.weight           - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 243/1224] blk.9.ffn_down_shexp.weight          - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 244/1224] blk.9.ffn_gate_exps.weight           - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 245/1224] blk.9.ffn_gate_inp.weight            - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 246/1224] blk.9.ffn_gate_inp_shexp.weight      - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 247/1224] blk.9.ffn_gate_shexp.weight          - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 248/1224] blk.9.ffn_up_exps.weight             - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 249/1224] blk.9.ffn_up_shexp.weight            - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 250/1224] blk.9.hc_attn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 251/1224] blk.9.hc_attn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 252/1224] blk.9.hc_attn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 253/1224] blk.9.hc_attn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 254/1224] blk.9.hc_ffn_down.weight             - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 255/1224] blk.9.hc_ffn_inject.weight           - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 256/1224] blk.9.hc_ffn_norm.weight             - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 257/1224] blk.9.hc_ffn_up.weight               - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 258/1224] blk.9.ssm_a                          - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 259/1224] blk.9.ssm_alpha.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 260/1224] blk.9.ssm_beta.weight                - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 261/1224] blk.9.ssm_conv1d.weight              - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 262/1224] blk.9.ssm_dt.bias                    - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 263/1224] blk.9.ssm_norm.weight                - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 264/1224] blk.9.ssm_out.weight                 - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 265/1224] blk.10.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 266/1224] blk.10.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 267/1224] blk.10.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 268/1224] blk.10.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 269/1224] blk.10.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 270/1224] blk.10.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 271/1224] blk.10.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 272/1224] blk.10.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 273/1224] blk.10.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 274/1224] blk.10.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 275/1224] blk.10.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 276/1224] blk.10.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 277/1224] blk.10.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 278/1224] blk.10.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 279/1224] blk.10.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 280/1224] blk.10.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 281/1224] blk.10.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 282/1224] blk.10.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 283/1224] blk.10.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 284/1224] blk.10.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 285/1224] blk.10.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 286/1224] blk.10.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 287/1224] blk.10.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 288/1224] blk.10.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 289/1224] blk.10.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 290/1224] blk.11.attn_k.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 291/1224] blk.11.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 292/1224] blk.11.attn_output.weight            - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 293/1224] blk.11.attn_q.weight                 - [  2560,  12288,      1,      1], type =   q8_0, size =    31.88 MiB ->    16.88 MiB (iq4_nl)
+[ 294/1224] blk.11.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 295/1224] blk.11.attn_v.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 296/1224] blk.11.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 297/1224] blk.11.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 298/1224] blk.11.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 299/1224] blk.11.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 300/1224] blk.11.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 301/1224] blk.11.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 302/1224] blk.11.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 303/1224] blk.11.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 304/1224] blk.11.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 305/1224] blk.11.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 306/1224] blk.11.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 307/1224] blk.11.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 308/1224] blk.11.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 309/1224] blk.11.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 310/1224] blk.11.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 311/1224] blk.11.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 312/1224] blk.11.indexer.k_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 313/1224] blk.11.indexer.k_proj.weight         - [  2560,    128,      1,      1], type =   bf16, size =    0.625 MiB
+[ 314/1224] blk.11.indexer.q_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 315/1224] blk.11.indexer.q_proj.weight         - [  2560,    512,      1,      1], type =   bf16, size =    2.500 MiB
+[ 316/1224] blk.12.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 317/1224] blk.12.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 318/1224] blk.12.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 319/1224] blk.12.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 320/1224] blk.12.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 321/1224] blk.12.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 322/1224] blk.12.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 323/1224] blk.12.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 324/1224] blk.12.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 325/1224] blk.12.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 326/1224] blk.12.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 327/1224] blk.12.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 328/1224] blk.12.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 329/1224] blk.12.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 330/1224] blk.12.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 331/1224] blk.12.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 332/1224] blk.12.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 333/1224] blk.12.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 334/1224] blk.12.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 335/1224] blk.12.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 336/1224] blk.12.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 337/1224] blk.12.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 338/1224] blk.12.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 339/1224] blk.12.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 340/1224] blk.12.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 341/1224] blk.13.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 342/1224] blk.13.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 343/1224] blk.13.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 344/1224] blk.13.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 345/1224] blk.13.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 346/1224] blk.13.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 347/1224] blk.13.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 348/1224] blk.13.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 349/1224] blk.13.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 350/1224] blk.13.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 351/1224] blk.13.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 352/1224] blk.13.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 353/1224] blk.13.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 354/1224] blk.13.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 355/1224] blk.13.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 356/1224] blk.13.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 357/1224] blk.13.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 358/1224] blk.13.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 359/1224] blk.13.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 360/1224] blk.13.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 361/1224] blk.13.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 362/1224] blk.13.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 363/1224] blk.13.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 364/1224] blk.13.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 365/1224] blk.13.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 366/1224] blk.14.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 367/1224] blk.14.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 368/1224] blk.14.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 369/1224] blk.14.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 370/1224] blk.14.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 371/1224] blk.14.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 372/1224] blk.14.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 373/1224] blk.14.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 374/1224] blk.14.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 375/1224] blk.14.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 376/1224] blk.14.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 377/1224] blk.14.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 378/1224] blk.14.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 379/1224] blk.14.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 380/1224] blk.14.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 381/1224] blk.14.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 382/1224] blk.14.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 383/1224] blk.14.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 384/1224] blk.14.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 385/1224] blk.14.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 386/1224] blk.14.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 387/1224] blk.14.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 388/1224] blk.14.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 389/1224] blk.14.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 390/1224] blk.14.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 391/1224] blk.15.attn_k.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 392/1224] blk.15.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 393/1224] blk.15.attn_output.weight            - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 394/1224] blk.15.attn_q.weight                 - [  2560,  12288,      1,      1], type =   q8_0, size =    31.88 MiB ->    16.88 MiB (iq4_nl)
+[ 395/1224] blk.15.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 396/1224] blk.15.attn_v.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 397/1224] blk.15.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 398/1224] blk.15.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 399/1224] blk.15.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 400/1224] blk.15.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 401/1224] blk.15.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 402/1224] blk.15.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 403/1224] blk.15.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 404/1224] blk.15.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 405/1224] blk.15.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 406/1224] blk.15.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 407/1224] blk.15.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 408/1224] blk.15.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 409/1224] blk.15.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 410/1224] blk.15.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 411/1224] blk.15.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 412/1224] blk.15.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 413/1224] blk.15.indexer.k_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 414/1224] blk.15.indexer.k_proj.weight         - [  2560,    128,      1,      1], type =   bf16, size =    0.625 MiB
+[ 415/1224] blk.15.indexer.q_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 416/1224] blk.15.indexer.q_proj.weight         - [  2560,    512,      1,      1], type =   bf16, size =    2.500 MiB
+[ 417/1224] blk.16.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 418/1224] blk.16.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 419/1224] blk.16.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 420/1224] blk.16.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 421/1224] blk.16.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 422/1224] blk.16.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 423/1224] blk.16.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 424/1224] blk.16.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 425/1224] blk.16.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 426/1224] blk.16.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 427/1224] blk.16.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 428/1224] blk.16.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 429/1224] blk.16.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 430/1224] blk.16.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 431/1224] blk.16.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 432/1224] blk.16.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 433/1224] blk.16.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 434/1224] blk.16.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 435/1224] blk.16.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 436/1224] blk.16.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 437/1224] blk.16.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 438/1224] blk.16.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 439/1224] blk.16.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 440/1224] blk.16.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 441/1224] blk.16.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 442/1224] blk.17.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 443/1224] blk.17.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 444/1224] blk.17.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 445/1224] blk.17.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 446/1224] blk.17.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 447/1224] blk.17.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 448/1224] blk.17.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 449/1224] blk.17.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 450/1224] blk.17.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 451/1224] blk.17.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 452/1224] blk.17.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 453/1224] blk.17.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 454/1224] blk.17.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 455/1224] blk.17.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 456/1224] blk.17.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 457/1224] blk.17.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 458/1224] blk.17.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 459/1224] blk.17.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 460/1224] blk.17.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 461/1224] blk.17.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 462/1224] blk.17.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 463/1224] blk.17.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 464/1224] blk.17.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 465/1224] blk.17.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 466/1224] blk.17.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 467/1224] blk.18.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 468/1224] blk.18.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 469/1224] blk.18.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 470/1224] blk.18.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 471/1224] blk.18.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 472/1224] blk.18.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 473/1224] blk.18.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 474/1224] blk.18.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 475/1224] blk.18.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 476/1224] blk.18.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 477/1224] blk.18.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 478/1224] blk.18.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 479/1224] blk.18.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 480/1224] blk.18.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 481/1224] blk.18.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 482/1224] blk.18.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 483/1224] blk.18.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 484/1224] blk.18.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 485/1224] blk.18.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 486/1224] blk.18.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 487/1224] blk.18.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 488/1224] blk.18.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 489/1224] blk.18.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 490/1224] blk.18.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 491/1224] blk.18.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 492/1224] blk.19.attn_k.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 493/1224] blk.19.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 494/1224] blk.19.attn_output.weight            - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 495/1224] blk.19.attn_q.weight                 - [  2560,  12288,      1,      1], type =   q8_0, size =    31.88 MiB ->    16.88 MiB (iq4_nl)
+[ 496/1224] blk.19.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 497/1224] blk.19.attn_v.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 498/1224] blk.19.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 499/1224] blk.19.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 500/1224] blk.19.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 501/1224] blk.19.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 502/1224] blk.19.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 503/1224] blk.19.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 504/1224] blk.19.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 505/1224] blk.19.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 506/1224] blk.19.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 507/1224] blk.19.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 508/1224] blk.19.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 509/1224] blk.19.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 510/1224] blk.19.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 511/1224] blk.19.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 512/1224] blk.19.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 513/1224] blk.19.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 514/1224] blk.19.indexer.k_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 515/1224] blk.19.indexer.k_proj.weight         - [  2560,    128,      1,      1], type =   bf16, size =    0.625 MiB
+[ 516/1224] blk.19.indexer.q_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 517/1224] blk.19.indexer.q_proj.weight         - [  2560,    512,      1,      1], type =   bf16, size =    2.500 MiB
+[ 518/1224] blk.20.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 519/1224] blk.20.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 520/1224] blk.20.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 521/1224] blk.20.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 522/1224] blk.20.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 523/1224] blk.20.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 524/1224] blk.20.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 525/1224] blk.20.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 526/1224] blk.20.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 527/1224] blk.20.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 528/1224] blk.20.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 529/1224] blk.20.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 530/1224] blk.20.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 531/1224] blk.20.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 532/1224] blk.20.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 533/1224] blk.20.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 534/1224] blk.20.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 535/1224] blk.20.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 536/1224] blk.20.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 537/1224] blk.20.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 538/1224] blk.20.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 539/1224] blk.20.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 540/1224] blk.20.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 541/1224] blk.20.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 542/1224] blk.20.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 543/1224] blk.21.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 544/1224] blk.21.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 545/1224] blk.21.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 546/1224] blk.21.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 547/1224] blk.21.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 548/1224] blk.21.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 549/1224] blk.21.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 550/1224] blk.21.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 551/1224] blk.21.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 552/1224] blk.21.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 553/1224] blk.21.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 554/1224] blk.21.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 555/1224] blk.21.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 556/1224] blk.21.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 557/1224] blk.21.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 558/1224] blk.21.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 559/1224] blk.21.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 560/1224] blk.21.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 561/1224] blk.21.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 562/1224] blk.21.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 563/1224] blk.21.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 564/1224] blk.21.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 565/1224] blk.21.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 566/1224] blk.21.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 567/1224] blk.21.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 568/1224] blk.22.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 569/1224] blk.22.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 570/1224] blk.22.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 571/1224] blk.22.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 572/1224] blk.22.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 573/1224] blk.22.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 574/1224] blk.22.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 575/1224] blk.22.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 576/1224] blk.22.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 577/1224] blk.22.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 578/1224] blk.22.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 579/1224] blk.22.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 580/1224] blk.22.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 581/1224] blk.22.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 582/1224] blk.22.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 583/1224] blk.22.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 584/1224] blk.22.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 585/1224] blk.22.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 586/1224] blk.22.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 587/1224] blk.22.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 588/1224] blk.22.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 589/1224] blk.22.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 590/1224] blk.22.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 591/1224] blk.22.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 592/1224] blk.22.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 593/1224] blk.23.attn_k.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 594/1224] blk.23.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 595/1224] blk.23.attn_output.weight            - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 596/1224] blk.23.attn_q.weight                 - [  2560,  12288,      1,      1], type =   q8_0, size =    31.88 MiB ->    16.88 MiB (iq4_nl)
+[ 597/1224] blk.23.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 598/1224] blk.23.attn_v.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 599/1224] blk.23.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 600/1224] blk.23.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 601/1224] blk.23.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 602/1224] blk.23.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 603/1224] blk.23.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 604/1224] blk.23.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 605/1224] blk.23.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 606/1224] blk.23.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 607/1224] blk.23.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 608/1224] blk.23.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 609/1224] blk.23.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 610/1224] blk.23.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 611/1224] blk.23.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 612/1224] blk.23.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 613/1224] blk.23.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 614/1224] blk.23.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 615/1224] blk.23.indexer.k_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 616/1224] blk.23.indexer.k_proj.weight         - [  2560,    128,      1,      1], type =   bf16, size =    0.625 MiB
+[ 617/1224] blk.23.indexer.q_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 618/1224] blk.23.indexer.q_proj.weight         - [  2560,    512,      1,      1], type =   bf16, size =    2.500 MiB
+[ 619/1224] blk.24.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 620/1224] blk.24.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 621/1224] blk.24.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 622/1224] blk.24.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 623/1224] blk.24.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 624/1224] blk.24.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 625/1224] blk.24.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 626/1224] blk.24.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 627/1224] blk.24.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 628/1224] blk.24.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 629/1224] blk.24.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 630/1224] blk.24.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 631/1224] blk.24.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 632/1224] blk.24.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 633/1224] blk.24.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 634/1224] blk.24.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 635/1224] blk.24.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 636/1224] blk.24.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 637/1224] blk.24.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 638/1224] blk.24.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 639/1224] blk.24.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 640/1224] blk.24.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 641/1224] blk.24.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 642/1224] blk.24.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 643/1224] blk.24.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 644/1224] blk.25.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 645/1224] blk.25.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 646/1224] blk.25.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 647/1224] blk.25.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 648/1224] blk.25.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 649/1224] blk.25.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 650/1224] blk.25.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 651/1224] blk.25.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 652/1224] blk.25.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 653/1224] blk.25.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 654/1224] blk.25.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 655/1224] blk.25.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 656/1224] blk.25.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 657/1224] blk.25.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 658/1224] blk.25.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 659/1224] blk.25.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 660/1224] blk.25.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 661/1224] blk.25.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 662/1224] blk.25.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 663/1224] blk.25.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 664/1224] blk.25.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 665/1224] blk.25.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 666/1224] blk.25.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 667/1224] blk.25.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 668/1224] blk.25.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 669/1224] blk.26.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 670/1224] blk.26.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 671/1224] blk.26.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 672/1224] blk.26.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 673/1224] blk.26.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 674/1224] blk.26.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 675/1224] blk.26.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 676/1224] blk.26.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 677/1224] blk.26.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 678/1224] blk.26.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 679/1224] blk.26.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 680/1224] blk.26.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 681/1224] blk.26.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 682/1224] blk.26.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 683/1224] blk.26.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 684/1224] blk.26.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 685/1224] blk.26.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 686/1224] blk.26.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 687/1224] blk.26.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 688/1224] blk.26.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 689/1224] blk.26.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 690/1224] blk.26.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 691/1224] blk.26.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 692/1224] blk.26.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 693/1224] blk.26.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 694/1224] blk.27.attn_k.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 695/1224] blk.27.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 696/1224] blk.27.attn_output.weight            - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 697/1224] blk.27.attn_q.weight                 - [  2560,  12288,      1,      1], type =   q8_0, size =    31.88 MiB ->    16.88 MiB (iq4_nl)
+[ 698/1224] blk.27.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 699/1224] blk.27.attn_v.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 700/1224] blk.27.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 701/1224] blk.27.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 702/1224] blk.27.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 703/1224] blk.27.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 704/1224] blk.27.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 705/1224] blk.27.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 706/1224] blk.27.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 707/1224] blk.27.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 708/1224] blk.27.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 709/1224] blk.27.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 710/1224] blk.27.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 711/1224] blk.27.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 712/1224] blk.27.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 713/1224] blk.27.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 714/1224] blk.27.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 715/1224] blk.27.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 716/1224] blk.27.indexer.k_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 717/1224] blk.27.indexer.k_proj.weight         - [  2560,    128,      1,      1], type =   bf16, size =    0.625 MiB
+[ 718/1224] blk.27.indexer.q_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 719/1224] blk.27.indexer.q_proj.weight         - [  2560,    512,      1,      1], type =   bf16, size =    2.500 MiB
+[ 720/1224] blk.28.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 721/1224] blk.28.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 722/1224] blk.28.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 723/1224] blk.28.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 724/1224] blk.28.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 725/1224] blk.28.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 726/1224] blk.28.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 727/1224] blk.28.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 728/1224] blk.28.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 729/1224] blk.28.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 730/1224] blk.28.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 731/1224] blk.28.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 732/1224] blk.28.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 733/1224] blk.28.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 734/1224] blk.28.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 735/1224] blk.28.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 736/1224] blk.28.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 737/1224] blk.28.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 738/1224] blk.28.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 739/1224] blk.28.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 740/1224] blk.28.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 741/1224] blk.28.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 742/1224] blk.28.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 743/1224] blk.28.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 744/1224] blk.28.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 745/1224] blk.29.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 746/1224] blk.29.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 747/1224] blk.29.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 748/1224] blk.29.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 749/1224] blk.29.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 750/1224] blk.29.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 751/1224] blk.29.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 752/1224] blk.29.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 753/1224] blk.29.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 754/1224] blk.29.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 755/1224] blk.29.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 756/1224] blk.29.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 757/1224] blk.29.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 758/1224] blk.29.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 759/1224] blk.29.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 760/1224] blk.29.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 761/1224] blk.29.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 762/1224] blk.29.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 763/1224] blk.29.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 764/1224] blk.29.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 765/1224] blk.29.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 766/1224] blk.29.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 767/1224] blk.29.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 768/1224] blk.29.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 769/1224] blk.29.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 770/1224] blk.30.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 771/1224] blk.30.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 772/1224] blk.30.ffn_down_exps.weight          - [   640,   2560,    512,      1], type =   q8_0, size =  850.000 MiB
+[ 773/1224] blk.30.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 774/1224] blk.30.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 775/1224] blk.30.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 776/1224] blk.30.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 777/1224] blk.30.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 778/1224] blk.30.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 779/1224] blk.30.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 780/1224] blk.30.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 781/1224] blk.30.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 782/1224] blk.30.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 783/1224] blk.30.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 784/1224] blk.30.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 785/1224] blk.30.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 786/1224] blk.30.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 787/1224] blk.30.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 788/1224] blk.30.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 789/1224] blk.30.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 790/1224] blk.30.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 791/1224] blk.30.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 792/1224] blk.30.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 793/1224] blk.30.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 794/1224] blk.30.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 795/1224] blk.31.attn_k.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 796/1224] blk.31.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 797/1224] blk.31.attn_output.weight            - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 798/1224] blk.31.attn_q.weight                 - [  2560,  12288,      1,      1], type =   q8_0, size =    31.88 MiB ->    16.88 MiB (iq4_nl)
+[ 799/1224] blk.31.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 800/1224] blk.31.attn_v.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 801/1224] blk.31.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 802/1224] blk.31.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 803/1224] blk.31.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 804/1224] blk.31.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 805/1224] blk.31.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 806/1224] blk.31.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 807/1224] blk.31.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 808/1224] blk.31.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 809/1224] blk.31.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 810/1224] blk.31.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 811/1224] blk.31.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 812/1224] blk.31.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 813/1224] blk.31.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 814/1224] blk.31.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 815/1224] blk.31.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 816/1224] blk.31.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 817/1224] blk.31.indexer.k_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 818/1224] blk.31.indexer.k_proj.weight         - [  2560,    128,      1,      1], type =   bf16, size =    0.625 MiB
+[ 819/1224] blk.31.indexer.q_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 820/1224] blk.31.indexer.q_proj.weight         - [  2560,    512,      1,      1], type =   bf16, size =    2.500 MiB
+[ 821/1224] blk.32.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 822/1224] blk.32.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 823/1224] blk.32.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 824/1224] blk.32.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 825/1224] blk.32.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 826/1224] blk.32.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 827/1224] blk.32.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 828/1224] blk.32.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 829/1224] blk.32.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 830/1224] blk.32.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 831/1224] blk.32.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 832/1224] blk.32.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 833/1224] blk.32.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 834/1224] blk.32.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 835/1224] blk.32.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 836/1224] blk.32.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 837/1224] blk.32.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 838/1224] blk.32.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 839/1224] blk.32.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 840/1224] blk.32.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 841/1224] blk.32.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 842/1224] blk.32.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 843/1224] blk.32.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 844/1224] blk.32.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 845/1224] blk.32.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 846/1224] blk.33.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 847/1224] blk.33.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 848/1224] blk.33.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 849/1224] blk.33.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 850/1224] blk.33.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 851/1224] blk.33.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 852/1224] blk.33.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 853/1224] blk.33.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 854/1224] blk.33.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 855/1224] blk.33.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 856/1224] blk.33.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 857/1224] blk.33.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 858/1224] blk.33.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 859/1224] blk.33.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 860/1224] blk.33.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 861/1224] blk.33.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 862/1224] blk.33.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 863/1224] blk.33.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 864/1224] blk.33.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 865/1224] blk.33.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 866/1224] blk.33.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 867/1224] blk.33.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 868/1224] blk.33.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 869/1224] blk.33.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 870/1224] blk.33.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 871/1224] blk.34.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 872/1224] blk.34.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 873/1224] blk.34.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 874/1224] blk.34.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 875/1224] blk.34.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 876/1224] blk.34.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 877/1224] blk.34.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 878/1224] blk.34.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 879/1224] blk.34.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 880/1224] blk.34.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 881/1224] blk.34.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 882/1224] blk.34.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 883/1224] blk.34.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 884/1224] blk.34.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 885/1224] blk.34.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 886/1224] blk.34.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 887/1224] blk.34.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 888/1224] blk.34.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 889/1224] blk.34.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 890/1224] blk.34.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 891/1224] blk.34.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 892/1224] blk.34.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 893/1224] blk.34.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 894/1224] blk.34.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 895/1224] blk.34.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 896/1224] blk.35.attn_k.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 897/1224] blk.35.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 898/1224] blk.35.attn_output.weight            - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 899/1224] blk.35.attn_q.weight                 - [  2560,  12288,      1,      1], type =   q8_0, size =    31.88 MiB ->    16.88 MiB (iq4_nl)
+[ 900/1224] blk.35.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 901/1224] blk.35.attn_v.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 902/1224] blk.35.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 903/1224] blk.35.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 904/1224] blk.35.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 905/1224] blk.35.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 906/1224] blk.35.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 907/1224] blk.35.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 908/1224] blk.35.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 909/1224] blk.35.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 910/1224] blk.35.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 911/1224] blk.35.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 912/1224] blk.35.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 913/1224] blk.35.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 914/1224] blk.35.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 915/1224] blk.35.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 916/1224] blk.35.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 917/1224] blk.35.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 918/1224] blk.35.indexer.k_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 919/1224] blk.35.indexer.k_proj.weight         - [  2560,    128,      1,      1], type =   bf16, size =    0.625 MiB
+[ 920/1224] blk.35.indexer.q_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 921/1224] blk.35.indexer.q_proj.weight         - [  2560,    512,      1,      1], type =   bf16, size =    2.500 MiB
+[ 922/1224] blk.36.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 923/1224] blk.36.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 924/1224] blk.36.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 925/1224] blk.36.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 926/1224] blk.36.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 927/1224] blk.36.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 928/1224] blk.36.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 929/1224] blk.36.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 930/1224] blk.36.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 931/1224] blk.36.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 932/1224] blk.36.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 933/1224] blk.36.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 934/1224] blk.36.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 935/1224] blk.36.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 936/1224] blk.36.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 937/1224] blk.36.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 938/1224] blk.36.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 939/1224] blk.36.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 940/1224] blk.36.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 941/1224] blk.36.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 942/1224] blk.36.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 943/1224] blk.36.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 944/1224] blk.36.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 945/1224] blk.36.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 946/1224] blk.36.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 947/1224] blk.37.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 948/1224] blk.37.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 949/1224] blk.37.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 950/1224] blk.37.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 951/1224] blk.37.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 952/1224] blk.37.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 953/1224] blk.37.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 954/1224] blk.37.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 955/1224] blk.37.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 956/1224] blk.37.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 957/1224] blk.37.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 958/1224] blk.37.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 959/1224] blk.37.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 960/1224] blk.37.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 961/1224] blk.37.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 962/1224] blk.37.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 963/1224] blk.37.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 964/1224] blk.37.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 965/1224] blk.37.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 966/1224] blk.37.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 967/1224] blk.37.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 968/1224] blk.37.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 969/1224] blk.37.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 970/1224] blk.37.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 971/1224] blk.37.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 972/1224] blk.38.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 973/1224] blk.38.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[ 974/1224] blk.38.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[ 975/1224] blk.38.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 976/1224] blk.38.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 977/1224] blk.38.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[ 978/1224] blk.38.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[ 979/1224] blk.38.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 980/1224] blk.38.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[ 981/1224] blk.38.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[ 982/1224] blk.38.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 983/1224] blk.38.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 984/1224] blk.38.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 985/1224] blk.38.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 986/1224] blk.38.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 987/1224] blk.38.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[ 988/1224] blk.38.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[ 989/1224] blk.38.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[ 990/1224] blk.38.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 991/1224] blk.38.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 992/1224] blk.38.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[ 993/1224] blk.38.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[ 994/1224] blk.38.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 995/1224] blk.38.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[ 996/1224] blk.38.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[ 997/1224] blk.39.attn_k.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[ 998/1224] blk.39.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[ 999/1224] blk.39.attn_output.weight            - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[1000/1224] blk.39.attn_q.weight                 - [  2560,  12288,      1,      1], type =   q8_0, size =    31.88 MiB ->    16.88 MiB (iq4_nl)
+[1001/1224] blk.39.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[1002/1224] blk.39.attn_v.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[1003/1224] blk.39.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[1004/1224] blk.39.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1005/1224] blk.39.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1006/1224] blk.39.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[1007/1224] blk.39.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[1008/1224] blk.39.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1009/1224] blk.39.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1010/1224] blk.39.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1011/1224] blk.39.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1012/1224] blk.39.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1013/1224] blk.39.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1014/1224] blk.39.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1015/1224] blk.39.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1016/1224] blk.39.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1017/1224] blk.39.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1018/1224] blk.39.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1019/1224] blk.39.indexer.k_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1020/1224] blk.39.indexer.k_proj.weight         - [  2560,    128,      1,      1], type =   bf16, size =    0.625 MiB
+[1021/1224] blk.39.indexer.q_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1022/1224] blk.39.indexer.q_proj.weight         - [  2560,    512,      1,      1], type =   bf16, size =    2.500 MiB
+[1023/1224] blk.40.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[1024/1224] blk.40.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[1025/1224] blk.40.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[1026/1224] blk.40.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1027/1224] blk.40.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1028/1224] blk.40.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[1029/1224] blk.40.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[1030/1224] blk.40.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1031/1224] blk.40.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1032/1224] blk.40.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1033/1224] blk.40.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1034/1224] blk.40.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1035/1224] blk.40.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1036/1224] blk.40.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1037/1224] blk.40.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1038/1224] blk.40.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1039/1224] blk.40.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1040/1224] blk.40.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1041/1224] blk.40.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1042/1224] blk.40.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[1043/1224] blk.40.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[1044/1224] blk.40.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[1045/1224] blk.40.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1046/1224] blk.40.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1047/1224] blk.40.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[1048/1224] blk.41.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[1049/1224] blk.41.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[1050/1224] blk.41.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[1051/1224] blk.41.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1052/1224] blk.41.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1053/1224] blk.41.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[1054/1224] blk.41.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[1055/1224] blk.41.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1056/1224] blk.41.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1057/1224] blk.41.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1058/1224] blk.41.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1059/1224] blk.41.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1060/1224] blk.41.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1061/1224] blk.41.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1062/1224] blk.41.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1063/1224] blk.41.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1064/1224] blk.41.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1065/1224] blk.41.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1066/1224] blk.41.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1067/1224] blk.41.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[1068/1224] blk.41.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[1069/1224] blk.41.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[1070/1224] blk.41.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1071/1224] blk.41.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1072/1224] blk.41.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[1073/1224] blk.42.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[1074/1224] blk.42.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[1075/1224] blk.42.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[1076/1224] blk.42.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1077/1224] blk.42.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1078/1224] blk.42.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[1079/1224] blk.42.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[1080/1224] blk.42.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1081/1224] blk.42.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1082/1224] blk.42.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1083/1224] blk.42.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1084/1224] blk.42.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1085/1224] blk.42.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1086/1224] blk.42.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1087/1224] blk.42.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1088/1224] blk.42.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1089/1224] blk.42.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1090/1224] blk.42.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1091/1224] blk.42.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1092/1224] blk.42.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[1093/1224] blk.42.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[1094/1224] blk.42.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[1095/1224] blk.42.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1096/1224] blk.42.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1097/1224] blk.42.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[1098/1224] blk.43.attn_k.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[1099/1224] blk.43.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[1100/1224] blk.43.attn_output.weight            - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[1101/1224] blk.43.attn_q.weight                 - [  2560,  12288,      1,      1], type =   q8_0, size =    31.88 MiB ->    16.88 MiB (iq4_nl)
+[1102/1224] blk.43.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[1103/1224] blk.43.attn_v.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[1104/1224] blk.43.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[1105/1224] blk.43.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1106/1224] blk.43.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1107/1224] blk.43.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[1108/1224] blk.43.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[1109/1224] blk.43.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1110/1224] blk.43.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1111/1224] blk.43.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1112/1224] blk.43.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1113/1224] blk.43.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1114/1224] blk.43.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1115/1224] blk.43.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1116/1224] blk.43.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1117/1224] blk.43.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1118/1224] blk.43.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1119/1224] blk.43.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1120/1224] blk.43.indexer.k_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1121/1224] blk.43.indexer.k_proj.weight         - [  2560,    128,      1,      1], type =   bf16, size =    0.625 MiB
+[1122/1224] blk.43.indexer.q_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1123/1224] blk.43.indexer.q_proj.weight         - [  2560,    512,      1,      1], type =   bf16, size =    2.500 MiB
+[1124/1224] blk.44.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[1125/1224] blk.44.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[1126/1224] blk.44.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[1127/1224] blk.44.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1128/1224] blk.44.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1129/1224] blk.44.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[1130/1224] blk.44.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[1131/1224] blk.44.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1132/1224] blk.44.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1133/1224] blk.44.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1134/1224] blk.44.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1135/1224] blk.44.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1136/1224] blk.44.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1137/1224] blk.44.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1138/1224] blk.44.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1139/1224] blk.44.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1140/1224] blk.44.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1141/1224] blk.44.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1142/1224] blk.44.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1143/1224] blk.44.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[1144/1224] blk.44.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[1145/1224] blk.44.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[1146/1224] blk.44.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1147/1224] blk.44.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1148/1224] blk.44.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[1149/1224] blk.45.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[1150/1224] blk.45.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[1151/1224] blk.45.ffn_down_exps.weight          - [   640,   2560,    512,      1], type = iq4_nl, size =  450.000 MiB
+[1152/1224] blk.45.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1153/1224] blk.45.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1154/1224] blk.45.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[1155/1224] blk.45.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[1156/1224] blk.45.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1157/1224] blk.45.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1158/1224] blk.45.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1159/1224] blk.45.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1160/1224] blk.45.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1161/1224] blk.45.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1162/1224] blk.45.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1163/1224] blk.45.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1164/1224] blk.45.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1165/1224] blk.45.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1166/1224] blk.45.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1167/1224] blk.45.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1168/1224] blk.45.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[1169/1224] blk.45.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[1170/1224] blk.45.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[1171/1224] blk.45.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1172/1224] blk.45.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1173/1224] blk.45.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[1174/1224] blk.46.attn_gate.weight              - [  2560,   6144,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[1175/1224] blk.46.attn_qkv.weight               - [  2560,  10240,      1,      1], type =   q8_0, size =    26.56 MiB ->    14.06 MiB (iq4_nl)
+[1176/1224] blk.46.ffn_down_exps.weight          - [   640,   2560,    512,      1], type =   q8_0, size =  850.000 MiB
+[1177/1224] blk.46.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1178/1224] blk.46.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1179/1224] blk.46.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[1180/1224] blk.46.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[1181/1224] blk.46.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1182/1224] blk.46.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1183/1224] blk.46.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1184/1224] blk.46.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1185/1224] blk.46.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1186/1224] blk.46.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1187/1224] blk.46.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1188/1224] blk.46.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1189/1224] blk.46.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1190/1224] blk.46.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1191/1224] blk.46.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1192/1224] blk.46.ssm_a                         - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1193/1224] blk.46.ssm_alpha.weight              - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[1194/1224] blk.46.ssm_beta.weight               - [  2560,     48,      1,      1], type =    f32, size =    0.469 MiB
+[1195/1224] blk.46.ssm_conv1d.weight             - [     4,  10240,      1,      1], type =    f32, size =    0.156 MiB
+[1196/1224] blk.46.ssm_dt.bias                   - [    48,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1197/1224] blk.46.ssm_norm.weight               - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1198/1224] blk.46.ssm_out.weight                - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[1199/1224] blk.47.attn_k.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[1200/1224] blk.47.attn_k_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[1201/1224] blk.47.attn_output.weight            - [  6144,   2560,      1,      1], type =   q8_0, size =    15.94 MiB ->     8.44 MiB (iq4_nl)
+[1202/1224] blk.47.attn_q.weight                 - [  2560,  12288,      1,      1], type =   q8_0, size =    31.88 MiB ->    16.88 MiB (iq4_nl)
+[1203/1224] blk.47.attn_q_norm.weight            - [   256,      1,      1,      1], type =    f32, size =    0.001 MiB
+[1204/1224] blk.47.attn_v.weight                 - [  2560,    512,      1,      1], type =   q8_0, size =     1.33 MiB ->     0.70 MiB (iq4_nl)
+[1205/1224] blk.47.ffn_down_exps.weight          - [   640,   2560,    512,      1], type =   q8_0, size =  850.000 MiB
+[1206/1224] blk.47.ffn_down_shexp.weight         - [   640,   2560,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1207/1224] blk.47.ffn_gate_exps.weight          - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1208/1224] blk.47.ffn_gate_inp.weight           - [  2560,    512,      1,      1], type =    f32, size =    5.000 MiB
+[1209/1224] blk.47.ffn_gate_inp_shexp.weight     - [  2560,      1,      1,      1], type =    f32, size =    0.010 MiB
+[1210/1224] blk.47.ffn_gate_shexp.weight         - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1211/1224] blk.47.ffn_up_exps.weight            - [  2560,    640,    512,      1], type =  iq3_s, size =  343.750 MiB
+[1212/1224] blk.47.ffn_up_shexp.weight           - [  2560,    640,      1,      1], type =   q8_0, size =     1.66 MiB ->     0.88 MiB (iq4_nl)
+[1213/1224] blk.47.hc_attn_down.weight           - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1214/1224] blk.47.hc_attn_inject.weight         - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1215/1224] blk.47.hc_attn_norm.weight           - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1216/1224] blk.47.hc_attn_up.weight             - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1217/1224] blk.47.hc_ffn_down.weight            - [ 10240,    320,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1218/1224] blk.47.hc_ffn_inject.weight          - [ 10240,      4,      1,      1], type =    f32, size =    0.156 MiB
+[1219/1224] blk.47.hc_ffn_norm.weight            - [ 10240,      1,      1,      1], type =    f32, size =    0.039 MiB
+[1220/1224] blk.47.hc_ffn_up.weight              - [   320,  10240,      1,      1], type =   q8_0, size =     3.32 MiB ->     1.76 MiB (iq4_nl)
+[1221/1224] blk.47.indexer.k_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1222/1224] blk.47.indexer.k_proj.weight         - [  2560,    128,      1,      1], type =   bf16, size =    0.625 MiB
+[1223/1224] blk.47.indexer.q_norm.weight         - [   128,      1,      1,      1], type =    f32, size =    0.000 MiB
+[1224/1224] blk.47.indexer.q_proj.weight         - [  2560,    512,      1,      1], type =   bf16, size =    2.500 MiB
+llama_model_quantize_impl: model size  = 89332.16 MiB (4.24 BPW)
+llama_model_quantize_impl: quant size  = 87625.91 MiB (4.15 BPW)
+
+llama_quantize: quantize time =   187.16 ms
+llama_quantize:    total time =   187.16 ms

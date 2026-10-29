@@ -16,7 +16,7 @@ docker run --rm --user "$(id -u):$(id -g)" -v "$SRC":"$SRC" -w "$SRC" \
       -DGGML_HIP=ON -DAMDGPU_TARGETS=gfx1151 -DGPU_TARGETS=gfx1151 \
       -DGGML_RPC=ON -DGGML_RPC_RDMA=ON -DLLAMA_CURL=OFF -DBUILD_SHARED_LIBS=OFF \
       -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ &&
-    cmake --build build-rocm -j 24 --target llama-server llama-cli llama-bench llama-perplexity ggml-rpc-server' \
+    cmake --build build-rocm -j 24 --target llama-server llama-cli llama-bench llama-perplexity ggml-rpc-server llama-quantize llama-imatrix' \
   > "${LOG:-$D/build-hip.log}" 2>&1
 echo "rc=$?"; tail -3 "${LOG:-$D/build-hip.log}"
 grep -E 'GGML_RPC_RDMA|RDMA' "$SRC/build-rocm/CMakeCache.txt" 2>/dev/null | head -3
