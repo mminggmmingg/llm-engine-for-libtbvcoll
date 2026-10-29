@@ -6,19 +6,20 @@ Strix Halo(gfx1151) 노트북 두 대를 Thunderbolt/USB4 RDMA(tbv, libtbvcoll)�
 원칙: **다중 노드는 텐서 병렬(TP)만** 쓴다(층 분할·PP 는 중간 단계로도 쓰지 않음). 하드웨어·전원·펌웨어 설정은 바꾸지 않는다(소프트웨어만).
 tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) 저장소에 있다. 이 저장소의 앞 7개 커밋은 그 저장소 `engine2n/` 의 이력을 그대로 옮긴 것.
 
-## 지금까지 (2026-10-29, Flash-Next, 자세한 값은 RESULTS.md)
+## 지금까지 (2026-10-30, Flash-Next, 자세한 값은 RESULTS.md)
 
-| 구성 | 디코드 tok/s | 비고 |
-|---|---:|---|
-| 1노드, unsloth UD-IQ4_XS | 22–23 | 토큰당 가중치 5.84 GB(밀집 부분 Q8_0) |
-| 1노드 + MTP 추측 디코딩 | **36** | +62%, 출력은 3/6 프롬프트에서 MTP 없을 때와 중간부터 갈라짐 |
-| 2노드 TP(RDMA, 발행 겹치기 2, 서버 HIP 그래프 끔) | 23–24 | IQ4 는 한 대에 들어가 TP 이득이 작음. TP 는 Q8_0 용 |
-| 2노드 TP + MTP | **33.8** | +49%, 출력은 2노드 MTP 없음과 6/6 동일 |
-| (참고) halogen, 자체 4.16 bit 체크포인트 | 35.4 / 초안 55–57 | 개발사 측정. 같은 GGUF 를 halogen 이 돌리면 25.4 |
+| 구성 | PPL | 1노드 직렬 | 1노드 + MTP | 2노드 TP | 2노드 TP + MTP |
+|---|---:|---:|---:|---:|---:|
+| Q8_0 (원본 기준, 토큰당 7.30 GB) | 2.0660 | 한 대에 안 들어감 | — | 20.9 | **31.3** |
+| unsloth UD-IQ4_XS (5.84 GB) | 2.1682 | 17.5–17.8 | 31.1–31.3 | 22.6–23.3 | 34.3–34.5 |
+| **H5** (우리 배분, Q8_0 에서, 4.82 GB) | **2.1359** | 18.5 | 31.2 | **25.4** | **34.8** |
+| H (halogen 식 밀집 4-bit, 4.40 GB) | 2.1477 | 19.9 | 32.6 | 25.3 | 34.1 |
+| (참고) halogen 자체 체크포인트, 개발사 측정 | — | 35.4 | 55–57 | — | — |
 
-- halogen 과의 차이 ≈1.68× = 체크포인트 비트 배분 ≈1.39× × 엔진 ≈1.15×. halogen 은 BF16 에서 활성값 기반으로 4-bit(혼합 층 6-bit, o_proj 8-bit)를 만들어
-  개발사 측정 PPL 이 UD-IQ4_XS 보다 0.7–2.1% 좋다. 우리가 Q8_0 에서 보정 없이 밀집 부분을 4-bit 로 다시 만들면 PPL +4~+12.5%(`quant/`).
-- 다음: Q8_0 GGUF(받는 중)를 원본 삼아 halogen 과 비슷한 비트 배분을 llama.cpp 형식으로 만들기 → 1노드/2노드 TP + MTP 로 속도·PPL 비교.
+- tok/s, llama-server 6 프롬프트. 1노드 값은 A 의 '느린 상태'(TB 활동 없음, 빠른 상태에서는 ≈+20%). 2노드는 B rank 0, 발행 겹치기 2, 서버 HIP 그래프 끔, FFN 320/320.
+- 비트 배분(`tools/make_mix.py`, `quant/`): 전문가 IQ4_XS(down IQ4_NL), o_proj Q8_0, hyper-connection Q6_K/Q8_0, 몸통 4-bit(H) 또는 Q5_0(H5), imatrix.
+  gfx1151 에서 IQ3_S 는 4-bit 보다 빠르지 않고 K 형식은 묶음 4 에서 1.7배 느려서(커널 표) 고른 형식.
+- MTP 를 켜면 배분과 상관없이 속도가 같다 → 남은 차이는 엔진 고정비(토큰당 ≈19–28 ms). 다음: 고정비 분해·줄이기.
 
 - 설계: [DESIGN.md](DESIGN.md) (v1, TP). 폐기된 층 분할(PP) 설계는 [DESIGN_v0_pp.md](DESIGN_v0_pp.md), `run_2node.sh` 에 기록용으로만 남김.
 - 측정 기록: [RESULTS.md](RESULTS.md)
@@ -68,10 +69,13 @@ tbv 는 `9a35117`(여러 프레임 SEND 의 RNR 대기) 이상이어야 한다.
 python3 -I tools/gguf_head.py <조각.gguf> | grep '  T ' > quant/orig.tensors        # 텐서 목록
 python3 -I tools/make_types.py <형식> <그룹,...> < quant/orig.tensors > quant/X.types   # 그룹: attn, gdn, hc, shexp, ple
 [IMATRIX=quant/imatrix-orig.gguf] quant/run_variant.sh quant/X.types <태그>         # 변환 → 1노드 디코드 → PPL
+python3 -I tools/make_mix.py <H|H5> < quant/q8.tensors > quant/q8mix-H5.types        # Q8_0 원본용 그룹별 배분
+quant/run_mix_suite.sh quant/q8mix-H5.types q8mix-H5                               # Q8_0 에서 변환 → UD 와 번갈아 측정 → 서버 1·2노드 × MTP
 python3 -I tools/gguf_head.py <변형.gguf> | python3 -I tools/bytes_per_token.py 512 10   # 토큰당 읽는 양
 ./eval/make_calib_text.sh                                                          # imatrix 보정 글(평가 글과 겹치지 않음)
 ```
 `quant/run_variant.sh` 는 변형 디렉터리(`UD-IQ4_XS-dense4/`) 안의 이전 변형 파일만 지우고 새로 만든다(디스크 부족으로 사용자 허락, 2026-10-29).
+형식별 커널 속도: `TARGETS=test-backend-ops ./build_llama.sh` 후 `test-backend-ops perf -b ROCm0 -o MUL_MAT -p 'm=10240,n=[0-9]+,k=2560,bs=\[16,1\]'`(패치에 qwen4exp 모양 추가).
 
 ## 구성
 - `run_*.sh`, `eval_ppl.sh`, `build_llama.sh`, `get_models.sh` + `models_manifest.json`: 빌드·모델 받기·측정 실행기
