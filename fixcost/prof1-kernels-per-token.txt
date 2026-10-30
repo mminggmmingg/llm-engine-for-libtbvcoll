@@ -1,0 +1,44 @@
+tokens 32: wall/tok 167.71 ms, kernels/tok 3201, kernel time/tok 49.41 ms, gaps/tok 118.29 ms (median gap 4.4 us)
+  kernel duration p10: 1.5 us
+  kernel duration p25: 2.0 us
+  kernel duration p50: 5.2 us
+  kernel duration p75: 14.9 us
+  kernel duration p90: 41.1 us
+  kernel duration p99: 127.0 us
+  kernels < 20 us: 2636/tok, 14.93 ms/tok
+ ms/tok  n/tok  avg us  kernel
+  33.64  713.0    47.2  mul_mat_vec_q<>
+   2.65  713.0     3.7  quantize_q8_1
+   2.11   96.0    22.0  mul_mat_vec_f<float>
+   1.02   36.0    28.4  gated_delta_net_cuda<128>
+   0.95   48.0    19.7  topk_moe_cuda<512>
+   0.94   36.0    26.1  k_get_rows_float_vec<float>>
+   0.68  185.0     3.7  k_bin_bcast<&>
+   0.66  132.0     5.0  rms_norm_f32<32>
+   0.61  187.0     3.2  unary_op_kernel<&>
+   0.59  100.0     5.9  rms_norm_f32<1024>
+   0.50   96.0     5.2  dsv4_hc_pre_f32<true>>
+   0.46   53.0     8.7  __amd_rocclr_copyBufferRectAligned
+   0.46   96.0     4.7  dsv4_hc_post_f32<false>
+   0.43   24.0    17.8  mul_mat_vec_f<__hip_bfloat16>
+   0.36  113.0     3.2  scale_f32<float>>
+   0.35   48.0     7.4  rope_multi<true>
+   0.34   85.0     4.0  unary_gated_op_kernel<&>
+   0.34   48.0     7.0  moe_weighted_reduction_f32
+   0.30   49.0     6.0  concat_cont<unsigned int>
+   0.27   69.0     3.9  __amd_rocclr_copyBuffer
+   0.27   40.0     6.7  k_get_rows_float<float>
+   0.19   12.0    15.8  flash_attn_tile<256>
+   0.19   36.0     5.2  ssm_conv_f32<true>
+   0.16   12.0    13.4  k_argsort_f32_i32<>
+   0.16   12.0    13.1  lightning_indexer_kernel_vec<8>
+   0.16   36.0     4.3  k_set_rows<float>
+   0.13   24.0     5.6  rms_norm_f32<128>
+   0.11   24.0     4.6  k_get_rows_float<__half>
+   0.11   12.0     8.8  top_k_mask_kernel<__half>>
+   0.09   16.0     5.5  cpy_scalar<&>
+   0.08   24.0     3.4  fill_kernel<float>>
+   0.08   12.0     6.8  flash_attn_combine_results<256>>
+   0.04   12.0     3.2  fill_kernel<__half>>
+   0.01    1.0     6.4  reduce_rows_f32<false>>
+   0.00    1.0     4.6  op_clamp_kernel<float>>

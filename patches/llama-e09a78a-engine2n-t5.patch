@@ -11,7 +11,7 @@ index 6b36ca9..8b32e21 100644
      int64_t last_used_time = 0;
      struct node_properties {
 diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
-index 72e961d..c142790 100644
+index 72e961d..e83505c 100644
 --- a/ggml/src/ggml-cuda/ggml-cuda.cu
 +++ b/ggml/src/ggml-cuda/ggml-cuda.cu
 @@ -2884,10 +2884,53 @@ static int ggml_cuda_graph_chunk_size() {
@@ -91,7 +91,66 @@ index 72e961d..c142790 100644
  }
  #endif // USE_CUDA_GRAPH
  
-@@ -4878,8 +4936,12 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
+@@ -3848,6 +3906,47 @@ static bool ggml_cuda_can_fuse(const struct ggml_cgraph *                cgraph,
+     return false;
+ }
+ 
++// GGML_CUDA_SKIP_OPS=<op,...>: for timing only, the results are wrong. Nodes whose op name or op description
++// (unary/glu name) is listed are not launched; a leading '!' skips every op except the listed ones ("!" alone skips all).
++// "w:<text>" matches nodes whose first source (the weight of a matmul) has <text> in its name.
++// The decode time an op class removes is its cost.
++static bool ggml_cuda_skip_op(const ggml_tensor * node) {
++    static const std::pair<bool, std::vector<std::string>> cfg = [] {
++        std::pair<bool, std::vector<std::string>> c{false, {}};
++        const char * env = getenv("GGML_CUDA_SKIP_OPS");
++        if (env == nullptr || *env == 0) {
++            return c;
++        }
++        std::string s = env;
++        if (s[0] == '!') {
++            c.first = true;
++            s = s.substr(1);
++        }
++        for (size_t p = 0; p < s.size();) {
++            size_t q = s.find(',', p);
++            q = q == std::string::npos ? s.size() : q;
++            if (q > p) {
++                c.second.push_back(s.substr(p, q - p));
++            }
++            p = q + 1;
++        }
++        GGML_LOG_INFO("%s: GGML_CUDA_SKIP_OPS=%s (timing only, results are wrong)\n", __func__, env);
++        return c;
++    }();
++    if (!cfg.first && cfg.second.empty()) {
++        return false;
++    }
++    bool listed = false;
++    for (const std::string & o : cfg.second) {
++        if (o.rfind("w:", 0) == 0) {
++            listed = listed || (node->src[0] != nullptr && strstr(node->src[0]->name, o.c_str() + 2) != nullptr);
++        } else {
++            listed = listed || o == ggml_op_name(node->op) || o == ggml_op_desc(node);
++        }
++    }
++    return cfg.first ? !listed : listed;
++}
++
+ // try and fuse nodes and return the number of nodes to skip
+ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph, int i) {
+ 
+@@ -4815,6 +4914,10 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
+                     continue;
+                 }
+ 
++                if (ggml_cuda_skip_op(node)) {
++                    continue;
++                }
++
+                 int nodes_to_skip = ggml_cuda_try_fuse(cuda_ctx, cgraph, i);
+ 
+                 if (nodes_to_skip != 0) {
+@@ -4878,8 +4981,12 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
  
      if (use_cuda_graph && !cuda_graph_update_required) {
          // the chunks were launched during capture, otherwise launch them here
@@ -106,7 +165,7 @@ index 72e961d..c142790 100644
          }
  #else
          GGML_UNUSED(graph_key);
-@@ -6282,8 +6344,40 @@ static ggml_backend_feature * ggml_backend_cuda_get_features(ggml_backend_reg_t
+@@ -6282,8 +6389,40 @@ static ggml_backend_feature * ggml_backend_cuda_get_features(ggml_backend_reg_t
      GGML_UNUSED(reg);
  }
  
@@ -1276,10 +1335,10 @@ index c3e2b01..6327263 100644
  }
  
 diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
-index e2c3daf..992b5e3 100644
+index e2c3daf..308df6a 100644
 --- a/tests/test-backend-ops.cpp
 +++ b/tests/test-backend-ops.cpp
-@@ -13106,6 +13106,18 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_perf() {
+@@ -13106,6 +13106,26 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_perf() {
      }
  
  
@@ -1294,6 +1353,14 @@ index e2c3daf..992b5e3 100644
 +                test_cases.emplace_back(new test_mul_mat_id(t, GGML_TYPE_F32, 512, 10, false, 2560, bs, 640));
 +            }
 +        }
++    }
++    // 한 개짜리 행렬(H5 형식): 출력 머리 Q6_K 2560→248320(520 MB), hc_down Q6_K 10240→320, hc_up Q8_0 320→10240,
++    // hc_inject Q8_0 10240→4. 작은 셋은 MALL 에 남으므로 캐시에 있는 최선값이다.
++    for (int bs : {1, 4}) {
++        test_cases.emplace_back(new test_mul_mat(GGML_TYPE_Q6_K, GGML_TYPE_F32, 248320, bs, 2560, {1, 1}, {1, 1}));
++        test_cases.emplace_back(new test_mul_mat(GGML_TYPE_Q6_K, GGML_TYPE_F32, 320, bs, 10240, {1, 1}, {1, 1}));
++        test_cases.emplace_back(new test_mul_mat(GGML_TYPE_Q8_0, GGML_TYPE_F32, 10240, bs, 320, {1, 1}, {1, 1}));
++        test_cases.emplace_back(new test_mul_mat(GGML_TYPE_Q8_0, GGML_TYPE_F32, 4, bs, 10240, {1, 1}, {1, 1}));
 +    }
      return test_cases;
  }
