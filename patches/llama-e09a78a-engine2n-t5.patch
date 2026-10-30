@@ -207,7 +207,7 @@ index 72e961d..e83505c 100644
          return (void *)ggml_backend_cuda_comm_init;
      }
 diff --git a/ggml/src/ggml-rpc/ggml-rpc.cpp b/ggml/src/ggml-rpc/ggml-rpc.cpp
-index 8cedee7..d37c31c 100644
+index 8cedee7..527a2b9 100644
 --- a/ggml/src/ggml-rpc/ggml-rpc.cpp
 +++ b/ggml/src/ggml-rpc/ggml-rpc.cpp
 @@ -6,6 +6,9 @@
@@ -614,7 +614,17 @@ index 8cedee7..d37c31c 100644
  
      size_t ctx_size = 16*ggml_tensor_overhead() + 2*ggml_graph_overhead_custom(8, false);
      struct ggml_init_params params = {
-@@ -2320,12 +2651,34 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2316,16 +2647,43 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+     }
+     // reduce large partials in bf16 to halve the wire bytes; small (decode-sized) ones
+     // stay f32 since the extra casts and sync cost more than the bytes saved
+-    const bool   wire_bf16  = t_dst->type == GGML_TYPE_F32 && ne >= 32768;
++    // GGML_RPC_COMM_BF16_MIN=<n>: smallest partial sent as bf16 (default 32768; a huge value keeps all f32)
++    static const int64_t bf16_min = [] {
++        const char * env = getenv("GGML_RPC_COMM_BF16_MIN");
++        return env ? (int64_t) atoll(env) : (int64_t) 32768;
++    }();
++    const bool   wire_bf16  = t_dst->type == GGML_TYPE_F32 && ne >= bf16_min;
      const size_t wire_bytes = wire_bf16 ? (size_t) ne*2 : nbytes;
      const size_t need       = wire_bf16 ? 2*nbytes : nbytes;
      if (state.scratch_size < need) {
@@ -651,7 +661,7 @@ index 8cedee7..d37c31c 100644
  
      auto new_scratch_tensor = [&](ggml_type type, size_t offset) {
          ggml_tensor * t = ggml_new_tensor_4d(ctx, type, t_dst->ne[0], t_dst->ne[1], t_dst->ne[2], t_dst->ne[3]);
-@@ -2352,41 +2705,193 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2352,41 +2710,193 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
          GGML_ASSERT(status == GGML_STATUS_SUCCESS && "Unsuccessful graph computations are not supported with RPC");
      };
  
@@ -860,7 +870,7 @@ index 8cedee7..d37c31c 100644
      }
  
      ggml_tensor * t_red = ggml_new_tensor_4d(ctx, t_dst->type, t_dst->ne[0], t_dst->ne[1], t_dst->ne[2], t_dst->ne[3]);
-@@ -2402,6 +2907,39 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2402,6 +2912,39 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
      } else {
          compute_nodes(t_red, nullptr);
      }
@@ -900,7 +910,7 @@ index 8cedee7..d37c31c 100644
      return true;
  }
  
-@@ -2409,6 +2947,10 @@ bool rpc_server::comm_free(const rpc_msg_comm_free_req & request) {
+@@ -2409,6 +2952,10 @@ bool rpc_server::comm_free(const rpc_msg_comm_free_req & request) {
      if (request.device >= backends.size()) {
          return false;
      }
@@ -911,7 +921,7 @@ index 8cedee7..d37c31c 100644
      comm_states[request.device] = comm_state();
      return true;
  }
-@@ -2474,10 +3016,31 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+@@ -2474,10 +3021,31 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
      // Activate transport upgrade using client's caps
      sock->update_caps(req.conn_caps);
      LOG_DBG("[%s] client connected, transport: %s\n", __func__, sock->transport_name());
@@ -1252,7 +1262,7 @@ index 59b8845..743b32e 100644
 +// RDMA device for connections negotiated on this thread (get_caps/update_caps), over GGML_RDMA_DEV; nullptr clears
 +void rpc_transport_set_rdma_dev(const char * dev);
 diff --git a/src/llama-model-loader.cpp b/src/llama-model-loader.cpp
-index a963f24..dc5c7cb 100644
+index a963f24..892b044 100644
 --- a/src/llama-model-loader.cpp
 +++ b/src/llama-model-loader.cpp
 @@ -867,11 +867,59 @@ const llama_model_loader::llama_tensor_weight & llama_model_loader::require_weig
@@ -1349,14 +1359,16 @@ index a963f24..dc5c7cb 100644
      if (n_tensors_moved > 0) {
          LLAMA_LOG_DEBUG("%s: tensor '%s' (%s) (and %zu others) cannot be used with preferred buffer type %s, using %s instead\n",
              __func__, first_tensor_moved_name.c_str(), first_tensor_moved_type_name.c_str(), n_tensors_moved - 1,
-@@ -1690,10 +1757,45 @@ bool llama_model_loader::load_all_data(
+@@ -1690,10 +1757,49 @@ bool llama_model_loader::load_all_data(
          });
      }
  
-+    // a merged weight is set part by part, each converted to the merged type when it differs
++    // a merged weight is assembled on the host, each part converted to the merged type when it differs, then set at
++    // once: a buffer split across devices (--split-mode tensor) takes a segmented weight only as a whole
 +    auto load_merged = [&](ggml_tensor * cur, const merged_weight & mw) {
 +        std::vector<no_init<uint8_t>> read_buf;
 +        std::vector<no_init<uint8_t>> conv_buf;
++        std::vector<no_init<uint8_t>> merged_buf(ggml_nbytes(cur));
 +        std::vector<float> f32_buf;
 +        size_t offs = 0;
 +        for (const llama_tensor_weight * w : mw.parts) {
@@ -1377,11 +1389,13 @@ index a963f24..dc5c7cb 100644
 +                data = conv_buf.data();
 +            }
 +            const size_t n_set = ggml_row_size(cur->type, n_per_row)*n_rows;
-+            ggml_backend_tensor_set(cur, data, offs, n_set);
++            GGML_ASSERT(offs + n_set <= merged_buf.size());
++            memcpy(merged_buf.data() + offs, data, n_set);
 +            offs      += n_set;
 +            size_done += n_size;
 +        }
 +        GGML_ASSERT(offs == ggml_nbytes(cur));
++        ggml_backend_tensor_set(cur, merged_buf.data(), 0, offs);
 +    };
 +
      for (struct ggml_tensor * cur : tensors) {
@@ -1422,7 +1436,7 @@ index ed59079..1168305 100644
      const llama_model_tensor_buft_override * tensor_buft_overrides;
  
 diff --git a/src/llama-model.cpp b/src/llama-model.cpp
-index 81af890..e00bf28 100644
+index 81af890..8eb615a 100644
 --- a/src/llama-model.cpp
 +++ b/src/llama-model.cpp
 @@ -398,6 +398,19 @@ llama_model * llama_model_create(llama_model_loader & ml, const llama_model_para
@@ -1445,7 +1459,66 @@ index 81af890..e00bf28 100644
  struct ggml_backend_meta_split_state llama_meta_device_get_split_state(const struct ggml_tensor * tensor, void * userdata) {
      const llama_meta_device_get_split_state_userdata * ud = (const llama_meta_device_get_split_state_userdata *) userdata;
      const llama_hparams & hparams = ud->model->hparams;
-@@ -852,7 +865,7 @@ struct ggml_backend_meta_split_state llama_meta_device_get_split_state(const str
+@@ -430,6 +443,9 @@ struct ggml_backend_meta_split_state llama_meta_device_get_split_state(const str
+     static const std::regex pattern_ssm_alpha       ("blk\\.\\d*\\.ssm_alpha.weight");
+     static const std::regex pattern_ssm_beta        ("blk\\.\\d*\\.ssm_beta.weight");
+     static const std::regex pattern_ssm_beta_alpha  ("blk\\.\\d*\\.ssm_ba.weight");
++    // engine2n: GDN weights qwen4exp merges while loading, [qkv | gate] and [beta | alpha]
++    static const std::regex pattern_qkv_gate_weight   ("blk\\.\\d*\\.attn_qkv_gate\\.weight");
++    static const std::regex pattern_ssm_beta_alpha_cat("blk\\.\\d*\\.ssm_beta_alpha\\.weight");
+     static const std::regex pattern_r_cache         ("cache_r_l\\d*");
+     static const std::regex pattern_ple_r_cache     ("cache_ple_r_l\\d*");
+     static const std::regex pattern_s_cache         ("cache_s_l\\d*");
+@@ -577,11 +593,14 @@ struct ggml_backend_meta_split_state llama_meta_device_get_split_state(const str
+         if (std::regex_match(tensor_name, pattern_attn_gate_weight)) {
+             return get_tensor_config_impl(GGML_BACKEND_SPLIT_AXIS_1, "attn_output.weight", "ssm_out.weight");
+         }
++        if (std::regex_match(tensor_name, pattern_qkv_gate_weight)) {
++            return get_tensor_config_impl(GGML_BACKEND_SPLIT_AXIS_1, "ssm_out.weight");
++        }
+         if (std::regex_match(tensor_name, pattern_ssm_dt) || std::regex_match(tensor_name, pattern_ssm_a)) {
+             return get_tensor_config_impl(GGML_BACKEND_SPLIT_AXIS_0, "ssm_out.weight");
+         }
+         if (std::regex_match(tensor_name, pattern_ssm_alpha) || std::regex_match(tensor_name, pattern_ssm_beta) ||
+-                std::regex_match(tensor_name, pattern_ssm_beta_alpha)) {
++                std::regex_match(tensor_name, pattern_ssm_beta_alpha) || std::regex_match(tensor_name, pattern_ssm_beta_alpha_cat)) {
+             return get_tensor_config_impl(GGML_BACKEND_SPLIT_AXIS_1, "ssm_out.weight");
+         }
+         if (std::regex_match(tensor_name, pattern_r_cache) || std::regex_match(tensor_name, pattern_s_cache)) {
+@@ -677,6 +696,16 @@ struct ggml_backend_meta_split_state llama_meta_device_get_split_state(const str
+                 if (std::regex_match(tensor_name, pattern_attn_gate_weight) || std::regex_match(tensor_name, pattern_ssm_out_weight)) {
+                     return {{key_dim, head_ratio}};
+                 }
++                // merged while loading: the qkv repeats then the gate repeats, all split alike, so the
++                // qkv and gate views of the product scale with the device share like the separate products
++                if (std::regex_match(tensor_name, pattern_qkv_gate_weight)) {
++                    GGML_ASSERT(tensor->ne[axis] == 2*key_dim + 2*value_dim);
++                    return {{key_dim, 2 + 2*head_ratio}};
++                }
++                if (std::regex_match(tensor_name, pattern_ssm_beta_alpha_cat)) {
++                    GGML_ASSERT(tensor->ne[axis] == 2*n_v_heads);
++                    return {{n_k_heads, 2*head_ratio}};
++                }
+                 if (std::regex_match(tensor_name, pattern_ssm_dt) || std::regex_match(tensor_name, pattern_ssm_a) ||
+                         std::regex_match(tensor_name, pattern_ssm_alpha) || std::regex_match(tensor_name, pattern_ssm_beta)) {
+                     return {{n_k_heads, head_ratio}};
+@@ -734,11 +763,13 @@ struct ggml_backend_meta_split_state llama_meta_device_get_split_state(const str
+             const int64_t blck_size_perf  = std::lcm(blck_size, 128);
+             const int64_t granularity_qkv = std::lcm(blck_size_perf, head_dim);
+             if (std::regex_match(tensor_name, pattern_qkv_weight) || std::regex_match(tensor_name, pattern_attn_gate_weight) ||
+-                    std::regex_match(tensor_name, pattern_ssm_conv1d) || std::regex_match(tensor_name, pattern_ssm_out_weight)) {
++                    std::regex_match(tensor_name, pattern_ssm_conv1d) || std::regex_match(tensor_name, pattern_ssm_out_weight) ||
++                    std::regex_match(tensor_name, pattern_qkv_gate_weight)) {
+                 return std::vector<int64_t>(segments.size(), granularity_qkv);
+             }
+             if (std::regex_match(tensor_name, pattern_ssm_dt) || std::regex_match(tensor_name, pattern_ssm_a) ||
+-                    std::regex_match(tensor_name, pattern_ssm_alpha) || std::regex_match(tensor_name, pattern_ssm_beta)) {
++                    std::regex_match(tensor_name, pattern_ssm_alpha) || std::regex_match(tensor_name, pattern_ssm_beta) ||
++                    std::regex_match(tensor_name, pattern_ssm_beta_alpha_cat)) {
+                 return std::vector<int64_t>(segments.size(), granularity_qkv / head_dim);
+             }
+             if (std::regex_match(tensor_name, pattern_ssm_beta_alpha)) {
+@@ -852,7 +883,7 @@ struct ggml_backend_meta_split_state llama_meta_device_get_split_state(const str
                  std::regex_match(tensor_name, pattern_ffn_up_shexp_weight) ||
                  std::regex_match(tensor_name, pattern_ffn_gate_shexp_weight) ||
                  std::regex_match(tensor_name, pattern_ffn_down_shexp_weight)) {
@@ -1454,7 +1527,7 @@ index 81af890..e00bf28 100644
              GGML_ASSERT(segments.size() == 1);
              return {blck_size_perf};
          }
-@@ -876,6 +889,15 @@ struct ggml_backend_meta_split_state llama_meta_device_get_split_state(const str
+@@ -876,6 +907,15 @@ struct ggml_backend_meta_split_state llama_meta_device_get_split_state(const str
      if (split_state.axis >= 0 && split_state.axis < GGML_MAX_DIMS) {
          const int64_t blck_size = ggml_blck_size(tc.tensor_axis_0->type);
          const float * tensor_split = ud->model->tensor_split();
@@ -1470,7 +1543,7 @@ index 81af890..e00bf28 100644
          std::vector<float> tensor_split_scan;
          tensor_split_scan.reserve(ud->n_devices);
          for (size_t j = 0; j < ud->n_devices; j++) {
-@@ -905,6 +927,16 @@ struct ggml_backend_meta_split_state llama_meta_device_get_split_state(const str
+@@ -905,6 +945,16 @@ struct ggml_backend_meta_split_state llama_meta_device_get_split_state(const str
              split_state.nr[is] = nr_s;
          }
          split_state.n_segments = segments.size();
@@ -1488,7 +1561,7 @@ index 81af890..e00bf28 100644
          memset(split_state.ne, 0, sizeof(split_state.ne));
          split_state.nr[0] = 1;
 diff --git a/src/models/qwen4exp.cpp b/src/models/qwen4exp.cpp
-index c3e2b01..5cbf0bb 100644
+index c3e2b01..7f7bcde 100644
 --- a/src/models/qwen4exp.cpp
 +++ b/src/models/qwen4exp.cpp
 @@ -217,6 +217,12 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
@@ -1514,15 +1587,13 @@ index c3e2b01..5cbf0bb 100644
          auto create_merged = [&](llm_tensor t_merged, llm_tensor t_a, llm_tensor t_b, int64_t n_in, int64_t n_a, int64_t n_b,
                  ggml_tensor *& merged, ggml_tensor *& a, ggml_tensor *& b) {
              if (flags & TENSOR_SKIP) {
-@@ -242,6 +249,15 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
+@@ -242,6 +249,13 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
                  return;
              }
              merged = create_tensor(tn(t_merged, "weight", il), { n_in, n_a + n_b }, flags | TENSOR_NOT_REQUIRED | TENSOR_SKIP_IF_VIRTUAL);
-+            // the tensor split rules know the GDN projections only as separate weights; the HC weights are mirrored
-+            const bool tp_split = params.split_mode == LLAMA_SPLIT_MODE_TENSOR &&
-+                t_merged != LLM_TENSOR_HC_ATTN_DOWN_INJECT && t_merged != LLM_TENSOR_HC_FFN_DOWN_INJECT;
++            // with --split-mode tensor the HC weights are mirrored and the GDN ones split by the qkv_gate / beta_alpha rules
 +            const int merge_bit = t_merged == LLM_TENSOR_ATTN_QKV_GATE ? 2 : t_merged == LLM_TENSOR_SSM_BETA_ALPHA_CAT ? 4 : 1;
-+            if (!merged && (merge_mask & merge_bit) && !tp_split &&
++            if (!merged && (merge_mask & merge_bit) &&
 +                    ml.add_merged_weight(tn(t_merged, "weight", il).str(), { tn(t_a, "weight", il).str(), tn(t_b, "weight", il).str() },
 +                        merge_wide)) {
 +                merged = create_tensor(tn(t_merged, "weight", il), { n_in, n_a + n_b }, flags | TENSOR_NOT_REQUIRED);
@@ -1530,7 +1601,7 @@ index c3e2b01..5cbf0bb 100644
              if (!merged) {
                  a = create_tensor(tn(t_a, "weight", il), { n_in, n_a }, flags);
                  b = create_tensor(tn(t_b, "weight", il), { n_in, n_b }, flags);
-@@ -369,10 +385,11 @@ llama_model_qwen4exp::graph::build_hc_mix(
+@@ -369,10 +383,11 @@ llama_model_qwen4exp::graph::build_hc_mix(
          // one matmul for both: the hc_down rows, then the hc_inject rows
          const int64_t n_lo = w_down_inject->ne[1] - hc;
          ggml_tensor * lo_inject = build_lora_mm(w_down_inject, xn);
@@ -1546,7 +1617,7 @@ index c3e2b01..5cbf0bb 100644
          cb(inject, "hc_inject", il);
      } else {
          lo = ggml_scale(ctx0, build_lora_mm(w_down, xn), 1.0f / (float) hc);
-@@ -808,6 +825,12 @@ llama_model_qwen4exp::llm_graph_input_kpool * llama_model_qwen4exp::graph::build
+@@ -808,6 +823,12 @@ llama_model_qwen4exp::llm_graph_input_kpool * llama_model_qwen4exp::graph::build
      inp->new_pool_pos = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, 4*inp->n_new);
      ggml_set_input(inp->new_pool_pos);
  
