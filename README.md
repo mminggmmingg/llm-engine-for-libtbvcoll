@@ -14,6 +14,7 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
 | unsloth UD-IQ4_XS (5.84 GB) | 2.1682 | 17.5–17.8 | 31.1–31.3 | 22.6–23.3 | 34.3–34.5 |
 | **H5** (우리 배분, Q8_0 에서, 4.82 GB) | **2.1359** | 18.5 | 31.2 | **25.4** | **34.8** |
 | H (halogen 식 밀집 4-bit, 4.40 GB) | 2.1477 | 19.9 | 32.6 | 25.3 | 34.1 |
+| **H5 + 불러올 때 가중치 합치기** (같은 날 같은 조건 끔 → 켬) | 2.1179 | (llama-bench 19.5 → 21.0, 그래프 끔 21.8) | 32.6 → **33.4** | 24.4 → **25.9** | 34.3 → **36.4** |
 | (참고) halogen 자체 체크포인트, 개발사 측정 | — | 35.4 | 55–57 | — | — |
 
 - tok/s, llama-server 6 프롬프트. 1노드 값은 A 의 '느린 상태'(TB 활동 없음, 빠른 상태에서는 ≈+20%). 2노드는 B rank 0, 발행 겹치기 2, 서버 HIP 그래프 끔, FFN 320/320.
@@ -21,7 +22,9 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
   gfx1151 에서 IQ3_S 는 4-bit 보다 빠르지 않고 K 형식은 묶음 4 에서 1.7배 느려서(커널 표) 고른 형식.
 - MTP 를 켜면 배분과 상관없이 속도가 같다 → 남은 차이는 엔진 고정비(토큰당 ≈19–28 ms).
 - 고정비 분해(2026-10-30, RESULTS.md): 직렬 토큰 ≈52 ms = 가중치 읽기 ≈21 + 행렬곱이 대역폭보다 느린 몫 ≈16(hc ≈7) + 작은 연산 ≈14 + 호스트 0.3.
-  토큰당 커널 ≈3200개 × ≈3 µs 발행 바닥. 다음: 입력이 같은 가중치를 불러올 때 합쳐 커널 수 줄이기.
+  토큰당 커널 ≈3200개 × ≈3 µs 발행 바닥.
+- 가중치 합치기(2026-10-30, RESULTS.md): 입력이 같은 가중치 168쌍(hc down+inject, GDN qkv+gate, beta+alpha)을 불러올 때 한 텐서로 합쳐
+  토큰당 커널 3201 → 2865, 1노드 직렬 −7%, 2노드 TP(hc 만) +6%. 다음: TP 분할 규칙에 GDN 합친 텐서 넣기, 남은 같은 입력 묶음, 활성값 양자화 공유.
 
 - 설계: [DESIGN.md](DESIGN.md) (v1, TP). 폐기된 층 분할(PP) 설계는 [DESIGN_v0_pp.md](DESIGN_v0_pp.md), `run_2node.sh` 에 기록용으로만 남김.
 - 측정 기록: [RESULTS.md](RESULTS.md)
@@ -43,6 +46,8 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
     펌웨어가 CPU 우선으로 바뀌어 GPU 클럭이 떨어져 느림 → 기본은 2(`run_tp.sh`)
   - `GGML_RPC_SPIN_US=<n>`: 대기가 n µs 만 바쁘게 돌고 잠듦(RDMA 완료 이벤트, 명령 전달 큐, 송수신 스레드). 미설정이면 기존 동작
   - `GGML_RPC_COMM_RAIL2=<RDMA 장치>` (+`GGML_RPC_COMM_RAIL2_MIN`): 두 번째 케이블로 큰 부분합을 반씩 교환. 지금 tbv 에서는 이득 없음, 기본 꺼짐
+  - 불러올 때 가중치 합치기(qwen4exp, 기본 켬): `LLAMA_MERGE_WEIGHTS=<mask>` — 1 hc down+inject, 2 GDN qkv+gate, 4 GDN beta+alpha(기본 7, 0 은 끔).
+    형식이 다르면 바이트가 큰 쪽 형식으로 다시 양자화(H5 의 hc inject Q8_0 → Q6_K), `LLAMA_MERGE_WIDE=1` 은 bpw 큰 쪽(hc down → Q8_0). TP 에서는 hc 만 합친다(분할 규칙이 GDN 합친 텐서를 모름)
   - `GGML_CUDA_SKIP_OPS=<연산|w:가중치이름,...>` (앞에 `!` 면 나열한 것만 남김): 측정 전용, 결과가 틀림. 연산 종류를 GPU 에서 빼 토큰당 시간이 얼마나 주는지 잰다
     (`fixcost/ablate.sh <GGUF> <회차> 이름=환경 ...`, 프로파일러 없이 고정비 분해)
 

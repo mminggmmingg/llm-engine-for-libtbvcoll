@@ -1251,6 +1251,176 @@ index 59b8845..743b32e 100644
  void rpc_transport_shutdown();
 +// RDMA device for connections negotiated on this thread (get_caps/update_caps), over GGML_RDMA_DEV; nullptr clears
 +void rpc_transport_set_rdma_dev(const char * dev);
+diff --git a/src/llama-model-loader.cpp b/src/llama-model-loader.cpp
+index a963f24..dc5c7cb 100644
+--- a/src/llama-model-loader.cpp
++++ b/src/llama-model-loader.cpp
+@@ -867,11 +867,59 @@ const llama_model_loader::llama_tensor_weight & llama_model_loader::require_weig
+ struct ggml_tensor * llama_model_loader::get_tensor_meta(const char * name) const {
+     const auto * weight = get_weight(name);
+     if (!weight) {
+-        return nullptr;
++        const auto it = merged_weights.find(name);
++        return it == merged_weights.end() ? nullptr : it->second.meta;
+     }
+     return weight->tensor;
+ }
+ 
++bool llama_model_loader::add_merged_weight(const std::string & name, const std::vector<std::string> & parts, bool widest) {
++    if (files.empty() || parts.size() < 2 || get_weight(name.c_str()) || merged_weights.count(name)) {
++        return false;
++    }
++
++    std::vector<const llama_tensor_weight *> ws;
++    const ggml_tensor * t_type = nullptr;
++    int64_t n_rows = 0;
++    for (const std::string & part : parts) {
++        const llama_tensor_weight * w = get_weight(part.c_str());
++        if (!w || !ggml_is_matrix(w->tensor) || (!ws.empty() && w->tensor->ne[0] != ws[0]->tensor->ne[0])) {
++            return false;
++        }
++        const auto bpw = [](const ggml_tensor * t) { return (double) ggml_type_size(t->type) / ggml_blck_size(t->type); };
++        if (!t_type || (widest ? bpw(w->tensor) > bpw(t_type) : ggml_nbytes(w->tensor) > ggml_nbytes(t_type))) {
++            t_type = w->tensor;
++        }
++        n_rows += w->tensor->ne[1];
++        ws.push_back(w);
++    }
++
++    const ggml_type type      = t_type->type;
++    const int64_t   n_per_row = t_type->ne[0];
++    for (const llama_tensor_weight * w : ws) {
++        if (w->tensor->type != type && (n_per_row % ggml_blck_size(type) != 0 || ggml_quantize_requires_imatrix(type) ||
++                ggml_get_type_traits(w->tensor->type)->to_float == nullptr)) {
++            return false;
++        }
++    }
++
++    if (!ctx_merged) {
++        ggml_init_params params = {
++            /*.mem_size   =*/ ggml_tensor_overhead()*n_tensors,
++            /*.mem_buffer =*/ NULL,
++            /*.no_alloc   =*/ true,
++        };
++        ctx_merged.reset(ggml_init(params));
++    }
++    ggml_tensor * meta = ggml_new_tensor_2d(ctx_merged.get(), type, n_per_row, n_rows);
++    ggml_set_name(meta, name.c_str());
++    merged_weights[name] = { meta, ws };
++
++    // the parts are file tensors that are not created on their own
++    n_created += (int) ws.size() - 1;
++    return true;
++}
++
+ struct ggml_tensor * llama_model_loader::require_tensor_meta(const std::string & name) const {
+     struct ggml_tensor * tensor = get_tensor_meta(name.c_str());
+     if (!tensor) {
+@@ -1375,6 +1423,13 @@ struct ggml_tensor * llama_model_loader::create_tensor(
+         return nullptr;
+     }
+ 
++    // a merged weight has no range in the file, so it cannot live in a buffer mapped from it: the caller loads the parts
++    if (use_mmap && ggml_backend_buft_is_host(buft) && merged_weights.count(tn.str())) {
++        n_created -= (int) merged_weights.at(tn.str()).parts.size() - 1;
++        merged_weights.erase(tn.str());
++        return nullptr;
++    }
++
+     ggml_context * ctx = ctx_for_buft(buft);
+ 
+     // if duplicated, check if the original tensor was allocated in the same buffer type context and avoid creating a new one
+@@ -1410,6 +1465,18 @@ void llama_model_loader::done_getting_tensors(bool partial) const {
+         LLAMA_LOG_INFO("%s: partial load — used %d of %d tensors in the file (rest belong to a sibling model on the same .gguf)\n",
+                 __func__, n_created, n_tensors);
+     }
++    if (!merged_weights.empty()) {
++        size_t n_parts = 0;
++        size_t n_conv  = 0;
++        for (const auto & it : merged_weights) {
++            for (const llama_tensor_weight * w : it.second.parts) {
++                n_parts++;
++                n_conv += w->tensor->type != it.second.meta->type;
++            }
++        }
++        LLAMA_LOG_INFO("%s: merged %zu weights into %zu at load time (%zu converted to the type of another part)\n",
++                __func__, n_parts, merged_weights.size(), n_conv);
++    }
+     if (n_tensors_moved > 0) {
+         LLAMA_LOG_DEBUG("%s: tensor '%s' (%s) (and %zu others) cannot be used with preferred buffer type %s, using %s instead\n",
+             __func__, first_tensor_moved_name.c_str(), first_tensor_moved_type_name.c_str(), n_tensors_moved - 1,
+@@ -1690,10 +1757,45 @@ bool llama_model_loader::load_all_data(
+         });
+     }
+ 
++    // a merged weight is set part by part, each converted to the merged type when it differs
++    auto load_merged = [&](ggml_tensor * cur, const merged_weight & mw) {
++        std::vector<no_init<uint8_t>> read_buf;
++        std::vector<no_init<uint8_t>> conv_buf;
++        std::vector<float> f32_buf;
++        size_t offs = 0;
++        for (const llama_tensor_weight * w : mw.parts) {
++            const size_t n_size = ggml_nbytes(w->tensor);
++            if (!use_mmap) {
++                read_buf.resize(n_size);
++            }
++            const void * data = load_data_range(*w, 0, n_size, read_buf.data());
++
++            const int64_t n_per_row = w->tensor->ne[0];
++            const int64_t n_rows    = w->tensor->ne[1];
++            if (w->tensor->type != cur->type) {
++                f32_buf.resize(n_per_row*n_rows);
++                ggml_get_type_traits(w->tensor->type)->to_float(data, f32_buf.data(), n_per_row*n_rows);
++                conv_buf.resize(ggml_row_size(cur->type, n_per_row)*n_rows);
++                ggml_quantize_init(cur->type);
++                ggml_quantize_chunk(cur->type, f32_buf.data(), conv_buf.data(), 0, n_rows, n_per_row, nullptr);
++                data = conv_buf.data();
++            }
++            const size_t n_set = ggml_row_size(cur->type, n_per_row)*n_rows;
++            ggml_backend_tensor_set(cur, data, offs, n_set);
++            offs      += n_set;
++            size_done += n_size;
++        }
++        GGML_ASSERT(offs == ggml_nbytes(cur));
++    };
++
+     for (struct ggml_tensor * cur : tensors) {
+         const auto * weight = get_weight(ggml_get_name(cur));
+         if (weight == nullptr) {
+-            // this can happen with split experts models
++            const auto it = merged_weights.find(ggml_get_name(cur));
++            if (it != merged_weights.end()) {
++                load_merged(cur, it->second);
++            }
++            // otherwise this can happen with split experts models
+             continue;
+         }
+ 
+diff --git a/src/llama-model-loader.h b/src/llama-model-loader.h
+index ed59079..1168305 100644
+--- a/src/llama-model-loader.h
++++ b/src/llama-model-loader.h
+@@ -122,6 +122,20 @@ struct llama_model_loader {
+     llama_mmaps mappings;
+ 
+     std::map<std::string, llama_tensor_weight, weight_name_comparer> weights_map;
++
++    // engine2n: weights built at load time from file tensors with the same row length, rows of parts[0] first
++    struct merged_weight {
++        ggml_tensor * meta; // name, type and shape of the merged weight
++        std::vector<const llama_tensor_weight *> parts;
++    };
++    std::map<std::string, merged_weight> merged_weights;
++    ggml_context_ptr ctx_merged;
++
++    // register name as [parts[0] | parts[1] | ...], typed like the part with the most bytes, or with widest like the
++    // part with the most bits per weight (the others are converted through F32); false if a part is missing or
++    // cannot take that type
++    bool add_merged_weight(const std::string & name, const std::vector<std::string> & parts, bool widest = false);
++
+     std::unordered_map<std::string, llama_model_kv_override> kv_overrides;
+     const llama_model_tensor_buft_override * tensor_buft_overrides;
+ 
 diff --git a/src/llama-model.cpp b/src/llama-model.cpp
 index 81af890..e00bf28 100644
 --- a/src/llama-model.cpp
@@ -1318,10 +1488,65 @@ index 81af890..e00bf28 100644
          memset(split_state.ne, 0, sizeof(split_state.ne));
          split_state.nr[0] = 1;
 diff --git a/src/models/qwen4exp.cpp b/src/models/qwen4exp.cpp
-index c3e2b01..6327263 100644
+index c3e2b01..5cbf0bb 100644
 --- a/src/models/qwen4exp.cpp
 +++ b/src/models/qwen4exp.cpp
-@@ -808,6 +808,12 @@ llama_model_qwen4exp::llm_graph_input_kpool * llama_model_qwen4exp::graph::build
+@@ -217,6 +217,12 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
+                                            { hparams.ple_head_dim, ple_rows }, TENSOR_READ_LAZY);
+     }
+ 
++    // LLAMA_MERGE_WEIGHTS=<mask> picks the weights merged while loading: 1 HC down + inject, 2 GDN qkv + gate,
++    // 4 GDN beta + alpha (default 7, 0 keeps them all separate)
++    // LLAMA_MERGE_WIDE=1 types a merged weight like its part with the most bits per weight instead of the most bytes
++    const int merge_mask = [] { const char * e = getenv("LLAMA_MERGE_WEIGHTS"); return e ? atoi(e) : 7; }();
++    const bool merge_wide = [] { const char * e = getenv("LLAMA_MERGE_WIDE"); return e && atoi(e) != 0; }();
++
+     auto load_block = [&](int il, int flags) {
+         auto & layer = layers[il];
+ 
+@@ -231,7 +237,8 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
+         const int64_t value_dim  = head_v_dim * n_v_heads;
+         const int64_t conv_dim   = key_dim * 2 + value_dim;
+ 
+-        // matmuls that read the same input: try the merged [a | b] weight the converter writes, else the separate ones
++        // matmuls that read the same input: try the merged [a | b] weight the converter writes, else merge the separate
++        // ones while loading (engine2n), else load them separately
+         auto create_merged = [&](llm_tensor t_merged, llm_tensor t_a, llm_tensor t_b, int64_t n_in, int64_t n_a, int64_t n_b,
+                 ggml_tensor *& merged, ggml_tensor *& a, ggml_tensor *& b) {
+             if (flags & TENSOR_SKIP) {
+@@ -242,6 +249,15 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
+                 return;
+             }
+             merged = create_tensor(tn(t_merged, "weight", il), { n_in, n_a + n_b }, flags | TENSOR_NOT_REQUIRED | TENSOR_SKIP_IF_VIRTUAL);
++            // the tensor split rules know the GDN projections only as separate weights; the HC weights are mirrored
++            const bool tp_split = params.split_mode == LLAMA_SPLIT_MODE_TENSOR &&
++                t_merged != LLM_TENSOR_HC_ATTN_DOWN_INJECT && t_merged != LLM_TENSOR_HC_FFN_DOWN_INJECT;
++            const int merge_bit = t_merged == LLM_TENSOR_ATTN_QKV_GATE ? 2 : t_merged == LLM_TENSOR_SSM_BETA_ALPHA_CAT ? 4 : 1;
++            if (!merged && (merge_mask & merge_bit) && !tp_split &&
++                    ml.add_merged_weight(tn(t_merged, "weight", il).str(), { tn(t_a, "weight", il).str(), tn(t_b, "weight", il).str() },
++                        merge_wide)) {
++                merged = create_tensor(tn(t_merged, "weight", il), { n_in, n_a + n_b }, flags | TENSOR_NOT_REQUIRED);
++            }
+             if (!merged) {
+                 a = create_tensor(tn(t_a, "weight", il), { n_in, n_a }, flags);
+                 b = create_tensor(tn(t_b, "weight", il), { n_in, n_b }, flags);
+@@ -369,10 +385,11 @@ llama_model_qwen4exp::graph::build_hc_mix(
+         // one matmul for both: the hc_down rows, then the hc_inject rows
+         const int64_t n_lo = w_down_inject->ne[1] - hc;
+         ggml_tensor * lo_inject = build_lora_mm(w_down_inject, xn);
+-        // scale the combined rows before the split; both lo and inject use 1/hc
+-        lo_inject = ggml_scale(ctx0, lo_inject, 1.0f / (float) hc);
+-        lo     = ggml_view_2d(ctx0, lo_inject, n_lo, nt, lo_inject->nb[1], 0);
+-        inject = ggml_view_2d(ctx0, lo_inject, hc, nt, lo_inject->nb[1], ggml_row_size(lo_inject->type, n_lo));
++        // scale the parts on their own (both 1/hc): the inject rows then start the SCALE -> SIGMOID -> SCALE -> hc_post
++        // chain of build_hc_combine, which the CUDA backend runs as one kernel
++        lo     = ggml_scale(ctx0, ggml_view_2d(ctx0, lo_inject, n_lo, nt, lo_inject->nb[1], 0), 1.0f / (float) hc);
++        inject = ggml_scale(ctx0, ggml_view_2d(ctx0, lo_inject, hc, nt, lo_inject->nb[1], ggml_row_size(lo_inject->type, n_lo)),
++                1.0f / (float) hc);
+         cb(inject, "hc_inject", il);
+     } else {
+         lo = ggml_scale(ctx0, build_lora_mm(w_down, xn), 1.0f / (float) hc);
+@@ -808,6 +825,12 @@ llama_model_qwen4exp::llm_graph_input_kpool * llama_model_qwen4exp::graph::build
      inp->new_pool_pos = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, 4*inp->n_new);
      ggml_set_input(inp->new_pool_pos);
  
