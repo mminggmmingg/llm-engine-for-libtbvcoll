@@ -1,0 +1,43 @@
+tokens 32: wall/tok 47.76 ms, kernels/tok 2768, kernel time/tok 33.60 ms, gaps/tok 14.16 ms (median gap 3.3 us)
+  kernel duration p10: 1.2 us
+  kernel duration p25: 1.5 us
+  kernel duration p50: 2.6 us
+  kernel duration p75: 8.7 us
+  kernel duration p90: 22.7 us
+  kernel duration p99: 129.2 us
+  kernels < 20 us: 2432/tok, 10.36 ms/tok
+ ms/tok  n/tok  avg us  kernel
+  25.31  545.0    46.4  mul_mat_vec_q<>
+   1.20   72.0    16.7  mul_mat_vec_f<__hip_bfloat16>
+   1.05   36.0    29.2  gated_delta_net_cuda<128>
+   0.77  484.0     1.6  quantize_q8_1
+   0.60   48.0    12.6  topk_moe_cuda<512>
+   0.38  100.0     3.8  rms_norm_f32<1024>
+   0.36  185.0     2.0  k_bin_bcast<&>
+   0.35  187.0     1.9  unary_op_kernel<&>
+   0.34  132.0     2.6  rms_norm_f32<32>
+   0.28   96.0     2.9  dsv4_hc_post_f32<false>
+   0.27   48.0     5.6  mul_mat_vec_f<float>
+   0.25   96.0     2.6  dsv4_hc_pre_f32<true>>
+   0.22   48.0     4.7  rope_multi<true>
+   0.21   53.0     4.0  __amd_rocclr_copyBufferRectAligned
+   0.21   48.0     4.4  moe_weighted_reduction_f32
+   0.21   85.0     2.4  unary_gated_op_kernel<&>
+   0.20  113.0     1.7  scale_f32<float>>
+   0.19   49.0     3.9  concat_cont<unsigned int>
+   0.18   40.0     4.4  k_get_rows_float<float>
+   0.14   69.0     2.0  __amd_rocclr_copyBuffer
+   0.14   36.0     3.8  ssm_conv_f32<true>
+   0.11   12.0     9.1  flash_attn_tile<256>
+   0.10   36.0     2.8  k_set_rows<float>
+   0.09   12.0     7.8  k_argsort_f32_i32<>
+   0.08   24.0     3.4  k_get_rows_float<__half>
+   0.08   24.0     3.3  rms_norm_f32<128>
+   0.07   12.0     5.6  lightning_indexer_kernel_vec<8>
+   0.06   12.0     4.8  top_k_mask_kernel<__half>>
+   0.05   24.0     2.2  fill_kernel<float>>
+   0.04   16.0     2.8  cpy_scalar<&>
+   0.04   12.0     3.6  flash_attn_combine_results<256>>
+   0.02   12.0     2.1  fill_kernel<__half>>
+   0.00    1.0     2.9  reduce_rows_f32<false>>
+   0.00    1.0     2.2  op_clamp_kernel<float>>
