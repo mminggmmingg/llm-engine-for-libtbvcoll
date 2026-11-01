@@ -1,0 +1,74 @@
+host=park2 bios=X89 Ver. 01.05.07 05/05/2026 ec=53.52
+amdgpu file: /lib/modules/7.0.0-1015-oem/kernel/drivers/gpu/drm/amd/amdgpu/amdgpu.ko.zst 2026-09-21 14:47:39.000000000 +0900 6688815
+srcversion:     0BC8BD86617953872ACA2E2
+vermagic:       7.0.0-1015-oem SMP preempt mod_unload modversions 
+total 45656
+drwxr-xr-x 2 root root     4096 Oct 29 12:56 .
+drwxr-xr-x 6 root root     4096 Oct 29 12:56 ..
+-rw-r--r-- 1 root root 11703760 Oct 29 12:56 thunderbolt_ibverbs.ko
+-rw-r--r-- 1 root root 11677400 Oct 24 18:45 thunderbolt_ibverbs.ko.pre-credit.bak
+-rw-r--r-- 1 root root 11679600 Oct 25 02:10 thunderbolt_ibverbs.ko.pre-sendskip.bak
+-rw-r--r-- 1 root root 11677360 Oct 24 18:11 thunderbolt_ibverbs.ko.pre-wmb.bak
+-- pp_power_profile_mode:
+cat: /sys/class/drm/card1/device/pp_power_profile_mode: No such file or directory
+-- power_dpm_state:
+performance
+-- pp_features:
+cat: /sys/class/drm/card1/device/pp_features: No such file or directory
+-- smu fw: 0x0a640700 mes: 0x00000086 vbios=113-STRXLGEN-001
+-- pmf:
+ls: cannot access '/sys/bus/platform/drivers/amd_pmf/': No such file or directory
+hp_wmi                 45056  0
+sparse_keymap          12288  1 hp_wmi
+amd_pmf               131072  1 amdxdna
+amdtee                 36864  0
+tee                    61440  2 amd_pmf,amdtee
+platform_profile       20480  2 hp_wmi,amd_pmf
+ccp                   196608  2 kvm_amd,amdtee
+amd_pmc                53248  0
+amd_sfh                73728  1 amd_pmf
+hid                   282624  7 i2c_hid,hid_multitouch,hid_sensor_hub,snd_soc_sdca,hid_generic,amd_sfh,uhid
+wmi                    36864  4 hp_wmi,video,hp_bioscfg,wmi_bmof
+-- platform_profile_choices: low-power balanced performance
+platform-profile-0
+/sys/class/platform-profile/platform-profile-0: amd-pmf performance [low-power balanced performance]
+-- kmsg pmf/smu:
+Oct 29 18:02:25 park2 kernel: workqueue: amd_pmf_invoke_cmd [amd_pmf] hogged CPU for >10000us 67 times, consider switching to WQ_UNBOUND
+Oct 29 18:09:05 park2 kernel: workqueue: amd_pmf_invoke_cmd [amd_pmf] hogged CPU for >10000us 131 times, consider switching to WQ_UNBOUND
+Oct 29 18:20:28 park2 kernel: workqueue: amd_pmf_invoke_cmd [amd_pmf] hogged CPU for >10000us 259 times, consider switching to WQ_UNBOUND
+Oct 29 18:47:32 park2 kernel: workqueue: amd_pmf_invoke_cmd [amd_pmf] hogged CPU for >10000us 515 times, consider switching to WQ_UNBOUND
+Oct 29 20:16:35 park2 kernel: workqueue: amd_pmf_invoke_cmd [amd_pmf] hogged CPU for >10000us 1027 times, consider switching to WQ_UNBOUND
+Oct 29 22:09:31 park2 kernel: WARNING: drivers/gpu/drm/amd/amdgpu/../display/dc/dce/dmub_replay.c:90 at dmub_replay_enable+0xf7/0x100 [amdgpu], CPU#0: kworker/u128:1/130061
+Oct 29 22:09:31 park2 kernel:  bluetooth snd_acp_legacy_common drm_buddy snd_soc_cs_amp_lib rapl hp_wmi cs_dsp drm_ttm_helper snd_seq wmi_bmof sparse_keymap snd_pci_acp6x mac80211 snd_pcm ttm snd_seq_device i2c_piix4 drm_exec amd_pmf drm_suballoc_helper amdtee k10temp gpu_sched i2c_smbus serial_multi_instantiate drm_display_helper snd_timer tee snd_pci_acp5x cfg80211 cec snd_rn_pci_acp3x platform_profile snd snd_acp_config rc_core joydev snd_soc_acpi amd_isp4 i2c_algo_bit ccp amd_pmc wireless_hotkey libarc4 soundcore snd_pci_acp3x input_leds mac_hid sch_fq_codel ppdev lp parport msr uhid efi_pstore dmi_sysfs autofs4 ucsi_acpi typec_ucsi hid_multitouch typec hid_generic gpio_keys video nvme i2c_hid_acpi nvme_core amd_sfh i2c_hid serio_raw thunderbolt(OE) nvme_keyring nvme_auth hid hkdf soc_button_array wmi
+Oct 29 22:09:31 park2 kernel: RIP: 0010:dmub_replay_enable+0xf7/0x100 [amdgpu]
+Oct 29 22:09:31 park2 kernel:  dm_ism_dispatch_power_state.constprop.0+0x28e/0x4d0 [amdgpu]
+Oct 29 22:57:00 park2 kernel: workqueue: amd_pmf_invoke_cmd [amd_pmf] hogged CPU for >10000us 2051 times, consider switching to WQ_UNBOUND
+Oct 30 10:53:00 park2 kernel: workqueue: amd_pmf_invoke_cmd [amd_pmf] hogged CPU for >10000us 4099 times, consider switching to WQ_UNBOUND
+Oct 30 17:20:35 park2 kernel:  bluetooth snd_acp_legacy_common drm_buddy snd_soc_cs_amp_lib rapl hp_wmi cs_dsp drm_ttm_helper snd_seq wmi_bmof sparse_keymap snd_pci_acp6x mac80211 snd_pcm ttm snd_seq_device i2c_piix4 drm_exec amd_pmf drm_suballoc_helper amdtee k10temp gpu_sched i2c_smbus serial_multi_instantiate drm_display_helper snd_timer tee snd_pci_acp5x cfg80211 cec snd_rn_pci_acp3x platform_profile snd snd_acp_config rc_core joydev snd_soc_acpi amd_isp4 i2c_algo_bit ccp amd_pmc wireless_hotkey libarc4 soundcore snd_pci_acp3x input_leds mac_hid sch_fq_codel ppdev lp parport msr uhid efi_pstore dmi_sysfs autofs4 ucsi_acpi typec_ucsi hid_multitouch typec hid_generic gpio_keys video nvme i2c_hid_acpi nvme_core amd_sfh i2c_hid serio_raw thunderbolt(OE) nvme_keyring nvme_auth hid hkdf soc_button_array wmi
+Oct 30 17:20:35 park2 kernel:  snd_acp_pci mt76 amdxcp snd_seq_midi_event ghash_clmulni_intel snd_soc_cs35l56_shared snd_amd_acpi_mach drm_panel_backlight_quirks aesni_intel spd5118 snd_rawmidi bluetooth snd_acp_legacy_common drm_buddy snd_soc_cs_amp_lib rapl hp_wmi cs_dsp drm_ttm_helper snd_seq wmi_bmof sparse_keymap snd_pci_acp6x mac80211 snd_pcm ttm snd_seq_device i2c_piix4 drm_exec amd_pmf drm_suballoc_helper amdtee k10temp gpu_sched i2c_smbus
+Oct 30 17:20:35 park2 kernel:  snd_soc_acpi_amd_match snd_amd_sdw_acpi soundwire_amd soundwire_generic_allocation hp_bioscfg snd_hda_intel soundwire_bus kvm_amd snd_soc_sdca snd_hda_codec amdxdna firmware_attributes_class mt7925e snd_soc_core snd_hda_core mt7925_common snd_compress kvm snd_intel_dspcfg ac97_bus btusb mt792x_lib snd_intel_sdw_acpi snd_pcm_dmaengine btmtk snd_hwdep mt76_connac_lib snd_rpl_pci_acp6x btrtl snd_hda_scodec_cs35l56_i2c snd_hda_scodec_cs35l56 btbcm snd_seq_midi irqbypass snd_hda_cirrus_scodec btintel snd_acp_pci mt76 amdxcp snd_seq_midi_event ghash_clmulni_intel snd_soc_cs35l56_shared snd_amd_acpi_mach drm_panel_backlight_quirks aesni_intel spd5118 snd_rawmidi bluetooth snd_acp_legacy_common drm_buddy snd_soc_cs_amp_lib rapl hp_wmi cs_dsp drm_ttm_helper snd_seq wmi_bmof sparse_keymap snd_pci_acp6x mac80211 snd_pcm ttm snd_seq_device i2c_piix4 drm_exec amd_pmf drm_suballoc_helper amdtee k10temp gpu_sched i2c_smbus serial_multi_instantiate drm_display_helper snd_timer tee snd_pci_acp5x cfg80211 cec
+Oct 30 17:20:35 park2 kernel:  snd_seq wmi_bmof sparse_keymap snd_pci_acp6x mac80211 snd_pcm ttm snd_seq_device i2c_piix4 drm_exec amd_pmf drm_suballoc_helper amdtee k10temp gpu_sched i2c_smbus serial_multi_instantiate drm_display_helper snd_timer tee snd_pci_acp5x cfg80211 cec snd_rn_pci_acp3x platform_profile snd snd_acp_config
+Oct 30 17:20:35 park2 kernel: amdgpu 0000:c3:00.0: SMU is resuming...
+Oct 30 17:20:35 park2 kernel: amdgpu 0000:c3:00.0: SMU is resumed successfully!
+Oct 30 17:20:40 park2 kernel: wlp193s0: Limiting TX power to 23 (23 - 0) dBm as advertised by 82:a6:58:e8:ca:3d
+Oct 30 17:29:39 park2 kernel: wlp193s0: Limiting TX power to 23 (23 - 0) dBm as advertised by 82:a6:58:e8:ca:3d
+Oct 30 17:48:17 park2 kernel: workqueue: power_supply_changed_work hogged CPU for >10000us 4 times, consider switching to WQ_UNBOUND
+Oct 30 17:54:59 park2 kernel: workqueue: power_supply_changed_work hogged CPU for >10000us 5 times, consider switching to WQ_UNBOUND
+Oct 31 00:16:52 park2 kernel: amdgpu 0000:c3:00.0: SMU is resuming...
+Oct 31 00:16:52 park2 kernel: amdgpu 0000:c3:00.0: SMU is resumed successfully!
+Oct 31 00:34:13 park2 kernel: workqueue: power_supply_changed_work hogged CPU for >10000us 7 times, consider switching to WQ_UNBOUND
+Oct 31 03:31:54 park2 kernel: workqueue: amd_pmf_invoke_cmd [amd_pmf] hogged CPU for >10000us 8195 times, consider switching to WQ_UNBOUND
+-- cpu: driver=amd-pstate-epp status=active boost=1 prefcore=enabled
+-- top procs:
+    PID %CPU COMMAND
+   6783  5.0 gnome-shell
+  10242  2.6 claude-desktop
+  11343  2.1 claude-desktop
+  11913  0.9 claude
+    248  0.7 kswapd0
+   1247  0.6 napi/phy0-0
+  10141  0.6 claude-desktop
+   1246  0.5 napi/phy0-0
+    221  0.5 kcompactd0
+ 129585  0.4 chrome
+ 438798  0.3 claude

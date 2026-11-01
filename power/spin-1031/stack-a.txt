@@ -1,0 +1,125 @@
+run /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-none-stack-1031-165158
+pid 102670
+=== snapshot 1 16:53:26
+102670 R 2341 0
+102677 R 969 0
+102678 S 0 kfd_wait_on_events
+103405 R 1569 0
+Thread 4 (Thread 0x7e934f5ff6c0 (LWP 102677) "ggml-rpc-server"):
+#0  __GI___ioctl (fd=4, request=3222817548) at ../sysdeps/unix/sysv/linux/ioctl.c:36
+#1  0x00007e936374c488 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#2  0x00007e93637425af in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#3  0x00007e936369b0ab in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#4  0x00007e93636f9a31 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#5  0x00007e9397ea3dfa in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:454
+#6  0x00007e9397f375cc in __GI___clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 3 (Thread 0x7e934edfe6c0 (LWP 102678) "ggml-rpc-server"):
+#0  __GI___ioctl (fd=4, request=3222817548) at ../sysdeps/unix/sysv/linux/ioctl.c:36
+#1  0x00007e936374c488 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#2  0x00007e93637425af in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#3  0x00007e93636bacd6 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#4  0x00007e936369b440 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#5  0x00007e93636f9a31 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#6  0x00007e9397ea3dfa in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:454
+#7  0x00007e9397f375cc in __GI___clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 2 (Thread 0x7e89febff6c0 (LWP 103405) "ggml-rpc-server"):
+#0  0x0000000004f36272 in std::thread::_State_impl<std::thread::_Invoker<std::tuple<comm_recv_helper::comm_recv_helper(std::shared_ptr<socket_t>)::{lambda()#1}> > >::_M_run() ()
+#1  0x00007e93982f5ef9 in ?? () from /usr/lib/x86_64-linux-gnu/libstdc++.so.6
+#2  0x00007e9397ea3dfa in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:454
+#3  0x00007e9397f375cc in __GI___clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 1 (Thread 0x7e939807a680 (LWP 102670) "ggml-rpc-server"):
+#0  0x00007e936367768e in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#1  0x00007e936367752e in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#2  0x00007e936366aaa1 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#3  0x00007e9398a507ba in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#4  0x00007e9398a2ee42 in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#5  0x00007e939892e4be in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#6  0x00007e939893099f in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#7  0x00000000042df38f in ggml_backend_cuda_synchronize(ggml_backend*) ()
+#8  0x0000000004f258f0 in rpc_server::comm_allreduce(rpc_msg_comm_allreduce_req const&) ()
+#9  0x0000000004f28155 in ggml_backend_rpc_start_server ()
+#10 0x0000000004119ba7 in main ()
+=== snapshot 2 16:53:32
+102670 R 2923 0
+102677 R 1348 0
+102678 S 0 kfd_wait_on_events
+103405 R 2183 0
+Thread 4 (Thread 0x7e934f5ff6c0 (LWP 102677) "ggml-rpc-server"):
+#0  __GI___ioctl (fd=4, request=3222817548) at ../sysdeps/unix/sysv/linux/ioctl.c:36
+#1  0x00007e936374c488 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#2  0x00007e93637425af in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#3  0x00007e936369b0ab in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#4  0x00007e93636f9a31 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#5  0x00007e9397ea3dfa in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:454
+#6  0x00007e9397f375cc in __GI___clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 3 (Thread 0x7e934edfe6c0 (LWP 102678) "ggml-rpc-server"):
+#0  __GI___ioctl (fd=4, request=3222817548) at ../sysdeps/unix/sysv/linux/ioctl.c:36
+#1  0x00007e936374c488 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#2  0x00007e93637425af in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#3  0x00007e93636bacd6 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#4  0x00007e936369b440 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#5  0x00007e93636f9a31 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#6  0x00007e9397ea3dfa in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:454
+#7  0x00007e9397f375cc in __GI___clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 2 (Thread 0x7e89febff6c0 (LWP 103405) "ggml-rpc-server"):
+#0  0x0000000004f36272 in std::thread::_State_impl<std::thread::_Invoker<std::tuple<comm_recv_helper::comm_recv_helper(std::shared_ptr<socket_t>)::{lambda()#1}> > >::_M_run() ()
+#1  0x00007e93982f5ef9 in ?? () from /usr/lib/x86_64-linux-gnu/libstdc++.so.6
+#2  0x00007e9397ea3dfa in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:454
+#3  0x00007e9397f375cc in __GI___clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 1 (Thread 0x7e939807a680 (LWP 102670) "ggml-rpc-server"):
+#0  0x00007e936366695f in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#1  0x00007e936366653e in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#2  0x00007e936366aaa1 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#3  0x00007e9398a507ba in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#4  0x00007e9398a5b52a in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#5  0x00007e9398a5e634 in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#6  0x00007e9398a64ce7 in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#7  0x00007e9398a2bca0 in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#8  0x00007e9398a2eaf5 in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#9  0x00007e939892e4be in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#10 0x00007e939893099f in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#11 0x00000000042dc98e in ggml_backend_cuda_buffer_set_tensor(ggml_backend_buffer*, ggml_tensor*, void const*, unsigned long, unsigned long) ()
+#12 0x0000000004f21beb in rpc_server::set_tensor(std::vector<unsigned char, std::allocator<unsigned char> > const&) ()
+#13 0x0000000004f2839d in ggml_backend_rpc_start_server ()
+=== snapshot 3 16:53:39
+102670 R 3475 0
+102677 R 1696 0
+102678 S 0 kfd_wait_on_events
+103405 R 2799 0
+Thread 4 (Thread 0x7e934f5ff6c0 (LWP 102677) "ggml-rpc-server"):
+#0  __GI___ioctl (fd=4, request=3222817548) at ../sysdeps/unix/sysv/linux/ioctl.c:36
+#1  0x00007e936374c488 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#2  0x00007e93637425af in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#3  0x00007e936369b0ab in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#4  0x00007e93636f9a31 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#5  0x00007e9397ea3dfa in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:454
+#6  0x00007e9397f375cc in __GI___clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 3 (Thread 0x7e934edfe6c0 (LWP 102678) "ggml-rpc-server"):
+#0  __GI___ioctl (fd=4, request=3222817548) at ../sysdeps/unix/sysv/linux/ioctl.c:36
+#1  0x00007e936374c488 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#2  0x00007e93637425af in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#3  0x00007e93636bacd6 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#4  0x00007e936369b440 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#5  0x00007e93636f9a31 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#6  0x00007e9397ea3dfa in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:454
+#7  0x00007e9397f375cc in __GI___clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 2 (Thread 0x7e89febff6c0 (LWP 103405) "ggml-rpc-server"):
+#0  0x0000000004f36272 in std::thread::_State_impl<std::thread::_Invoker<std::tuple<comm_recv_helper::comm_recv_helper(std::shared_ptr<socket_t>)::{lambda()#1}> > >::_M_run() ()
+#1  0x00007e93982f5ef9 in ?? () from /usr/lib/x86_64-linux-gnu/libstdc++.so.6
+#2  0x00007e9397ea3dfa in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:454
+#3  0x00007e9397f375cc in __GI___clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:78
+Thread 1 (Thread 0x7e939807a680 (LWP 102670) "ggml-rpc-server"):
+#0  0x00007e9363677692 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#1  0x00007e936367752e in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#2  0x00007e936366aaa1 in ?? () from /opt/rocm/lib/libhsa-runtime64.so.1
+#3  0x00007e9398a507ba in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#4  0x00007e9398a2ee42 in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#5  0x00007e939892e4be in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#6  0x00007e939893099f in ?? () from /opt/rocm/lib/libamdhip64.so.7
+#7  0x00000000042df38f in ggml_backend_cuda_synchronize(ggml_backend*) ()
+#8  0x0000000004f258f0 in rpc_server::comm_allreduce(rpc_msg_comm_allreduce_req const&) ()
+#9  0x0000000004f28155 in ggml_backend_rpc_start_server ()
+#10 0x0000000004119ba7 in main ()
+{"id": "summary", "n": 178, "tps": 24.43738782272539, "draft_n": null, "draft_acc": null, "prompt_tps": 77.24743693004267, "wall_s": 8.54, "sha": "d67a87d3bd74f8dc"}
+TOTAL tokens 1407, decode 24.72 tok/s (token-weighted)
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-none-stack-1031-165158

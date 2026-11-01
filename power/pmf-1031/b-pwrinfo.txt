@@ -1,0 +1,76 @@
+host=parks-zbook bios=X89 Ver. 01.06.02 08/26/2026 ec=53.54
+amdgpu file: /lib/modules/7.0.0-1015-oem/updates/amdgpu.ko 2026-10-25 03:58:22.232574719 +0900 746049152
+srcversion:     F2E1472DAFC3138E101C7B8
+vermagic:       7.0.0-1015-oem SMP preempt mod_unload modversions 
+total 785616
+drwxr-xr-x 2 root root      4096 Oct 29 12:54 .
+drwxr-xr-x 6 root root      4096 Oct 29 12:54 ..
+-rw-r--r-- 1 root root 746049152 Oct 25 03:58 amdgpu.ko
+-rw-r--r-- 1 root root  11703760 Oct 29 12:54 thunderbolt_ibverbs.ko
+-rw-r--r-- 1 root root  11677400 Oct 24 18:45 thunderbolt_ibverbs.ko.pre-credit.bak
+-rw-r--r-- 1 root root  11679600 Oct 25 02:10 thunderbolt_ibverbs.ko.pre-sendskip.bak
+-rw-r--r-- 1 root root  11677360 Oct 24 16:51 thunderbolt_ibverbs.ko.pre-wmb.bak
+-rw-r--r-- 1 root root  11665040 Oct 24 16:41 thunderbolt_ibverbs.ko.single.bak
+-- pp_power_profile_mode:
+cat: /sys/class/drm/card1/device/pp_power_profile_mode: No such file or directory
+-- power_dpm_state:
+performance
+-- pp_features:
+cat: /sys/class/drm/card1/device/pp_features: No such file or directory
+-- smu fw: 0x0a640700 mes: 0x00000086 vbios=113-STRXLGEN-001
+-- pmf:
+ls: cannot access '/sys/bus/platform/drivers/amd_pmf/': No such file or directory
+hp_wmi                 45056  0
+sparse_keymap          12288  1 hp_wmi
+amd_pmf               131072  1 amdxdna
+amdtee                 36864  0
+tee                    61440  2 amd_pmf,amdtee
+platform_profile       20480  2 hp_wmi,amd_pmf
+ccp                   196608  2 kvm_amd,amdtee
+amd_pmc                53248  0
+amd_sfh                73728  1 amd_pmf
+hid                   282624  8 i2c_hid,hid_multitouch,hid_sensor_hub,snd_soc_sdca,hid_playstation,hid_generic,amd_sfh,uhid
+wmi                    36864  4 hp_wmi,video,hp_bioscfg,wmi_bmof
+-- platform_profile_choices: low-power balanced performance
+platform-profile-0
+/sys/class/platform-profile/platform-profile-0: amd-pmf performance [low-power balanced performance]
+-- kmsg pmf/smu:
+Oct 31 08:34:08 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:10 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:11 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:12 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:13 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:14 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:15 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:16 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:17 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:18 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:19 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:20 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:21 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:22 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:23 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:24 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:25 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:26 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:27 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:28 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:29 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:30 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:31 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:32 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+Oct 31 08:34:33 parks-zbook kernel: amd-pmf AMDI0105:00: TEE enact cmd failed. err: ffff000e, ret:0
+-- cpu: driver=amd-pstate-epp status=active boost=1 prefcore=enabled
+-- top procs:
+    PID %CPU COMMAND
+   9774  4.1 gnome-shell
+ 267616  1.7 chrome
+ 388515  1.0 kworker/u128:1-gfx_0.0.0
+ 392766  0.8 kworker/u128:2-gfx_0.0.0
+ 267469  0.6 chrome
+   1983  0.2 tailscaled
+   9978  0.2 MathWorksServic
+ 267402  0.2 chrome
+  12220  0.2 MathWorksServic
+ 267687  0.2 chrome
+   9997  0.1 sticky-memo

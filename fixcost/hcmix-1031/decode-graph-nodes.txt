@@ -1,0 +1,160 @@
+node    0 DUP            node_4                       [ 2560     1   1] ROCm0#inp_mixed_embd#0 | - | f32
+node    1 SET_ROWS        (view)                      [ 2560     1   1] ROCm0#node_3#0 | ROCm0#inp_mixed_slots#0 | f32
+node    2 RESHAPE        model.input_embed (reshaped) [ 2560     1   1] model.input_embed | - | f32
+node    3 REPEAT         hc_init                      [ 2560     4   1] ROCm0#model.input_embed (reshaped)#0 | - | f32
+node    4 RMS_NORM       node_8                       [ 2560     4   1] hc_init | - | f32
+node    5 MUL            node_9                       [ 2560     4   1] node_8 | blk.0.hc_attn_norm.weight | f32
+node    6 RESHAPE        hc_norm-0                    [10240     1   1] node_9 | - | f32
+node    7 RESHAPE        hc_norm-0 (reshaped)         [ 2560     4   1] hc_norm-0 | - | f32
+node    8 MUL_MAT        node_12                      [  324     1   1] blk.0.hc_attn_down_inject.weight | hc_norm-0 | q6_K
+node    9 VIEW            (view)                      [  320     1   1] node_12 | - | f32
+node   10 SCALE          node_14                      [  320     1   1]  (view) | - | f32
+node   11 SILU           node_15                      [  320     1   1] node_14 | - | f32
+node   12 MUL_MAT        hc_gate-0                    [10240     1   1] blk.0.hc_attn_up.weight | node_15 | q8_0
+node   13 RESHAPE        hc_gate-0 (reshaped)         [ 2560     4   1] hc_gate-0 | - | f32
+node   14 DSV4_HC_PRE    hc_mixed-0                   [ 2560     1   1] hc_norm-0 (reshaped) | hc_gate-0 (reshaped) | f32
+node   15 RESHAPE        cache_r_l0 (reshaped)        [30720     1   1] cache_r_l0 | - | f32
+node   16 VIEW           cache_r_l0 (reshaped) (view) [30720     1   1] cache_r_l0 (reshaped) | - | f32
+node   17 SCALE          cache_r_l0 (reshaped) (view) (view) [30720     1   1] cache_r_l0 (reshaped) (view) | - | f32
+node   18 GET_ROWS       node_22                      [30720     1   1] cache_r_l0 (reshaped) | ROCm0#rs_s_copy#0 | f32
+node   19 VIEW            (view)                      [30720     1   1] node_22 | - | f32
+node   20 VIEW           node_22 (view)               [30720     0   1] node_22 | - | f32
+node   21 VIEW           cache_r_l0 (view)            [30720     0   1] cache_r_l0 | - | f32
+node   22 CPY            cache_r_l0 (view) (copy of node_22 (view)) [30720     0   1] node_22 (view) | cache_r_l0 (view) | f32
+node   23 RESHAPE        conv_state_at-0              [    3 10240   1]  (view) | - | f32
+node   24 MUL_MAT        linear_attn_qkvz-0           [16384     1   1] blk.0.attn_qkv_gate.weight | hc_mixed-0 | q5_0
+node   25 VIEW           linear_attn_qkv_mixed-0      [10240     1   1] linear_attn_qkvz-0 | - | f32
+node   26 TRANSPOSE      linear_attn_qkv_mixed-0 (transposed) [    1 10240   1] linear_attn_qkv_mixed-0 | - | f32
+node   27 CONCAT         node_31                      [    4 10240   1] conv_state_at-0 | linear_attn_qkv_mixed-0 (transposed) | f32
+node   28 VIEW            (view)                      [    3 10240   1] node_31 | - | f32
+node   29 CONT            (view) (cont)               [    3 10240   1]  (view) | - | f32
+node   30 VIEW           cache_r_l0 (view)            [30720     1   1] cache_r_l0 | - | f32
+node   31 CPY            cache_r_l0 (view) (copy of  (view) (cont)) [30720     1   1]  (view) (cont) | cache_r_l0 (view) | f32
+node   32 RESHAPE        cache_s_l0 (reshaped)        [786432     1   1] cache_s_l0 | - | f32
+node   33 VIEW           cache_s_l0 (reshaped) (view) [786432     1   1] cache_s_l0 (reshaped) | - | f32
+node   34 SCALE          cache_s_l0 (reshaped) (view) (view) [786432     1   1] cache_s_l0 (reshaped) (view) | - | f32
+node   35 GET_ROWS       node_39                      [786432     1   1] cache_s_l0 (reshaped) | ROCm0#rs_s_copy#0 | f32
+node   36 VIEW            (view)                      [786432     1   1] node_39 | - | f32
+node   37 VIEW           node_39 (view)               [786432     0   1] node_39 | - | f32
+node   38 VIEW           cache_s_l0 (view)            [786432     0   1] cache_s_l0 | - | f32
+node   39 CPY            cache_s_l0 (view) (copy of node_39 (view)) [786432     0   1] node_39 (view) | cache_s_l0 (view) | f32
+node   40 SSM_CONV       conv_output_raw-0            [10240     1   1] node_31 | blk.0.ssm_conv1d.weight | f32
+node   41 SILU           conv_output_silu-0           [10240     1   1] conv_output_raw-0 | - | f32
+node   42 VIEW           q_conv-0                     [  128    16   1] conv_output_silu-0 | - | f32
+node   43 RMS_NORM       node_47                      [  128    16   1] q_conv-0 | - | f32
+node   44 SCALE          q_conv_predelta-0            [  128    16   1] node_47 | - | f32
+node   45 VIEW           k_conv-0                     [  128    16   1] conv_output_silu-0 | - | f32
+node   46 RMS_NORM       node_50                      [  128    16   1] k_conv-0 | - | f32
+node   47 SCALE          k_conv_predelta-0            [  128    16   1] node_50 | - | f32
+node   48 VIEW           v_conv_predelta-0            [  128    48   1] conv_output_silu-0 | - | f32
+node   49 MUL_MAT        beta_alpha-0                 [   96     1   1] blk.0.ssm_beta_alpha.weight | hc_mixed-0 | q8_0
+node   50 VIEW           alpha-0                      [   48     1   1] beta_alpha-0 | - | f32
+node   51 ADD            node_55                      [   48     1   1] alpha-0 | blk.0.ssm_dt.bias | f32
+node   52 SOFTPLUS       a_softplus-0                 [   48     1   1] node_55 | - | f32
+node   53 MUL            gate-0                       [   48     1   1] a_softplus-0 | blk.0.ssm_a | f32
+node   54 RESHAPE        gate-0 (reshaped)            [    1    48   1] gate-0 | - | f32
+node   55 VIEW           beta-0                       [    1    48   1] beta_alpha-0 | - | f32
+node   56 SIGMOID        beta_sigmoid-0               [    1    48   1] beta-0 | - | f32
+node   57 RESHAPE        state_predelta-0             [  128   128  48]  (view) | - | f32
+node   58 GATED_DELTA_NET node_62                      [ 6144   129   1] q_conv_predelta-0 | k_conv_predelta-0 | f32
+node   59 VIEW           new_state-0                  [  128   128  48] node_62 | - | f32
+node   60 VIEW           cache_s_l0 (view)            [786432     1   1] cache_s_l0 | - | f32
+node   61 CPY            cache_s_l0 (view) (copy of new_state-0) [786432     1   1] new_state-0 | cache_s_l0 (view) | f32
+node   62 VIEW           attn_output-0                [  128    48   1] node_62 | - | f32
+node   63 RMS_NORM       norm-0                       [  128    48   1] attn_output-0 | - | f32
+node   64 MUL            node_68                      [  128    48   1] norm-0 | blk.0.ssm_norm.weight | f32
+node   65 VIEW           z-0                          [ 6144     1   1] linear_attn_qkvz-0 | - | f32
+node   66 VIEW           z-0 (view)                   [  128    48   1] z-0 | - | f32
+node   67 SIGMOID        node_71                      [  128    48   1] z-0 (view) | - | f32
+node   68 MUL            node_72                      [  128    48   1] node_68 | node_71 | f32
+node   69 RESHAPE        final_output-0               [ 6144     1   1] node_72 | - | f32
+node   70 MUL_MAT        linear_attn_out-0            [ 2560     1   1] blk.0.ssm_out.weight | final_output-0 | q5_0
+node   71 VIEW            (view)                      [    4     1   1] node_12 | - | f32
+node   72 SCALE          hc_inject-0                  [    4     1   1]  (view) | - | f32
+node   73 SIGMOID        node_77                      [    4     1   1] hc_inject-0 | - | f32
+node   74 SCALE          node_78                      [    4     1   1] node_77 | - | f32
+node   75 DSV4_HC_POST   hc_combine-0                 [ 2560     4   1] linear_attn_out-0 | hc_init | f32
+node   76 RMS_NORM       node_80                      [ 2560     4   1] hc_combine-0 | - | f32
+node   77 MUL            node_81                      [ 2560     4   1] node_80 | blk.0.hc_ffn_norm.weight | f32
+node   78 RESHAPE        hc_norm-0                    [10240     1   1] node_81 | - | f32
+node   79 RESHAPE        hc_norm-0 (reshaped)         [ 2560     4   1] hc_norm-0 | - | f32
+node   80 MUL_MAT        node_84                      [  324     1   1] blk.0.hc_ffn_down_inject.weight | hc_norm-0 | q6_K
+node   81 VIEW            (view)                      [  320     1   1] node_84 | - | f32
+node   82 SCALE          node_86                      [  320     1   1]  (view) | - | f32
+node   83 SILU           node_87                      [  320     1   1] node_86 | - | f32
+node   84 MUL_MAT        hc_gate-0                    [10240     1   1] blk.0.hc_ffn_up.weight | node_87 | q8_0
+node   85 RESHAPE        hc_gate-0 (reshaped)         [ 2560     4   1] hc_gate-0 | - | f32
+node   86 DSV4_HC_PRE    hc_mixed-0                   [ 2560     1   1] hc_norm-0 (reshaped) | hc_gate-0 (reshaped) | f32
+node   87 MUL_MAT        ffn_moe_logits-0             [  512     1   1] blk.0.ffn_gate_inp.weight | hc_mixed-0 | f32
+node   88 SOFT_MAX       ffn_moe_probs-0              [  512     1   1] ffn_moe_logits-0 | - | f32
+node   89 RESHAPE        ffn_moe_probs-0 (reshaped)   [    1   512   1] ffn_moe_probs-0 | - | f32
+node   90 ARGSORT        ffn_moe_argsort-0            [  512     1   1] ffn_moe_probs-0 | - | f32
+node   91 VIEW           ffn_moe_topk-0               [   10     1   1] ffn_moe_argsort-0 | - | i32
+node   92 GET_ROWS       ffn_moe_weights-0            [    1    10   1] ffn_moe_probs-0 (reshaped) | ffn_moe_topk-0 | f32
+node   93 RESHAPE        ffn_moe_weights-0 (reshaped) [   10     1   1] ffn_moe_weights-0 | - | f32
+node   94 SUM_ROWS       ffn_moe_weights_sum-0        [    1     1   1] ffn_moe_weights-0 (reshaped) | - | f32
+node   95 CLAMP          ffn_moe_weights_sum_clamped-0 [    1     1   1] ffn_moe_weights_sum-0 | - | f32
+node   96 DIV            ffn_moe_weights_norm-0       [   10     1   1] ffn_moe_weights-0 (reshaped) | ffn_moe_weights_sum_clamped-0 | f32
+node   97 RESHAPE        ffn_moe_weights_norm-0 (reshaped) [    1    10   1] ffn_moe_weights_norm-0 | - | f32
+node   98 RESHAPE        hc_mixed-0 (reshaped)        [ 2560     1   1] hc_mixed-0 | - | f32
+node   99 MUL_MAT_ID     ffn_moe_gate-0               [  640    10   1] blk.0.ffn_gate_exps.weight | hc_mixed-0 (reshaped) | iq4_xs
+node  100 MUL_MAT_ID     ffn_moe_up-0                 [  640    10   1] blk.0.ffn_up_exps.weight | hc_mixed-0 (reshaped) | iq4_xs
+node  101 SWIGLU         ffn_moe_swiglu-0             [  640    10   1] ffn_moe_gate-0 | ffn_moe_up-0 | f32
+node  102 MUL_MAT_ID     ffn_moe_down-0               [ 2560    10   1] blk.0.ffn_down_exps.weight | ffn_moe_swiglu-0 | iq4_nl
+node  103 MUL            ffn_moe_weighted-0           [ 2560    10   1] ffn_moe_down-0 | ffn_moe_weights_norm-0 (reshaped) | f32
+node  104 VIEW           ffn_moe_weighted-0 (view)    [ 2560     1   1] ffn_moe_weighted-0 | - | f32
+node  105 VIEW           ffn_moe_weighted-0 (view)    [ 2560     1   1] ffn_moe_weighted-0 | - | f32
+node  106 VIEW           ffn_moe_weighted-0 (view)    [ 2560     1   1] ffn_moe_weighted-0 | - | f32
+node  107 VIEW           ffn_moe_weighted-0 (view)    [ 2560     1   1] ffn_moe_weighted-0 | - | f32
+node  108 VIEW           ffn_moe_weighted-0 (view)    [ 2560     1   1] ffn_moe_weighted-0 | - | f32
+node  109 VIEW           ffn_moe_weighted-0 (view)    [ 2560     1   1] ffn_moe_weighted-0 | - | f32
+node  110 VIEW           ffn_moe_weighted-0 (view)    [ 2560     1   1] ffn_moe_weighted-0 | - | f32
+node  111 VIEW           ffn_moe_weighted-0 (view)    [ 2560     1   1] ffn_moe_weighted-0 | - | f32
+node  112 VIEW           ffn_moe_weighted-0 (view)    [ 2560     1   1] ffn_moe_weighted-0 | - | f32
+node  113 VIEW           ffn_moe_weighted-0 (view)    [ 2560     1   1] ffn_moe_weighted-0 | - | f32
+node  114 ADD            node_118                     [ 2560     1   1] ffn_moe_weighted-0 (view) | ffn_moe_weighted-0 (view) | f32
+node  115 ADD            node_119                     [ 2560     1   1] node_118 | ffn_moe_weighted-0 (view) | f32
+node  116 ADD            node_120                     [ 2560     1   1] node_119 | ffn_moe_weighted-0 (view) | f32
+node  117 ADD            node_121                     [ 2560     1   1] node_120 | ffn_moe_weighted-0 (view) | f32
+node  118 ADD            node_122                     [ 2560     1   1] node_121 | ffn_moe_weighted-0 (view) | f32
+node  119 ADD            node_123                     [ 2560     1   1] node_122 | ffn_moe_weighted-0 (view) | f32
+node  120 ADD            node_124                     [ 2560     1   1] node_123 | ffn_moe_weighted-0 (view) | f32
+node  121 ADD            node_125                     [ 2560     1   1] node_124 | ffn_moe_weighted-0 (view) | f32
+node  122 ADD            ffn_moe_out-0                [ 2560     1   1] node_125 | ffn_moe_weighted-0 (view) | f32
+node  123 RESHAPE        cache_ple_r_l1 (reshaped)    [92160     1   1] cache_ple_r_l1 | - | f32
+node  124 VIEW           cache_ple_r_l1 (reshaped) (view) [92160     1   1] cache_ple_r_l1 (reshaped) | - | f32
+node  125 SCALE          cache_ple_r_l1 (reshaped) (view) (view) [92160     1   1] cache_ple_r_l1 (reshaped) (view) | - | f32
+node  126 GET_ROWS       node_130                     [92160     1   1] cache_ple_r_l1 (reshaped) | ROCm0#rs_s_copy#0 | f32
+node  127 VIEW            (view)                      [92160     1   1] node_130 | - | f32
+node  128 VIEW           node_130 (view)              [92160     0   1] node_130 | - | f32
+node  129 VIEW           cache_ple_r_l1 (view)        [92160     0   1] cache_ple_r_l1 | - | f32
+node  130 CPY            cache_ple_r_l1 (view) (copy of node_130 (view)) [92160     0   1] node_130 (view) | cache_ple_r_l1 (view) | f32
+node  131 RESHAPE        conv_state_at-1              [    9 10240   1]  (view) | - | f32
+node  132 MUL_MAT        node_136                     [ 2560     1   1] blk.1.ple_value.weight | ROCm0#ple_embd#0 | q8_0
+node  133 RESHAPE         (reshaped)                  [ 2560     1   1] node_136 | - | f32
+node  134 REPEAT         node_138                     [ 2560     4   1]  (reshaped) | - | f32
+node  135 MUL_MAT        node_139                     [10240     1   1] blk.1.ple_key.weight | ROCm0#ple_embd#0 | q8_0
+node  136 RESHAPE         (reshaped)                  [ 2560     4   1] node_139 | - | f32
+node  137 RMS_NORM       node_141                     [ 2560     4   1]  (reshaped) | - | f32
+node  138 MUL            node_142                     [ 2560     4   1] node_141 | blk.1.ple_norm_key.weight | f32
+node  139 MUL_MAT        ffn_gate-0                   [  640     1   1] blk.0.ffn_gate_shexp.weight | hc_mixed-0 | q5_0
+node  140 MUL_MAT        ffn_up-0                     [  640     1   1] blk.0.ffn_up_shexp.weight | hc_mixed-0 | q5_0
+node  141 SWIGLU         ffn_swiglu-0                 [  640     1   1] ffn_gate-0 | ffn_up-0 | f32
+node  142 MUL_MAT        ffn_shexp-0                  [ 2560     1   1] blk.0.ffn_down_shexp.weight | ffn_swiglu-0 | q5_0
+node  143 MUL_MAT        shared_expert_gate-0         [    1     1   1] blk.0.ffn_gate_inp_shexp.weight | hc_mixed-0 | f32
+node  144 SIGMOID        shared_expert_gate_sigmoid-0 [    1     1   1] shared_expert_gate-0 | - | f32
+node  145 MUL            ffn_shexp_gated-0            [ 2560     1   1] ffn_shexp-0 | shared_expert_gate_sigmoid-0 | f32
+node  146 ADD            ffn_out-0                    [ 2560     1   1] ffn_moe_out-0 | ffn_shexp_gated-0 | f32
+node  147 VIEW            (view)                      [    4     1   1] node_84 | - | f32
+node  148 SCALE          hc_inject-0                  [    4     1   1]  (view) | - | f32
+node  149 SIGMOID        node_153                     [    4     1   1] hc_inject-0 | - | f32
+node  150 SCALE          node_154                     [    4     1   1] node_153 | - | f32
+node  151 DSV4_HC_POST   l_last-0                     [ 2560     4   1] ffn_out-0 | hc_combine-0 | f32
+node  152 RESHAPE        l_last-0 (reshaped)          [ 2560     4   1] l_last-0 | - | f32
+node  153 RMS_NORM       node_157                     [ 2560     4   1] l_last-0 (reshaped) | - | f32
+node  154 MUL            node_158                     [ 2560     4   1] node_157 | blk.1.ple_norm_query.weight | f32
+node  155 MUL            node_159                     [ 2560     4   1] node_142 | node_158 | f32
+node  156 SUM_ROWS       node_160                     [    1     4   1] node_159 | - | f32
+node  157 SCALE          node_161                     [    1     4   1] node_160 | - | f32
+node  158 SGN            node_162                     [    1     4   1] node_161 | - | f32
+node  159 ABS            node_163                     [    1     4   1] node_161 | - | f32

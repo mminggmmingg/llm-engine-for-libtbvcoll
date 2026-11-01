@@ -1,0 +1,46 @@
+tokens 32: wall/tok 74.00 ms, kernels/tok 3111, kernel time/tok 55.88 ms, gaps/tok 18.11 ms (median gap 3.5 us)
+  kernel duration p10: 1.4 us
+  kernel duration p25: 1.9 us
+  kernel duration p50: 3.0 us
+  kernel duration p75: 7.9 us
+  kernel duration p90: 27.3 us
+  kernel duration p99: 253.8 us
+  kernels < 20 us: 2684/tok, 11.37 ms/tok
+ ms/tok  n/tok  avg us  kernel
+  22.52   94.0   239.6  mul_mat_vec_q_moe<>
+  20.31  498.0    40.8  mul_mat_vec_q<>
+   2.24  186.0    12.1  scale_f32<float>>
+   1.87   96.0    19.5  mul_mat_vec_f<float>
+   1.67  592.0     2.8  quantize_q8_1
+   0.80   36.0    22.2  gated_delta_net_cuda<128>
+   0.79   96.0     8.2  dsv4_hc_post_f32<false>
+   0.62   48.0    12.9  topk_moe_cuda<512>
+   0.56  257.0     2.2  k_bin_bcast<&>
+   0.39  100.0     3.9  rms_norm_f32<1024>
+   0.38  187.0     2.0  unary_op_kernel<&>
+   0.37   65.0     5.7  __amd_rocclr_copyBufferRectAligned
+   0.32   24.0    13.3  mul_mat_f<__hip_bfloat162>
+   0.32  132.0     2.4  rms_norm_f32<32>
+   0.29   96.0     3.1  dsv4_hc_pre_f32<true>>
+   0.28   48.0     5.9  moe_weighted_reduction_f32
+   0.26   37.0     7.1  concat_non_cont_flat<unsigned int>
+   0.25   48.0     5.1  rope_multi<true>
+   0.19   36.0     5.2  ssm_conv_f32<true>
+   0.18   72.0     2.6  unary_op_kernel_strided<&>
+   0.18   12.0    15.2  flash_attn_tile<256>
+   0.18   60.0     2.9  unary_gated_op_kernel<&>
+   0.15   40.0     3.8  k_get_rows_float<float>
+   0.09   36.0     2.6  k_set_rows<float>
+   0.09   53.0     1.7  __amd_rocclr_copyBuffer
+   0.09   24.0     3.7  rms_norm_f32<128>
+   0.09   12.0     7.3  k_argsort_f32_i32<>
+   0.07   16.0     4.2  cpy_scalar<&>
+   0.07   24.0     2.7  k_get_rows_float<__half>
+   0.06   12.0     5.4  lightning_indexer_kernel_vec<8>
+   0.06   12.0     4.8  top_k_mask_kernel<__half>>
+   0.05   24.0     2.1  fill_kernel<float>>
+   0.05   12.0     3.9  flash_attn_combine_results<256>>
+   0.03   12.0     2.2  concat_cont<unsigned int>
+   0.02   12.0     1.5  fill_kernel<__half>>
+   0.00    1.0     2.5  reduce_rows_f32<false>>
+   0.00    1.0     2.2  op_clamp_kernel<float>>

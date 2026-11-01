@@ -1,0 +1,49 @@
+tokens 32: wall/tok 60.56 ms, kernels/tok 2667, kernel time/tok 50.47 ms, gaps/tok 10.17 ms (median gap 2.8 us)
+  kernel duration p10: 1.5 us
+  kernel duration p25: 1.9 us
+  kernel duration p50: 3.2 us
+  kernel duration p75: 10.5 us
+  kernel duration p90: 31.4 us
+  kernel duration p99: 267.9 us
+  kernels < 20 us: 2148/tok, 8.20 ms/tok
+ ms/tok  n/tok  avg us  kernel
+  21.07   94.0   224.2  mul_mat_vec_q_moe<>
+  13.30  306.0    43.5  mul_mat_vec_q<>
+   2.77   95.0    29.2  hc_mix_up_pos<10>
+   2.21   96.0    23.0  hc_mix_down<>
+   1.72   96.0    17.9  mul_mat_vec_f<float>
+   1.32   90.0    14.7  scale_f32<float>>
+   1.18   37.0    31.8  concat_non_cont<unsigned int>
+   0.95   36.0    26.3  k_get_rows_float_vec<float>>
+   0.77  400.0     1.9  quantize_q8_1
+   0.71   36.0    19.6  gated_delta_net_cuda<128>
+   0.51   48.0    10.7  topk_moe_cuda<512>
+   0.50  257.0     1.9  k_bin_bcast<&>
+   0.48   96.0     5.1  dsv4_hc_post_f32<false>
+   0.33  100.0     3.3  rms_norm_f32<1024>
+   0.29   24.0    12.3  mul_mat_f<__hip_bfloat162>
+   0.27  132.0     2.1  rms_norm_f32<32>
+   0.22   65.0     3.3  __amd_rocclr_copyBufferRectAligned
+   0.22   48.0     4.5  rope_multi<true>
+   0.21   48.0     4.4  moe_weighted_reduction_f32
+   0.15   91.0     1.7  unary_op_kernel<&>
+   0.15   12.0    12.4  flash_attn_tile<256>
+   0.15   72.0     2.0  unary_op_kernel_strided<&>
+   0.13   36.0     3.6  ssm_conv_f32<true>
+   0.11   60.0     1.9  unary_gated_op_kernel<&>
+   0.11   40.0     2.8  k_get_rows_float<float>
+   0.09   53.0     1.6  __amd_rocclr_copyBuffer
+   0.08   12.0     6.9  k_argsort_f32_i32<>
+   0.07   36.0     1.8  k_set_rows<float>
+   0.06   24.0     2.6  rms_norm_f32<128>
+   0.06   12.0     4.8  lightning_indexer_kernel_vec<8>
+   0.06   16.0     3.6  cpy_scalar<&>
+   0.05   24.0     2.1  k_get_rows_float<__half>
+   0.04   12.0     3.6  top_k_mask_kernel<__half>>
+   0.03   12.0     2.9  flash_attn_combine_results<256>>
+   0.03   24.0     1.4  fill_kernel<float>>
+   0.02    1.0    22.3  hc_mix_up_row<10>
+   0.02   12.0     1.7  concat_cont<unsigned int>
+   0.01   12.0     1.2  fill_kernel<__half>>
+   0.00    1.0     2.0  reduce_rows_f32<false>>
+   0.00    1.0     1.5  op_clamp_kernel<float>>

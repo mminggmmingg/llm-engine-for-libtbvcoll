@@ -1,0 +1,30 @@
+tokens 32: wall/tok 47.76 ms, kernels/tok 2385, kernel time/tok 32.66 ms, gaps/tok 15.09 ms (median gap 2.7 us)
+  kernel duration p10: 1.4 us
+  kernel duration p25: 1.7 us
+  kernel duration p50: 2.6 us
+  kernel duration p75: 10.4 us
+  kernel duration p90: 37.5 us
+  kernel duration p99: 129.1 us
+  kernels < 20 us: 1999/tok, 8.25 ms/tok
+ ms/tok  n/tok  avg us  kernel
+  19.96  353.0    56.6  mul_mat_vec_q<>
+   3.64   96.0    37.9  hc_mix_up
+   1.95   96.0    20.3  hc_mix_down<>
+   1.51   96.0    15.7  mul_mat_vec_f<float>
+   0.66   36.0    18.5  k_get_rows_float_vec<float>>
+   0.55   36.0    15.2  gated_delta_net_cuda<128>
+   0.55  353.0     1.5  quantize_q8_1
+   0.49   48.0    10.3  topk_moe_cuda<512>
+   0.33  185.0     1.8  k_bin_bcast<&>
+   0.28  100.0     2.8  rms_norm_f32<1024>
+   0.27   24.0    11.3  mul_mat_vec_f<__hip_bfloat16>
+   0.27  132.0     2.1  rms_norm_f32<32>
+   0.22   96.0     2.3  dsv4_hc_post_f32<false>
+   0.20   48.0     4.2  rope_multi<true>
+   0.20   53.0     3.7  __amd_rocclr_copyBufferRectAligned
+   0.17   48.0     3.6  moe_weighted_reduction_f32
+   0.16   85.0     1.8  unary_gated_op_kernel<&>
+   0.14   49.0     2.9  concat_cont<unsigned int>
+   0.14   91.0     1.5  unary_op_kernel<&>
+   0.13   40.0     3.3  k_get_rows_float<float>
+   0.12   69.0     1.7  __amd_rocclr_copyBuffer

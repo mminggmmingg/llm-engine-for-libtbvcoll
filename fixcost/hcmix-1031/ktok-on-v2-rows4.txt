@@ -1,0 +1,45 @@
+tokens 32: wall/tok 40.08 ms, kernels/tok 2385, kernel time/tok 31.53 ms, gaps/tok 8.54 ms (median gap 2.8 us)
+  kernel duration p10: 1.4 us
+  kernel duration p25: 1.7 us
+  kernel duration p50: 2.9 us
+  kernel duration p75: 11.1 us
+  kernel duration p90: 27.3 us
+  kernel duration p99: 129.2 us
+  kernels < 20 us: 2029/tok, 9.20 ms/tok
+ ms/tok  n/tok  avg us  kernel
+  20.07  353.0    56.8  mul_mat_vec_q<>
+   2.12   96.0    22.1  hc_mix_up<10>>
+   1.74   96.0    18.2  hc_mix_down<>
+   1.57   96.0    16.4  mul_mat_vec_f<float>
+   0.68   36.0    18.8  k_get_rows_float_vec<float>>
+   0.58   36.0    16.1  gated_delta_net_cuda<128>
+   0.58  353.0     1.6  quantize_q8_1
+   0.52   48.0    10.9  topk_moe_cuda<512>
+   0.35  185.0     1.9  k_bin_bcast<&>
+   0.34  100.0     3.4  rms_norm_f32<1024>
+   0.29  132.0     2.2  rms_norm_f32<32>
+   0.29   24.0    11.9  mul_mat_vec_f<__hip_bfloat16>
+   0.26   96.0     2.7  dsv4_hc_post_f32<false>
+   0.21   48.0     4.3  rope_multi<true>
+   0.21   53.0     3.9  __amd_rocclr_copyBufferRectAligned
+   0.18   48.0     3.8  moe_weighted_reduction_f32
+   0.18   85.0     2.1  unary_gated_op_kernel<&>
+   0.16   49.0     3.3  concat_cont<unsigned int>
+   0.15   91.0     1.7  unary_op_kernel<&>
+   0.15   40.0     3.7  k_get_rows_float<float>
+   0.12   69.0     1.7  __amd_rocclr_copyBuffer
+   0.12   36.0     3.2  ssm_conv_f32<true>
+   0.10   12.0     8.3  flash_attn_tile<256>
+   0.09   36.0     2.4  k_set_rows<float>
+   0.08   12.0     6.7  k_argsort_f32_i32<>
+   0.07   24.0     2.9  rms_norm_f32<128>
+   0.06   24.0     2.7  k_get_rows_float<__half>
+   0.06   12.0     5.3  lightning_indexer_kernel_vec<8>
+   0.05   12.0     4.0  top_k_mask_kernel<__half>>
+   0.04   16.0     2.4  cpy_scalar<&>
+   0.04   24.0     1.5  fill_kernel<float>>
+   0.04   12.0     3.0  flash_attn_combine_results<256>>
+   0.03   17.0     1.7  scale_f32<float>>
+   0.02   12.0     1.6  fill_kernel<__half>>
+   0.00    1.0     2.1  reduce_rows_f32<false>>
+   0.00    1.0     1.9  op_clamp_kernel<float>>

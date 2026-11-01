@@ -1,0 +1,44 @@
+tokens 32: wall/tok 44.78 ms, kernels/tok 2865, kernel time/tok 33.52 ms, gaps/tok 11.40 ms (median gap 3.2 us)
+  kernel duration p10: 1.2 us
+  kernel duration p25: 1.5 us
+  kernel duration p50: 2.7 us
+  kernel duration p75: 9.1 us
+  kernel duration p90: 22.9 us
+  kernel duration p99: 129.1 us
+  kernels < 20 us: 2515/tok, 10.88 ms/tok
+ ms/tok  n/tok  avg us  kernel
+  24.37  545.0    44.7  mul_mat_vec_q<>
+   1.65   96.0    17.2  mul_mat_vec_f<float>
+   0.89  545.0     1.6  quantize_q8_1
+   0.65   36.0    18.2  k_get_rows_float_vec<float>>
+   0.59   48.0    12.2  topk_moe_cuda<512>
+   0.59   36.0    16.3  gated_delta_net_cuda<128>
+   0.39  185.0     2.1  k_bin_bcast<&>
+   0.38  100.0     3.8  rms_norm_f32<1024>
+   0.34  132.0     2.6  rms_norm_f32<32>
+   0.34  187.0     1.8  unary_op_kernel<&>
+   0.33   96.0     3.4  dsv4_hc_post_f32<false>
+   0.30   24.0    12.6  mul_mat_vec_f<__hip_bfloat16>
+   0.26   96.0     2.7  dsv4_hc_pre_f32<true>>
+   0.22   48.0     4.6  rope_multi<true>
+   0.21   53.0     4.1  __amd_rocclr_copyBufferRectAligned
+   0.21  113.0     1.8  scale_f32<float>>
+   0.20   85.0     2.4  unary_gated_op_kernel<&>
+   0.20   49.0     4.1  concat_cont<unsigned int>
+   0.19   48.0     4.0  moe_weighted_reduction_f32
+   0.17   40.0     4.3  k_get_rows_float<float>
+   0.14   36.0     4.0  ssm_conv_f32<true>
+   0.13   69.0     1.9  __amd_rocclr_copyBuffer
+   0.11   36.0     3.1  k_set_rows<float>
+   0.11   12.0     9.2  flash_attn_tile<256>
+   0.08   24.0     3.5  rms_norm_f32<128>
+   0.08   12.0     6.8  k_argsort_f32_i32<>
+   0.08   24.0     3.3  k_get_rows_float<__half>
+   0.07   12.0     5.5  lightning_indexer_kernel_vec<8>
+   0.06   12.0     4.7  top_k_mask_kernel<__half>>
+   0.05   24.0     2.2  fill_kernel<float>>
+   0.04   12.0     3.5  flash_attn_combine_results<256>>
+   0.04   16.0     2.6  cpy_scalar<&>
+   0.02   12.0     1.9  fill_kernel<__half>>
+   0.00    1.0     2.8  reduce_rows_f32<false>>
+   0.00    1.0     2.3  op_clamp_kernel<float>>

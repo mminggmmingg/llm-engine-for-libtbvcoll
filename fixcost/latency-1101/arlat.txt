@@ -1,0 +1,10 @@
+send side (launch -> host has the partial):
+  kernel, sync                                             p10   10.3  med   10.4  p90   10.6 us
+  kernel, D2H copy 10 KB (SDMA), sync  [engine now]        p10   11.1  med   12.4  p90   12.7 us
+  kernel writes pinned host directly, sync                 p10   10.3  med   10.4  p90   10.8 us
+  kernel writes pinned host + marker, host spins on marker p10    6.9  med    7.0  p90    9.2 us
+recv side (host writes flag -> add finished on GPU):
+  stream wait, marker kernel (release latency)             p10    7.0  med    8.9  p90    9.0 us
+  stream wait, H2D copy 10 KB (SDMA), add  [engine now]    p10   11.0  med   12.9  p90   13.1 us
+  stream wait, add reads pinned host directly              p10    8.3  med   10.2  p90   10.4 us
+  one kernel spins on the host flag, then add              p10    2.4  med    2.6  p90    3.0 us

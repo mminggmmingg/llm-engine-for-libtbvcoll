@@ -12,4 +12,5 @@ cat /sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference 2>/dev/nu
 powerprofilesctl get 2>/dev/null | sed 's/^/ppd: /'
 cat /sys/class/power_supply/AC*/online 2>/dev/null | sed 's/^/AC online: /'
 free -g | sed -n 2p
+echo "psp/pmf (this boot): $(journalctl -k -b --no-pager 2>/dev/null | grep -c "disabling PSP") PSP disabled, $(journalctl -k -b --no-pager 2>/dev/null | grep -c "TEE enact cmd failed") PMF policy failures"
 echo "top CPU:"; top -bn1 -o %CPU | sed -n 8,13p
