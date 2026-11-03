@@ -31,7 +31,7 @@ sleep 4
 GS=$(( 150 + NTOK ))
 python3 -I $R/tools/probe/gpumetrics_ts.py $GS > $O/a/gm.txt 2>&1 & GPID=$!
 ssh -o BatchMode=yes $B "cd $BW; python3 -I $BBIN/gpumetrics_ts.py $GS > gm.txt 2>&1" & BGPID=$!
-env LD_LIBRARY_PATH=/opt/rocm/lib LLAMA_TP_FFN_GRAN=32 GGML_RDMA_CHUNK=65536 GGML_RDMA_RX_DEPTH=48 GGML_RDMA_TX_SLOTS=4 \
+env LD_LIBRARY_PATH=/opt/rocm/lib LLAMA_TP_FFN_GRAN=32 GGML_RDMA_CHUNK=65536 GGML_RDMA_RX_DEPTH=48 GGML_RDMA_TX_SLOTS=4 ${CLIX:-} \
     "$BIN/llama-bench" -m "$M" -fa 1 -p 0 -n $NTOK -r 1 --rpc 10.99.0.2:50052,127.0.0.1:50052 -sm tensor -dev RPC0/RPC1 -o md > $O/bench.txt 2>&1
 grep -E "^\|" $O/bench.txt | tail -1
 # 서버 끝내기(기록 쓰기)
@@ -43,7 +43,7 @@ done
 kill -KILL $APID 2>/dev/null; ssh -o BatchMode=yes $B "pkill -KILL -x ggml-rpc-server; true"
 kill $GPID 2>/dev/null; wait $BGPID 2>/dev/null
 [ -d prof ] && mv prof/a_kernel_trace.csv prof/a_memory_copy_trace.csv . 2>/dev/null
-scp -q "$B:$BW/clocks.txt" "$B:$BW/tl.txt" "$B:$BW/rpc.log" "$B:$BW/gm.txt" $O/b/ 2>/dev/null
+scp -q "$B:$BW/clocks.txt" "$B:$BW/tl.txt" "$B:$BW/tl.txt.cal" "$B:$BW/rpc.log" "$B:$BW/gm.txt" $O/b/ 2>/dev/null
 [ "$PROF" = 1 ] && scp -q "$B:$BW/prof/a_kernel_trace.csv" "$B:$BW/prof/a_memory_copy_trace.csv" $O/b/ 2>/dev/null
 echo "rdma=$(grep -c 'RDMA activated' $O/a/rpc.log) | A: $(ls $O/a | tr '\n' ' ') | B: $(ls $O/b | tr '\n' ' ')"
 du -sh $O

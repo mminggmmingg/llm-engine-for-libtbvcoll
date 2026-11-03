@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 노드별 서버 환경 A/B, 2노드 H5: RUNS="none:<cfg> ..." — cfg 마다 A 환경(SA)·B 환경(SB). 회마다 두 노드 gpu_metrics·스레드·prof
+# 노드별 서버 환경 A/B, 2노드 H5: RUNS="none:<cfg> ..." — cfg 마다 A 환경(SA)·B 환경(SB)·클라이언트 환경(CL)·바이너리(BIN)·기록 링(TR). 회마다 두 노드 gpu_metrics·스레드·prof
 S=/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf; cd $S
 R=/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll; OUT=$R/fixcost/${OUTDIR:-bstate-1101}; mkdir -p $OUT
 BIN0=/data/parksThink/macos_reversing/codex/zbook-rdma/experiments/engine2n/llama.cpp/build-rocm3/bin   # cfg 별 바이너리: BIN_<cfg>
@@ -16,6 +16,8 @@ for run in ${RUNS:?}; do
     *) SA=$(eval echo \${SA_$cfg}); SB=$(eval echo \${SB_$cfg}) ;;
   esac
   bx=$(eval echo \${BIN_$cfg}); export BIN=${bx:-$BIN0}
+  tr=$(eval echo \${TR_$cfg}); export TRACE=${tr:-${TRACE:-1}}   # 기록 링(tools/watch) 켬/끔: TR_<cfg>=0|1
+  export CLI_ENV=$(eval echo \${CL_$cfg})                          # 클라이언트(llama-server) 환경: CL_<cfg>
   for i in $(seq 60); do b=$(timeout 10 ssh -o BatchMode=yes parks-zbook@10.99.0.2 "cut -d' ' -f1 /proc/loadavg"); a=$(cut -d' ' -f1 /proc/loadavg); awk "BEGIN{exit !($a<0.6 && $b<0.6)}" && break; sleep 5; done
   # RDMA 가 안 올라와 TCP 로 떨어진 회는 다시(최대 3번)
   for try in 1 2 3; do

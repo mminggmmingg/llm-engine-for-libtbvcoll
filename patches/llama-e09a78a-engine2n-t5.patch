@@ -1,3 +1,63 @@
+diff --git a/ggml/src/ggml-backend.cpp b/ggml/src/ggml-backend.cpp
+index 22e5fd9..024c311 100644
+--- a/ggml/src/ggml-backend.cpp
++++ b/ggml/src/ggml-backend.cpp
+@@ -957,6 +957,10 @@ struct ggml_backend_sched {
+     int cur_copy;
+     int next_copy;
+     ggml_backend_event_t events[GGML_SCHED_MAX_BACKENDS][GGML_SCHED_MAX_COPIES];
++
++    // engine2n: work issued to the backend since the scheduler last synchronized it (graph compute, async copies). With none,
++    // a user input can be copied without synchronizing the backend first (GGML_SCHED_INPUT_SYNC_ALWAYS=1: always synchronize)
++    bool work_pending[GGML_SCHED_MAX_BACKENDS];
+     struct ggml_tensor ** graph_inputs;
+     int n_graph_inputs;
+     int graph_inputs_capacity;
+@@ -1828,10 +1832,16 @@ static void ggml_backend_sched_copy_input(ggml_backend_sched_t sched, struct ggm
+ 
+     if (input->flags & GGML_TENSOR_FLAG_INPUT) {
+         // inputs from the user must be copied immediately to prevent the user overwriting the data before the copy is done
+-        if (sched->events[split_backend_id][sched->cur_copy] != NULL) {
+-            ggml_backend_event_synchronize(sched->events[split_backend_id][sched->cur_copy]);
+-        } else {
+-            ggml_backend_synchronize(split_backend);
++        // engine2n: the synchronize only protects input_cpy from work still using it; at the start of a step (nothing issued
++        // since the last synchronize) it is a round trip per input through every device's queue (RPC: ~30 us each)
++        static const bool always = getenv("GGML_SCHED_INPUT_SYNC_ALWAYS") != nullptr;
++        if (always || sched->work_pending[split_backend_id]) {
++            if (sched->events[split_backend_id][sched->cur_copy] != NULL) {
++                ggml_backend_event_synchronize(sched->events[split_backend_id][sched->cur_copy]);
++            } else {
++                ggml_backend_synchronize(split_backend);
++            }
++            sched->work_pending[split_backend_id] = false;
+         }
+         ggml_backend_tensor_copy(input, input_cpy);
+         return;
+@@ -1851,6 +1861,7 @@ static void ggml_backend_sched_copy_input(ggml_backend_sched_t sched, struct ggm
+ 
+     // try async copy, but if not possible, we can still use a sync copy without synchronizing the dst backend, since we handle the synchronization here with multiple copies and events
+     // TODO: add public function to facilitate this, since applications do not have direct access to the backend interface
++    sched->work_pending[split_backend_id] = true;
+     if (!split_backend->iface.cpy_tensor_async || !split_backend->iface.cpy_tensor_async(input_backend, split_backend, input, input_cpy)) {
+         ggml_backend_synchronize(input_backend);
+         if (sched->events[split_backend_id][sched->cur_copy] != NULL) {
+@@ -1896,6 +1907,7 @@ static enum ggml_status ggml_backend_sched_compute_splits(ggml_backend_sched_t s
+             }
+         }
+ 
++        sched->work_pending[split_backend_id] = true;
+         if (!sched->callback_eval) {
+             enum ggml_status ec = ggml_backend_graph_compute_async(split_backend, &split->graph);
+             if (ec != GGML_STATUS_SUCCESS) {
+@@ -2134,6 +2146,7 @@ void ggml_backend_sched_synchronize(ggml_backend_sched_t sched) {
+     GGML_ASSERT(sched);
+     for (int i = 0; i < sched->n_backends; i++) {
+         ggml_backend_synchronize(sched->backends[i]);
++        sched->work_pending[i] = false;
+     }
+     if (!sched->is_alloc) {
+         // if the graph is not already allocated, always use copy 0 after a synchronization
 diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
 index 6b36ca9..008e764 100644
 --- a/ggml/src/ggml-cuda/common.cuh
@@ -510,7 +570,7 @@ index f9bf437..8ce163a 100644
  
  void ggml_cuda_op_gated_delta_net(ggml_backend_cuda_context & ctx, ggml_tensor * dst);
 diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
-index 72e961d..c25ad88 100644
+index 72e961d..8e6ee3a 100644
 --- a/ggml/src/ggml-cuda/ggml-cuda.cu
 +++ b/ggml/src/ggml-cuda/ggml-cuda.cu
 @@ -62,6 +62,7 @@
@@ -1681,7 +1741,7 @@ index 72e961d..c25ad88 100644
      bool use_cuda_graph             = false;
      bool cuda_graph_update_required = false;
      const void * graph_key = nullptr;
-@@ -6282,8 +7243,129 @@ static ggml_backend_feature * ggml_backend_cuda_get_features(ggml_backend_reg_t
+@@ -6282,8 +7243,250 @@ static ggml_backend_feature * ggml_backend_cuda_get_features(ggml_backend_reg_t
      GGML_UNUSED(reg);
  }
  
@@ -1739,7 +1799,33 @@ index 72e961d..c25ad88 100644
 +#endif
 +}
 +
-+static __global__ void k_comm_partial_out(const float * src, float * dst, const int64_t n, unsigned * flag, const unsigned seq) {
++// engine2n: GGML_CUDA_COMM_TS=1 (measurement only): the two decode allreduce kernels below also write GPU clock stamps
++// (wall_clock64, 100 MHz) per allreduce seq into coherent host memory: [0] copy-out start, [1] copy-out end, [2] wait start,
++// [3] the peer's flag seen, [4] add end. Same kernels, no extra launches. The RPC server's timeline (GGML_RPC_COMM_PROF_TL)
++// reads them with ggml_backend_comm_ts_get and puts them on the host clock with ggml_backend_comm_ts_calib pairs.
++#define GGML_CUDA_COMM_TS_N 8192
++static uint64_t * ggml_cuda_comm_ts() {
++    static uint64_t * ts = getenv("GGML_CUDA_COMM_TS") != nullptr ?
++        (uint64_t *) ggml_backend_cuda_comm_host_alloc(GGML_CUDA_COMM_TS_N*8*sizeof(uint64_t)) : nullptr;
++    return ts;
++}
++
++static uint64_t * ggml_cuda_comm_ts_slot(uint32_t seq) {
++    uint64_t * ts = ggml_cuda_comm_ts();
++    return ts != nullptr ? ts + (seq % GGML_CUDA_COMM_TS_N)*8 : nullptr;
++}
++
++static __device__ __forceinline__ uint64_t ggml_cuda_realtime() {
++#if defined(GGML_USE_HIP)
++    return wall_clock64();  // constant-rate counter (s_sendmsg_rtn GET_REALTIME on gfx11), 100 MHz on gfx1151
++#else
++    return 0;
++#endif
++}
++
++static __global__ void k_comm_partial_out(const float * src, float * dst, const int64_t n, unsigned * flag, const unsigned seq,
++        uint64_t * ts) {
++    const uint64_t t0 = ts != nullptr && threadIdx.x == 0 ? ggml_cuda_realtime() : 0;
 +    for (int64_t i = threadIdx.x; i < n; i += blockDim.x) {
 +        dst[i] = src[i];
 +    }
@@ -1747,19 +1833,28 @@ index 72e961d..c25ad88 100644
 +    __threadfence_system();
 +    __syncthreads();
 +    if (threadIdx.x == 0) {
++        if (ts != nullptr) {
++            ts[0] = t0;
++            ts[1] = ggml_cuda_realtime();
++        }
 +        __hip_atomic_store(flag, seq, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_SYSTEM);
 +    }
 +#else
-+    GGML_UNUSED(flag); GGML_UNUSED(seq);
++    GGML_UNUSED(flag); GGML_UNUSED(seq); GGML_UNUSED(t0);
 +#endif
 +}
 +
-+static __global__ void k_comm_wait_add(float * dst, const float * src, const int64_t n, const unsigned * flag, const unsigned seq) {
++static __global__ void k_comm_wait_add(float * dst, const float * src, const int64_t n, const unsigned * flag, const unsigned seq,
++        uint64_t * ts) {
++    uint64_t t2 = 0;
++    uint64_t t3 = 0;
 +#if defined(GGML_USE_HIP)
 +    if (threadIdx.x == 0) {
++        t2 = ts != nullptr ? ggml_cuda_realtime() : 0;
 +        while (__hip_atomic_load(flag, __ATOMIC_ACQUIRE, __HIP_MEMORY_SCOPE_SYSTEM) < seq) {
 +            __builtin_amdgcn_s_sleep(1);
 +        }
++        t3 = ts != nullptr ? ggml_cuda_realtime() : 0;
 +    }
 +    __syncthreads();
 +#else
@@ -1768,13 +1863,22 @@ index 72e961d..c25ad88 100644
 +    for (int64_t i = threadIdx.x; i < n; i += blockDim.x) {
 +        dst[i] = dst[i] + src[i];
 +    }
++    if (ts != nullptr) {
++        __syncthreads();
++        if (threadIdx.x == 0) {
++            ts[2] = t2;
++            ts[3] = t3;
++            ts[4] = ggml_cuda_realtime();
++        }
++    }
 +}
 +
 +// queue: copy n f32 from device src to host dst (comm host memory), then *flag = seq
 +static bool ggml_backend_cuda_comm_partial_out(ggml_backend_t backend, const void * src, void * dst, int64_t n, void * flag, uint32_t seq) {
 +    ggml_backend_cuda_context * ctx = (ggml_backend_cuda_context *) backend->context;
 +    ggml_cuda_set_device(ctx->device);
-+    k_comm_partial_out<<<1, 1024, 0, ctx->stream()>>>((const float *) src, (float *) dst, n, (unsigned *) flag, seq);
++    k_comm_partial_out<<<1, 1024, 0, ctx->stream()>>>((const float *) src, (float *) dst, n, (unsigned *) flag, seq,
++        ggml_cuda_comm_ts_slot(seq));
 +    return cudaGetLastError() == cudaSuccess;
 +}
 +
@@ -1782,8 +1886,79 @@ index 72e961d..c25ad88 100644
 +static bool ggml_backend_cuda_comm_wait_add(ggml_backend_t backend, void * dst, const void * src, int64_t n, const void * flag, uint32_t seq) {
 +    ggml_backend_cuda_context * ctx = (ggml_backend_cuda_context *) backend->context;
 +    ggml_cuda_set_device(ctx->device);
-+    k_comm_wait_add<<<1, 1024, 0, ctx->stream()>>>((float *) dst, (const float *) src, n, (const unsigned *) flag, seq);
++    k_comm_wait_add<<<1, 1024, 0, ctx->stream()>>>((float *) dst, (const float *) src, n, (const unsigned *) flag, seq,
++        ggml_cuda_comm_ts_slot(seq));
 +    return cudaGetLastError() == cudaSuccess;
++}
++
++// GGML_CUDA_COMM_TS: the stamps of allreduce seq (GPU ticks [0..4], see above), or nullptr when off
++static const uint64_t * ggml_backend_cuda_comm_ts_get(uint32_t seq) {
++    return ggml_cuda_comm_ts_slot(seq);
++}
++
++static __global__ void k_comm_ts_calib(const int64_t * host_us, uint64_t * out, unsigned * done, const int n) {
++#if defined(GGML_USE_HIP)
++    for (int i = 0; i < n; i++) {
++        const uint64_t g0 = ggml_cuda_realtime();
++        const int64_t  h  = __hip_atomic_load(host_us, __ATOMIC_ACQUIRE, __HIP_MEMORY_SCOPE_SYSTEM);
++        const uint64_t g1 = ggml_cuda_realtime();
++        out[3*i + 0] = g0;
++        out[3*i + 1] = (uint64_t) h;
++        out[3*i + 2] = g1;
++        for (int k = 0; k < 4; k++) {
++            __builtin_amdgcn_s_sleep(127);  // ~3 us each
++        }
++    }
++    __threadfence_system();
++    __hip_atomic_store(done, 1u, __ATOMIC_RELEASE, __HIP_MEMORY_SCOPE_SYSTEM);
++#else
++    GGML_UNUSED(host_us); GGML_UNUSED(out); GGML_UNUSED(done); GGML_UNUSED(n);
++#endif
++}
++
++// GGML_CUDA_COMM_TS: one (host us, GPU tick) pair. A kernel on its own stream samples a host time that this thread keeps
++// rewriting; of 6 samples ~12 us apart the one read closest to its writing (largest host - GPU) is kept, so the host side
++// lags by about the CPU -> GPU visibility delay (~1 us). This thread spins for those ~80 us.
++static bool ggml_backend_cuda_comm_ts_calib(ggml_backend_t backend, int64_t * host_us, uint64_t * gpu_tick) {
++#if defined(GGML_USE_HIP)
++    constexpr int n = 6;
++    static int64_t *   hv     = nullptr;
++    static hipStream_t stream = nullptr;
++    if (hv == nullptr) {
++        hv = (int64_t *) ggml_backend_cuda_comm_host_alloc(64 + 3*n*sizeof(uint64_t));
++        if (hv == nullptr || hipStreamCreateWithFlags(&stream, hipStreamNonBlocking) != hipSuccess) {
++            return false;
++        }
++    }
++    ggml_backend_cuda_context * ctx = (ggml_backend_cuda_context *) backend->context;
++    ggml_cuda_set_device(ctx->device);
++    unsigned * done = (unsigned *) (hv + 4);
++    uint64_t * out  = (uint64_t *) (hv + 8);
++    __atomic_store_n(done, 0u, __ATOMIC_SEQ_CST);
++    __atomic_store_n(hv, ggml_time_us(), __ATOMIC_SEQ_CST);
++    k_comm_ts_calib<<<1, 1, 0, stream>>>(hv, out, done, n);
++    if (cudaGetLastError() != cudaSuccess) {
++        return false;
++    }
++    while (__atomic_load_n(done, __ATOMIC_ACQUIRE) == 0) {
++        __atomic_store_n(hv, ggml_time_us(), __ATOMIC_SEQ_CST);
++    }
++    CUDA_CHECK(hipStreamSynchronize(stream));
++    double best = -1e300;
++    for (int i = 0; i < n; i++) {
++        const uint64_t g = (out[3*i] + out[3*i + 2])/2;
++        const double   d = (double) (int64_t) out[3*i + 1] - g*0.01;
++        if (d > best) {
++            best      = d;
++            *host_us  = (int64_t) out[3*i + 1];
++            *gpu_tick = g;
++        }
++    }
++    return true;
++#else
++    GGML_UNUSED(backend); GGML_UNUSED(host_us); GGML_UNUSED(gpu_tick);
++    return false;
++#endif
 +}
 +
  static void * ggml_backend_cuda_reg_get_proc_address(ggml_backend_reg_t reg, const char * name) {
@@ -1806,6 +1981,12 @@ index 72e961d..c25ad88 100644
 +    }
 +    if (strcmp(name, "ggml_backend_comm_wait_add") == 0) {
 +        return (void *)ggml_backend_cuda_comm_wait_add;
++    }
++    if (strcmp(name, "ggml_backend_comm_ts_get") == 0) {
++        return (void *)ggml_backend_cuda_comm_ts_get;
++    }
++    if (strcmp(name, "ggml_backend_comm_ts_calib") == 0) {
++        return (void *)ggml_backend_cuda_comm_ts_calib;
 +    }
 +#endif
      if (strcmp(name, "ggml_backend_comm_init") == 0) {
@@ -2825,20 +3006,147 @@ index c6ffdb9..5e9fc41 100644
  
  void ggml_cuda_op_gelu_erf(ggml_backend_cuda_context & ctx, ggml_tensor * dst);
 diff --git a/ggml/src/ggml-rpc/ggml-rpc.cpp b/ggml/src/ggml-rpc/ggml-rpc.cpp
-index 8cedee7..942b0e9 100644
+index 8cedee7..7707f8e 100644
 --- a/ggml/src/ggml-rpc/ggml-rpc.cpp
 +++ b/ggml/src/ggml-rpc/ggml-rpc.cpp
-@@ -6,6 +6,9 @@
+@@ -6,6 +6,12 @@
  #include "log.h"
  
  #include <array>
 +#if defined(__linux__)
 +#include <sys/prctl.h>
++#include <sys/mman.h>
++#include <fcntl.h>
++#include <unistd.h>
 +#endif
  #include <chrono>
  #include <cinttypes>
  #include <optional>
-@@ -412,6 +415,42 @@ static bool send_rpc_cmd(socket_ptr sock, enum rpc_cmd cmd, const void * input,
+@@ -407,11 +413,166 @@ static bool send_rpc_cmd(socket_ptr sock, enum rpc_cmd cmd, const void * input,
+     return true;
+ }
+ 
++// engine2n: GGML_RPC_TRACE=<file> ("{port}" is replaced by the server port; the scripts use /dev/shm/ggml-rpc-trace-{port}.bin)
++// in an RPC server, GGML_RPC_TRACE_CLIENT=<file> in the client (every command it sends, plus llama_decode phases):
++// an mmap'd ring of 64-byte records for the inference watcher (tools/watch, Rust), written for the whole run with a few stores
++// per event — nothing is flushed or rewritten during the run. Records: every command the server handles (wait start, start,
++// end), every allreduce's host times and bytes, the helper thread's receive of the peer's partial, the allreduce kernels' GPU
++// stamps (GGML_CUDA_COMM_TS, which this turns on) and a (host us, GPU tick) pair every 250 ms from a background thread.
++// GGML_RPC_TRACE_RECS: ring size in records (default 1M = 64 MiB). A record is complete when its idx equals (index + 1) mod 2^32.
++enum rpc_trace_type : uint32_t {
++    RPC_TRACE_CMD     = 1,  // a = command;            t: wait start, start, end
++    RPC_TRACE_AR      = 2,  // a = seq, b = wire bytes; t: entry, previous receive done, partial on host, in send buffer, posted, return
++    RPC_TRACE_AR_SYNC = 3,  // a = seq, b = wire bytes; t: entry, previous receive done, partial on host, exchange done, return
++    RPC_TRACE_GPU     = 4,  // a = seq;                 t: GPU ticks copy-out start/end, wait start, peer's flag seen, add end
++    RPC_TRACE_CAL     = 5,  //                          t: host us, GPU tick
++    RPC_TRACE_RECV    = 6,  // a = seq, b = bytes;      t: receive start, partial landed (flag set)
++    // client (GGML_RPC_TRACE_CLIENT in llama-server / llama-bench)
++    RPC_TRACE_CCMD    = 7,  // a = command, b = endpoint; t: queued, send start, done (response received for commands with one)
++    RPC_TRACE_ENDP    = 8,  // a = endpoint;           t: the endpoint string (48 bytes)
++    RPC_TRACE_DECODE  = 9,  // a = tokens, b = outputs; t: llama_decode start, end
++    RPC_TRACE_UBATCH  = 10, // a = tokens, b = graph reused; t: start, graph ready, inputs set, compute launched
++    RPC_TRACE_SYNC    = 11, //                          t: llama_context::synchronize start, end
++};
++struct rpc_trace_rec {
++    std::atomic<uint32_t> idx;
++    uint32_t              type;
++    uint32_t              a;
++    uint32_t              b;
++    int64_t               t[6];
++};
++static_assert(sizeof(rpc_trace_rec) == 64, "rpc_trace_rec must be 64 bytes");
++struct rpc_trace_hdr {
++    char                  magic[8];  // "GGRPCTR1"
++    uint32_t              version;
++    uint32_t              rec_size;
++    uint64_t              capacity;
++    std::atomic<uint64_t> count;     // records reserved so far
++    int64_t               t_open;    // host us (ggml_time_us, CLOCK_MONOTONIC) at open
++    int32_t               pid;
++    int32_t               port;
++    char                  host[64];
++};
++static rpc_trace_hdr * g_trace_hdr  = nullptr;
++static rpc_trace_rec * g_trace_recs = nullptr;
++
++static bool rpc_trace_on() {
++    return g_trace_recs != nullptr;
++}
++
++static void rpc_trace(uint32_t type, uint32_t a, uint32_t b, int64_t t0, int64_t t1 = 0, int64_t t2 = 0, int64_t t3 = 0,
++        int64_t t4 = 0, int64_t t5 = 0) {
++    if (g_trace_recs == nullptr) {
++        return;
++    }
++    const uint64_t  i = g_trace_hdr->count.fetch_add(1, std::memory_order_relaxed);
++    rpc_trace_rec & r = g_trace_recs[i % g_trace_hdr->capacity];
++    r.idx.store(0, std::memory_order_relaxed);
++    r.type = type; r.a = a; r.b = b;
++    r.t[0] = t0; r.t[1] = t1; r.t[2] = t2; r.t[3] = t3; r.t[4] = t4; r.t[5] = t5;
++    r.idx.store((uint32_t) (i + 1), std::memory_order_release);
++}
++
++static void rpc_trace_open(const char * env_name, int port) {
++#if defined(__linux__)
++    const char * env = getenv(env_name);
++    if (env == nullptr || *env == 0) {
++        return;
++    }
++    std::string path = env;
++    const size_t at = path.find("{port}");
++    if (at != std::string::npos) {
++        path.replace(at, 6, std::to_string(port));
++    }
++    const char *   recs_env = getenv("GGML_RPC_TRACE_RECS");
++    const uint64_t cap      = recs_env ? std::max<uint64_t>(1024, strtoull(recs_env, nullptr, 10)) : (uint64_t) 1 << 20;
++    const size_t   size     = 4096 + cap*sizeof(rpc_trace_rec);
++    const int fd = open(path.c_str(), O_RDWR | O_CREAT | O_TRUNC, 0644);
++    if (fd < 0 || ftruncate(fd, (off_t) size) != 0) {
++        LOG_ERROR("[%s] cannot create %s\n", __func__, path.c_str());
++        if (fd >= 0) {
++            close(fd);
++        }
++        return;
++    }
++    void * m = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
++    close(fd);
++    if (m == MAP_FAILED) {
++        LOG_ERROR("[%s] cannot map %s\n", __func__, path.c_str());
++        return;
++    }
++    memset(m, 0, 4096);
++    rpc_trace_hdr * h = (rpc_trace_hdr *) m;
++    memcpy(h->magic, "GGRPCTR1", 8);
++    h->version  = 1;
++    h->rec_size = sizeof(rpc_trace_rec);
++    h->capacity = cap;
++    h->count.store(0);
++    h->t_open   = ggml_time_us();
++    h->pid      = (int32_t) getpid();
++    h->port     = port;
++    gethostname(h->host, sizeof(h->host) - 1);
++    g_trace_recs = (rpc_trace_rec *) ((char *) m + 4096);
++    g_trace_hdr  = h;
++    if (port != 0) {
++        setenv("GGML_CUDA_COMM_TS", "1", 0);  // the server's allreduce kernels' GPU stamps
++    }
++    LOG_INFO("  trace          : %s (%llu records)\n", path.c_str(), (unsigned long long) cap);
++#else
++    GGML_UNUSED(env_name); GGML_UNUSED(port);
++#endif
++}
++
++// for llama (via the RPC registry's proc address "ggml_backend_rpc_trace"): its decode phases into the client ring
++static void ggml_backend_rpc_trace_ext(uint32_t type, uint32_t a, uint32_t b, const int64_t * t, int n) {
++    int64_t v[6] = {};
++    for (int i = 0; i < n && i < 6; i++) {
++        v[i] = t[i];
++    }
++    rpc_trace(type, a, b, v[0], v[1], v[2], v[3], v[4], v[5]);
++}
++
+ // RPC client-side implementation
+ 
  // with busy spinning on, the dispatcher still blocks on its queue after this long without commands
  static constexpr auto RPC_BUSY_SPIN_IDLE_TIME = std::chrono::milliseconds(100);
  
@@ -2881,7 +3189,51 @@ index 8cedee7..942b0e9 100644
  static inline void rpc_cpu_relax() {
  #if defined(__aarch64__) && (defined(__clang__) || defined(__GNUC__))
      __asm__ volatile("yield" ::: "memory");
-@@ -665,8 +704,10 @@ void rpc_dispatcher::work() {
+@@ -526,6 +687,7 @@ private:
+         void                        * output;
+         size_t                        output_size;
+         std::promise<void>            completion;
++        int64_t                       t_queued = rpc_trace_on() ? ggml_time_us() : 0;  // GGML_RPC_TRACE_CLIENT
+     };
+     using rpc_msg_ptr   = std::shared_ptr<rpc_msg>;
+     using rpc_msg_queue = message_queue<rpc_msg_ptr>;
+@@ -540,6 +702,7 @@ private:
+     std::atomic_uint busy_spin_users = 0;
+     std::atomic_bool running;
+     std::thread      thread;
++    uint32_t         trace_id = 0;  // GGML_RPC_TRACE_CLIENT: this endpoint's number in the client trace
+ };
+ 
+ static void rpc_dispatcher_trampoline(rpc_dispatcher * dispatcher)
+@@ -656,18 +819,42 @@ void rpc_dispatcher::start(const std::string & endpoint) {
+         GGML_ABORT("RPC handshake failed for %s\n", endpoint.c_str());
+     }
+     LOG_DBG("[%s] connected to %s\n", __func__, endpoint.c_str());
++    static std::once_flag trace_once;
++    std::call_once(trace_once, [] { rpc_trace_open("GGML_RPC_TRACE_CLIENT", 0); });
++    if (rpc_trace_on()) {
++        static std::atomic<uint32_t> n_endpoints{0};
++        trace_id = n_endpoints.fetch_add(1);
++        int64_t name[6] = {};
++        memcpy(name, endpoint.c_str(), std::min(endpoint.size(), sizeof(name) - 1));
++        rpc_trace(RPC_TRACE_ENDP, trace_id, 0, name[0], name[1], name[2], name[3], name[4], name[5]);
++    }
+     running = true;
+     thread = std::thread(rpc_dispatcher_trampoline, this);
+ }
+ 
+ void rpc_dispatcher::work() {
+     auto last_cmd = std::chrono::steady_clock::now();
++    // engine2n: no-reply commands already queued behind one go out with it in one write (one send() on TCP instead of three
++    // per command, one post on RDMA); the bytes on the wire are the same. GGML_RPC_BATCH_MAX=<bytes> (default 0 = off: it cut
++    // RNR retransmits to B by 97% but decode got 4% slower in the 11-03 A/B, cause not found yet)
++    static const size_t batch_max = [] {
++        const char * env = getenv("GGML_RPC_BATCH_MAX");
++        return env ? (size_t) atoll(env) : (size_t) 0;
++    }();
++    rpc_msg_ptr held;  // popped while batching but not batchable: handled next
++    std::vector<rpc_msg_ptr> batch;
++    std::vector<uint8_t> wire;
      while (running) {
          rpc_msg_ptr msg_ptr;
          // spin only while commands keep coming, so an idle dispatcher does not keep a core busy
@@ -2889,11 +3241,102 @@ index 8cedee7..942b0e9 100644
 +                               std::chrono::duration_cast<std::chrono::microseconds>(RPC_BUSY_SPIN_IDLE_TIME);
          const bool spin = busy_spin_users.load(std::memory_order_relaxed) != 0 &&
 -                          std::chrono::steady_clock::now() - last_cmd < RPC_BUSY_SPIN_IDLE_TIME;
+-        if (spin) {
 +                          std::chrono::steady_clock::now() - last_cmd < idle_time;
-         if (spin) {
++        if (held) {
++            msg_ptr = std::move(held);
++            held.reset();
++        } else if (spin) {
              if (!queue.try_pop(&msg_ptr)) {
                  rpc_cpu_relax();
-@@ -1388,6 +1429,204 @@ void ggml_backend_rpc_get_device_memory(const char * endpoint, uint32_t device,
+                 continue;
+@@ -680,17 +867,65 @@ void rpc_dispatcher::work() {
+                      rpc_log_format_size(msg_ptr->input_size).c_str(), rpc_log_format_size(msg_ptr->output_size).c_str());
+             const bool trace = rpc_log_debug_level() >= 3;
+             const auto t0 = std::chrono::steady_clock::now();
++            const int64_t t_send = msg_ptr->t_queued != 0 ? ggml_time_us() : 0;
+             if (msg_ptr->output) {
+                 bool status = send_rpc_cmd(sock, msg_ptr->cmd, msg_ptr->input.get(), msg_ptr->input_size, msg_ptr->output, msg_ptr->output_size);
+                 RPC_STATUS_ASSERT(status);
+             } else {
+-                bool status = send_rpc_cmd(sock, msg_ptr->cmd, msg_ptr->input.get(), msg_ptr->input_size);
+-                RPC_STATUS_ASSERT(status);
++                batch.clear();
++                size_t bytes = 1 + sizeof(uint64_t) + msg_ptr->input_size;
++                if (batch_max > 0 && bytes < batch_max) {
++                    rpc_msg_ptr next;
++                    while (queue.try_pop(&next)) {
++                        const size_t nb = 1 + sizeof(uint64_t) + next->input_size;
++                        if (next->cmd == RPC_CMD_NONE || next->output != nullptr || bytes + nb > batch_max) {
++                            held = std::move(next);
++                            break;
++                        }
++                        batch.push_back(std::move(next));
++                        bytes += nb;
++                    }
++                }
++                if (batch.empty()) {
++                    bool status = send_rpc_cmd(sock, msg_ptr->cmd, msg_ptr->input.get(), msg_ptr->input_size);
++                    RPC_STATUS_ASSERT(status);
++                } else {
++                    // | cmd (1 byte) | size (8 bytes) | data | for each, as send_rpc_cmd writes them
++                    wire.resize(bytes);
++                    uint8_t * w = wire.data();
++                    auto pack = [&w](const rpc_msg & m) {
++                        *w++ = (uint8_t) m.cmd;
++                        const uint64_t n = m.input_size;
++                        memcpy(w, &n, sizeof(n));
++                        w += sizeof(n);
++                        if (n > 0) {
++                            memcpy(w, m.input.get(), n);
++                            w += n;
++                        }
++                    };
++                    pack(*msg_ptr);
++                    for (const auto & m : batch) {
++                        pack(*m);
++                    }
++                    bool status = sock->send_data(wire.data(), bytes) && sock->flush();
++                    RPC_STATUS_ASSERT(status);
++                }
+             }
+             if (trace) {
+                 const std::chrono::duration<double, std::milli> elapsed = std::chrono::steady_clock::now() - t0;
+                 LOG_DBG3("[%s] %s done in %.3f ms\n", __func__, rpc_cmd_name(msg_ptr->cmd), elapsed.count());
+             }
++            if (t_send != 0) {
++                const int64_t t_done = ggml_time_us();
++                rpc_trace(RPC_TRACE_CCMD, msg_ptr->cmd, trace_id, msg_ptr->t_queued, t_send, t_done);
++                for (const auto & m : batch) {
++                    rpc_trace(RPC_TRACE_CCMD, m->cmd, trace_id, m->t_queued, t_send, t_done);
++                }
++            }
++            for (auto & m : batch) {
++                m->completion.set_value();
++            }
++            batch.clear();
+         } else {
+             LOG_DBG3("[%s] sync barrier\n", __func__);
+         }
+@@ -872,6 +1107,17 @@ static void ggml_backend_rpc_buffer_set_tensor(ggml_backend_buffer_t buffer, ggm
+     }
+     size_t input_size;
+     auto input = serialize_set_tensor(rpc_tensor, cache_flag, offset, data, size, input_size);
++    // engine2n: small payloads (the per-step inputs) do not wait for the send: the data is already copied into `input`, and
++    // the endpoint's queue keeps the order with the commands after it. Large ones (weights at load) stay synchronous so the
++    // queue cannot hold copies of the model. GGML_RPC_ASYNC_SET=<bytes> (default 65536, 0 = off).
++    static const size_t async_max = [] {
++        const char * env = getenv("GGML_RPC_ASYNC_SET");
++        return env ? (size_t) atoll(env) : (size_t) 65536;
++    }();
++    if (size <= async_max) {
++        ctx->dispatcher->send_async(RPC_CMD_SET_TENSOR, input, input_size);
++        return;
++    }
+     ctx->dispatcher->send(RPC_CMD_SET_TENSOR, input, input_size);
+ }
+ 
+@@ -1388,6 +1634,217 @@ void ggml_backend_rpc_get_device_memory(const char * endpoint, uint32_t device,
  
  // RPC server-side implementation
  
@@ -2909,18 +3352,29 @@ index 8cedee7..942b0e9 100644
 +// overlap send, main thread only: [pending receive, copy into the send slot, post (flush)]
 +static int64_t               g_comm_send_split_us[3] = {};
 +// GGML_RPC_COMM_PROF_TL=<file> (with GGML_RPC_COMM_PROF): per overlap allreduce, absolute times (us) of entry, pending
-+// receive done, our partial seen on the host, sent, return, and the peer's partial landed (helper thread);
-+// the last 8192 are rewritten to <file> at each print
-+struct comm_tl_entry { int64_t entry, pending, ready, sent, end, land; };
++// receive done, our partial seen on the host, sent, return, and the peer's partial landed (helper thread), plus the host
++// start/end of the GRAPH_RECOMPUTE before it and, with GGML_CUDA_COMM_TS on the server, the allreduce kernels' GPU stamps
++// (ticks; <file>.cal gets a (host us, GPU tick) pair at each print); the last 8192 are rewritten to <file> at each print
++struct comm_tl_entry { int64_t entry, pending, ready, sent, end, land, rc0, rc1; };
 +static const char *               g_comm_tl_path = getenv("GGML_RPC_COMM_PROF_TL");
 +static std::vector<comm_tl_entry> g_comm_tl(g_comm_tl_path != nullptr ? 8192 : 0);
 +static uint32_t                   g_comm_tl_last = 0;
-+static void comm_tl_note(uint32_t seq, int64_t entry, int64_t pending, int64_t ready, int64_t sent, int64_t end) {
++static int64_t                    g_comm_tl_rc[2] = {};  // host start/end of the last GRAPH_RECOMPUTE
++typedef const uint64_t * (*comm_ts_get_t)(uint32_t);
++typedef bool             (*comm_ts_calib_t)(ggml_backend_t, int64_t *, uint64_t *);
++static comm_ts_get_t              g_comm_ts_get     = nullptr;  // set by the zero-copy path when the backend stamps
++static comm_ts_calib_t            g_comm_ts_calib   = nullptr;
++static ggml_backend_t             g_comm_ts_backend = nullptr;
++
++static void comm_tl_note(uint32_t seq, int64_t entry, int64_t pending, int64_t ready, int64_t copied, int64_t sent, int64_t end,
++        size_t wire_bytes) {
++    rpc_trace(RPC_TRACE_AR, seq, (uint32_t) wire_bytes, entry, pending, ready, copied, sent, end);
 +    if (g_comm_tl.empty()) {
 +        return;
 +    }
 +    comm_tl_entry & e = g_comm_tl[seq % g_comm_tl.size()];
 +    e.entry = entry; e.pending = pending; e.ready = ready; e.sent = sent; e.end = end;
++    e.rc0 = g_comm_tl_rc[0]; e.rc1 = g_comm_tl_rc[1];
 +    g_comm_tl_last = seq;
 +}
 +static std::atomic<uint64_t> g_comm_peer_wait_n{0};
@@ -2958,6 +3412,7 @@ index 8cedee7..942b0e9 100644
 +#endif
 +                    continue;
 +                }
++                const int64_t t_recv0 = t_submit != 0 ? ggml_time_us() : 0;
 +                if (!peer->recv_data(rbuf, bytes)) {
 +                    failed.store(true, std::memory_order_release);
 +                    done_seq.store(job, std::memory_order_release);
@@ -2966,6 +3421,7 @@ index 8cedee7..942b0e9 100644
 +                __atomic_store_n((uint32_t *) flag, job, __ATOMIC_SEQ_CST);  // releases the queued copy + add
 +                if (t_submit != 0) {
 +                    const int64_t t_land = ggml_time_us();
++                    rpc_trace(RPC_TRACE_RECV, job, (uint32_t) bytes, t_recv0, t_land);
 +                    g_comm_peer_wait_us.fetch_add(t_land - t_submit, std::memory_order_relaxed);
 +                    g_comm_peer_wait_n.fetch_add(1, std::memory_order_relaxed);
 +                    if (!g_comm_tl.empty()) {
@@ -3098,7 +3554,7 @@ index 8cedee7..942b0e9 100644
  class rpc_server {
  public:
      rpc_server(std::vector<ggml_backend_t> all_backends, const char * cache_dir)
-@@ -1415,6 +1654,8 @@ public:
+@@ -1415,6 +1872,8 @@ public:
      bool graph_recompute(const rpc_msg_graph_recompute_req & request);
      bool comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_init_rsp & response);
      bool comm_allreduce(const rpc_msg_comm_allreduce_req & request);
@@ -3107,7 +3563,15 @@ index 8cedee7..942b0e9 100644
      bool comm_free(const rpc_msg_comm_free_req & request);
      bool init_tensor(const rpc_msg_init_tensor_req & request);
      bool get_alloc_size(const rpc_msg_get_alloc_size_req & request, rpc_msg_get_alloc_size_rsp & response);
-@@ -1438,13 +1679,38 @@ private:
+@@ -1427,6 +1886,7 @@ public:
+ 
+ private:
+     void sync_all_backends();
++    bool set_tensor_staged(ggml_tensor * tensor, const void * data, size_t offset, size_t size);
+     bool get_cached_file(uint64_t hash, std::vector<uint8_t> & data);
+     ggml_tensor * deserialize_tensor(struct ggml_context * ctx, const rpc_tensor * tensor);
+     ggml_tensor * create_node(uint64_t id,
+@@ -1438,17 +1898,45 @@ private:
      // pairwise allreduce over a direct connection to the peer server
      struct comm_state {
          socket_ptr              peer;
@@ -3146,7 +3610,81 @@ index 8cedee7..942b0e9 100644
  
      std::vector<ggml_backend_t> backends;
      const char * cache_dir;
-@@ -1772,6 +2038,7 @@ bool rpc_server::set_tensor_2d(const std::vector<uint8_t> & input) {
+     std::unordered_set<ggml_backend_buffer_t> buffers;
++    // engine2n: pinned staging ring for small SET_TENSORs (see set_tensor_staged)
++    ggml_backend_buffer_ptr stage_buf;
++    size_t                  stage_pos = 0;
+     // computed graphs cached per backend, keyed by uid
+     std::vector<std::unordered_map<uint64_t, stored_graph>> stored_graphs;
+     std::vector<comm_state> comm_states;
+@@ -1698,8 +2186,54 @@ ggml_tensor * rpc_server::deserialize_tensor(struct ggml_context * ctx, const rp
+ }
+ 
+ 
++// engine2n: a small SET_TENSOR (the per-step inputs; <= GGML_RPC_SERVER_ASYNC_SET bytes, default 65536, 0 = off) is copied
++// into a pinned staging ring and queued on the stream of the backend that owns the buffer, without synchronizing first: the
++// compute that may still read the old value is before it on that stream and the one that reads the new value is after it.
++// The ring is reused after one synchronize when it wraps. Returns false when it does not apply (then the synchronous path).
++bool rpc_server::set_tensor_staged(ggml_tensor * tensor, const void * data, size_t offset, size_t size) {
++    static const size_t max_size = [] {
++        const char * env = getenv("GGML_RPC_SERVER_ASYNC_SET");
++        return env ? (size_t) atoll(env) : (size_t) 65536;
++    }();
++    constexpr size_t ring = 8u << 20;
++    if (size == 0 || size > max_size) {
++        return false;
++    }
++    ggml_backend_buffer_type_t buft = ggml_backend_buffer_get_type(tensor->buffer);
++    ggml_backend_t backend = nullptr;
++    for (ggml_backend_t b : backends) {
++        if (b->iface.set_tensor_async != nullptr && ggml_backend_get_device(b) == ggml_backend_buft_get_device(buft)) {
++            backend = b;
++            break;
++        }
++    }
++    if (backend == nullptr || ggml_backend_buffer_is_host(tensor->buffer)) {
++        return false;
++    }
++    if (!stage_buf) {
++        ggml_backend_buffer_type_t host_buft = ggml_backend_dev_host_buffer_type(ggml_backend_get_device(backend));
++        if (host_buft == nullptr) {
++            return false;
++        }
++        stage_buf.reset(ggml_backend_buft_alloc_buffer(host_buft, ring));
++        if (!stage_buf) {
++            return false;
++        }
++        stage_pos = 0;
++    }
++    const size_t n = (size + 255) & ~(size_t) 255;
++    if (stage_pos + n > ring) {
++        sync_all_backends();  // every copy out of the ring is done
++        stage_pos = 0;
++    }
++    uint8_t * dst = (uint8_t *) ggml_backend_buffer_get_base(stage_buf.get()) + stage_pos;
++    memcpy(dst, data, size);
++    stage_pos += n;
++    ggml_backend_tensor_set_async(backend, tensor, dst, offset, size);
++    return true;
++}
++
+ bool rpc_server::set_tensor(const std::vector<uint8_t> & input) {
+-    sync_all_backends();
+     // serialization format: | rpc_tensor | cache_flag (1 byte) | offset (8 bytes) | data (size bytes) |
+     uint8_t  cache_flag;
+     uint64_t offset;
+@@ -1752,6 +2286,10 @@ bool rpc_server::set_tensor(const std::vector<uint8_t> & input) {
+         ofs.write((const char *)data, size);
+         LOG_INFO("[%s] saved to '%s'\n", __func__, cache_file.string().c_str());
+     }
++    if (!(cache_dir && cache_flag) && set_tensor_staged(tensor, data, offset, size)) {
++        return true;
++    }
++    sync_all_backends();
+     ggml_backend_tensor_set(tensor, data, offset, size);
+     return true;
+ }
+@@ -1772,6 +2310,7 @@ bool rpc_server::set_tensor_2d(const std::vector<uint8_t> & input) {
  
      const uint64_t data_size = input.size() - sizeof(rpc_tensor) - 4*sizeof(uint64_t);
      if (n_copies == 0 || size == 0 || size > data_size / n_copies || size * n_copies != data_size) {
@@ -3154,7 +3692,7 @@ index 8cedee7..942b0e9 100644
          return false;
      }
  
-@@ -2277,6 +2544,88 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
+@@ -2277,6 +2816,88 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
          }
          state.peer->update_caps(remote_caps);
      }
@@ -3243,7 +3781,7 @@ index 8cedee7..942b0e9 100644
      state.rank  = request.rank;
      state.world = request.world;
      LOG_INFO("[%s] device %u joined pairwise comm as rank %u\n", __func__, request.device, request.rank);
-@@ -2284,6 +2633,95 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
+@@ -2284,6 +2905,109 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
      return true;
  }
  
@@ -3266,7 +3804,7 @@ index 8cedee7..942b0e9 100644
 +static int comm_prof_every() {
 +    if (g_comm_prof.every < 0) {
 +        const char * env = getenv("GGML_RPC_COMM_PROF");
-+        const int v = env ? atoi(env) : 0;
++        const int v = env ? atoi(env) : (rpc_trace_on() ? 1000 : 0);  // the trace needs the allreduce timings
 +        g_comm_prof.every = v <= 0 ? 0 : v == 1 ? 1000 : v;
 +        g_comm_prof.trace_path = getenv("GGML_RPC_COMM_PROF_TRACE");
 +        if (g_comm_prof.trace_path != nullptr) {
@@ -3307,12 +3845,26 @@ index 8cedee7..942b0e9 100644
 +        }
 +        g_comm_send_split_us[0] = g_comm_send_split_us[1] = g_comm_send_split_us[2] = 0;
 +        if (!g_comm_tl.empty() && g_comm_tl_last > 1) {
++            if (g_comm_ts_get != nullptr) {
++                int64_t  h = 0;
++                uint64_t g = 0;
++                if (g_comm_ts_calib(g_comm_ts_backend, &h, &g)) {
++                    if (FILE * f = fopen((std::string(g_comm_tl_path) + ".cal").c_str(), "a")) {
++                        fprintf(f, "%lld %llu\n", (long long) h, (unsigned long long) g);
++                        fclose(f);
++                    }
++                }
++            }
 +            if (FILE * f = fopen(g_comm_tl_path, "w")) {
 +                const uint32_t n_tl = (uint32_t) g_comm_tl.size();
++                static const uint64_t no_ts[5] = {};
 +                for (uint32_t q = g_comm_tl_last > n_tl ? g_comm_tl_last - n_tl + 2 : 1; q < g_comm_tl_last; q++) {
 +                    const comm_tl_entry & e = g_comm_tl[q % g_comm_tl.size()];
-+                    fprintf(f, "%u %lld %lld %lld %lld %lld %lld\n", q, (long long) e.entry, (long long) e.pending, (long long) e.ready,
-+                            (long long) e.sent, (long long) e.end, (long long) e.land);
++                    const uint64_t * ts = g_comm_ts_get != nullptr ? g_comm_ts_get(q) : no_ts;
++                    fprintf(f, "%u %lld %lld %lld %lld %lld %lld %lld %lld %llu %llu %llu %llu %llu\n", q, (long long) e.entry,
++                            (long long) e.pending, (long long) e.ready, (long long) e.sent, (long long) e.end, (long long) e.land,
++                            (long long) e.rc0, (long long) e.rc1, (unsigned long long) ts[0], (unsigned long long) ts[1],
++                            (unsigned long long) ts[2], (unsigned long long) ts[3], (unsigned long long) ts[4]);
 +                }
 +                fclose(f);
 +            }
@@ -3339,7 +3891,7 @@ index 8cedee7..942b0e9 100644
  bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
      if (request.device >= backends.size()) {
          return false;
-@@ -2294,6 +2732,12 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2294,6 +3018,12 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
          return false;
      }
      ggml_backend_t backend = backends[request.device];
@@ -3352,7 +3904,7 @@ index 8cedee7..942b0e9 100644
  
      size_t ctx_size = 16*ggml_tensor_overhead() + 2*ggml_graph_overhead_custom(8, false);
      struct ggml_init_params params = {
-@@ -2316,16 +2760,43 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2316,16 +3046,43 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
      }
      // reduce large partials in bf16 to halve the wire bytes; small (decode-sized) ones
      // stay f32 since the extra casts and sync cost more than the bytes saved
@@ -3399,7 +3951,7 @@ index 8cedee7..942b0e9 100644
  
      auto new_scratch_tensor = [&](ggml_type type, size_t offset) {
          ggml_tensor * t = ggml_new_tensor_4d(ctx, type, t_dst->ne[0], t_dst->ne[1], t_dst->ne[2], t_dst->ne[3]);
-@@ -2352,41 +2823,281 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2352,41 +3109,316 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
          GGML_ASSERT(status == GGML_STATUS_SUCCESS && "Unsuccessful graph computations are not supported with RPC");
      };
  
@@ -3508,6 +4060,28 @@ index 8cedee7..942b0e9 100644
 +            *state.zc_dflag = state.seq;
 +            *state.zc_rflag = state.seq;
 +            LOG_INFO("[%s] zero-copy decode allreduce on (GGML_RPC_COMM_ZC=%d)\n", __func__, zc_env);
++            if (!g_comm_tl.empty() || rpc_trace_on()) {
++                const comm_ts_get_t ts_get = (comm_ts_get_t) ggml_backend_reg_get_proc_address(zc_reg, "ggml_backend_comm_ts_get");
++                if (ts_get != nullptr && ts_get(0) != nullptr) {
++                    g_comm_ts_get     = ts_get;
++                    g_comm_ts_calib   = (comm_ts_calib_t) ggml_backend_reg_get_proc_address(zc_reg, "ggml_backend_comm_ts_calib");
++                    g_comm_ts_backend = backend;
++                    LOG_INFO("[%s] allreduce GPU stamps on (GGML_CUDA_COMM_TS)\n", __func__);
++                    if (rpc_trace_on() && g_comm_ts_calib != nullptr) {
++                        // a (host us, GPU tick) pair every 250 ms for the trace (own stream, ~1 ms of this thread's time each)
++                        std::thread([] {
++                            for (;;) {
++                                int64_t  h = 0;
++                                uint64_t g = 0;
++                                if (g_comm_ts_calib(g_comm_ts_backend, &h, &g)) {
++                                    rpc_trace(RPC_TRACE_CAL, 0, 0, h, (int64_t) g);
++                                }
++                                std::this_thread::sleep_for(std::chrono::milliseconds(250));
++                            }
++                        }).detach();
++                    }
++                }
++            }
 +        }
 +        const uint32_t seq = state.seq + 1;
 +        if (zc_env >= 2) {
@@ -3518,6 +4092,12 @@ index 8cedee7..942b0e9 100644
 +            while (__atomic_load_n(state.zc_dflag, __ATOMIC_ACQUIRE) != seq) {
 +                b.step();
 +            }
++        } else if (g_comm_ts_get != nullptr) {
++            // stamped copy-out kernel (GGML_CUDA_COMM_TS) in place of the copy; its flag is not used here
++            if (!zc_out(backend, t_dst->data, state.zc_send, ne, (void *) state.zc_dflag, seq)) {
++                return false;
++            }
++            ggml_backend_synchronize(backend);
 +        } else {
 +            ggml_backend_tensor_get_async(backend, t_dst, state.zc_send, 0, wire_bytes);
 +            ggml_backend_synchronize(backend);
@@ -3547,7 +4127,14 @@ index 8cedee7..942b0e9 100644
 +            g_comm_send_split_us[1] += t_copied - t1z;
 +            g_comm_send_split_us[2] += t3z - t_copied;
 +            const int64_t t_end = ggml_time_us();
-+            comm_tl_note(seq, t_entry, t_pending, t1z, t3z, t_end);
++            comm_tl_note(seq, t_entry, t_pending, t1z, t_copied, t3z, t_end, wire_bytes);
++            // the previous zero-copy allreduce's kernels are done (this one's copy-out was synchronized)
++            static uint32_t last_zc_seq = 0;
++            if (g_comm_ts_get != nullptr && rpc_trace_on() && seq > 1 && last_zc_seq == seq - 1) {
++                const uint64_t * g = g_comm_ts_get(seq - 1);
++                rpc_trace(RPC_TRACE_GPU, seq - 1, 0, (int64_t) g[0], (int64_t) g[1], (int64_t) g[2], (int64_t) g[3], (int64_t) g[4]);
++            }
++            last_zc_seq = seq;
 +            comm_prof_add(t_entry, t_end, t1z - t0, 0, (t_pending - t_entry) + (t3z - t1z), t_end - t3z, wire_bytes);
 +        }
 +        return true;
@@ -3622,7 +4209,7 @@ index 8cedee7..942b0e9 100644
 +            }
 +            if (prof) {
 +                const int64_t t_end = ggml_time_us();
-+                comm_tl_note(seq, t_entry, t_pending, t1, t3o, t_end);
++                comm_tl_note(seq, t_entry, t_pending, t1, t_copied, t3o, t_end, wire_bytes);
 +                comm_prof_add(t_entry, t_end, t1 - t0, 0, (t_pending - t_entry) + (t3o - t2), t_end - t3o, wire_bytes);
 +            }
 +            return true;
@@ -3696,12 +4283,13 @@ index 8cedee7..942b0e9 100644
      }
  
      ggml_tensor * t_red = ggml_new_tensor_4d(ctx, t_dst->type, t_dst->ne[0], t_dst->ne[1], t_dst->ne[2], t_dst->ne[3]);
-@@ -2402,6 +3113,39 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2402,6 +3434,40 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
      } else {
          compute_nodes(t_red, nullptr);
      }
 +    if (prof) {
 +        const int64_t t_end = ggml_time_us();
++        rpc_trace(RPC_TRACE_AR_SYNC, state.seq, (uint32_t) wire_bytes, t_entry, t_pending, t1, t3, t_end);
 +        comm_prof_add(t_entry, t_end, t1 - t0, 0, (t_pending - t_entry) + (t3 - t2), t_end - t3, wire_bytes);
 +    }
 +    return true;
@@ -3736,7 +4324,7 @@ index 8cedee7..942b0e9 100644
      return true;
  }
  
-@@ -2409,6 +3153,15 @@ bool rpc_server::comm_free(const rpc_msg_comm_free_req & request) {
+@@ -2409,6 +3475,15 @@ bool rpc_server::comm_free(const rpc_msg_comm_free_req & request) {
      if (request.device >= backends.size()) {
          return false;
      }
@@ -3752,20 +4340,23 @@ index 8cedee7..942b0e9 100644
      comm_states[request.device] = comm_state();
      return true;
  }
-@@ -2474,10 +3227,31 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+@@ -2474,10 +3549,34 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
      // Activate transport upgrade using client's caps
      sock->update_caps(req.conn_caps);
      LOG_DBG("[%s] client connected, transport: %s\n", __func__, sock->transport_name());
 +    const bool prof = comm_prof_every() > 0;
 +    int64_t prof_t = 0;
 +    int     prof_cmd = -1;
++    int64_t trace_wait = 0;  // GGML_RPC_TRACE: when this thread began waiting for the current command
      while (true) {
 +        if (prof) {
 +            const int64_t t = ggml_time_us();
 +            if (prof_cmd >= 0) {
 +                g_comm_prof.t_cmd[prof_cmd] += t - prof_t;
++                rpc_trace(RPC_TRACE_CMD, (uint32_t) prof_cmd, 0, trace_wait, prof_t, t);
 +            }
-+            prof_t = t;
++            prof_t     = t;
++            trace_wait = t;
 +        }
          if (!sock->recv_data(&cmd, 1)) {
              break;
@@ -3784,7 +4375,7 @@ index 8cedee7..942b0e9 100644
          if (cmd >= RPC_CMD_COUNT) {
              // fail fast if the command is invalid
              LOG_ERROR("Unknown command: %d\n", cmd);
-@@ -2613,6 +3387,7 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+@@ -2613,6 +3712,7 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
              case RPC_CMD_SET_TENSOR_2D: {
                  std::vector<uint8_t> input;
                  if (!recv_msg(sock, input)) {
@@ -3792,6 +4383,39 @@ index 8cedee7..942b0e9 100644
                      return;
                  }
                  if (!server.set_tensor_2d(input)) {
+@@ -2701,9 +3801,14 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+                 if (!recv_msg(sock, &request, sizeof(request))) {
+                     return;
+                 }
++                const int64_t t_rc0 = g_comm_tl.empty() ? 0 : ggml_time_us();
+                 if (!server.graph_recompute(request)) {
+                     return;
+                 }
++                if (!g_comm_tl.empty()) {
++                    g_comm_tl_rc[0] = t_rc0;
++                    g_comm_tl_rc[1] = ggml_time_us();
++                }
+                 break;
+             }
+             case RPC_CMD_COMM_INIT: {
+@@ -2812,6 +3917,7 @@ void ggml_backend_rpc_start_server(const char * endpoint, const char * cache_dir
+         LOG_ERROR("Failed to initialize RPC transport\n");
+         return;
+     }
++    rpc_trace_open("GGML_RPC_TRACE", port);
+     auto server_socket = socket_t::create_server(host.c_str(), port);
+     if (server_socket == nullptr) {
+         LOG_ERROR("Failed to create server socket\n");
+@@ -3102,6 +4208,9 @@ static void * ggml_backend_rpc_get_proc_address(ggml_backend_reg_t reg, const ch
+     if (std::strcmp(name, "ggml_backend_rpc_add_server") == 0) {
+         return (void *)ggml_backend_rpc_add_server;
+     }
++    if (std::strcmp(name, "ggml_backend_rpc_trace") == 0) {
++        return (void *)ggml_backend_rpc_trace_ext;
++    }
+     if (std::strcmp(name, "ggml_backend_rpc_start_server") == 0) {
+         return (void *)ggml_backend_rpc_start_server;
+     }
 diff --git a/ggml/src/ggml-rpc/transport.cpp b/ggml/src/ggml-rpc/transport.cpp
 index d5670f3..ac88dc1 100644
 --- a/ggml/src/ggml-rpc/transport.cpp
@@ -4100,6 +4724,113 @@ index 59b8845..743b32e 100644
  void rpc_transport_shutdown();
 +// RDMA device for connections negotiated on this thread (get_caps/update_caps), over GGML_RDMA_DEV; nullptr clears
 +void rpc_transport_set_rdma_dev(const char * dev);
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index 33ad784..1046b59 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -885,12 +885,31 @@ void llama_context::sched_reserve() {
+             __func__, (t_end_us - t_start_us)/1000.0, ggml_backend_sched_get_n_copies(sched.get()));
+ }
+ 
++// engine2n: decode phases into the RPC client trace (GGML_RPC_TRACE_CLIENT, tools/watch); a no-op without it
++typedef void (*llama_rpc_trace_t)(uint32_t type, uint32_t a, uint32_t b, const int64_t * t, int n);
++static llama_rpc_trace_t llama_rpc_trace() {
++    static const llama_rpc_trace_t fn = [] () -> llama_rpc_trace_t {
++        if (getenv("GGML_RPC_TRACE_CLIENT") == nullptr) {
++            return nullptr;
++        }
++        ggml_backend_reg_t reg = ggml_backend_reg_by_name("RPC");
++        return reg ? (llama_rpc_trace_t) ggml_backend_reg_get_proc_address(reg, "ggml_backend_rpc_trace") : nullptr;
++    }();
++    return fn;
++}
++
+ void llama_context::synchronize() {
+     if (!sched) {
+         return;
+     }
+ 
++    const llama_rpc_trace_t tr = llama_rpc_trace();
++    int64_t ts[2] = { tr ? ggml_time_us() : 0, 0 };
+     ggml_backend_sched_synchronize(sched.get());
++    if (tr) {
++        ts[1] = ggml_time_us();
++        tr(11, 0, 0, ts, 2);
++    }
+ 
+     // FIXME: if multiple single tokens are evaluated without a synchronization,
+     // the stats will be added to the prompt evaluation stats
+@@ -1523,6 +1542,9 @@ bool llama_context::set_adapter_cvec(
+ }
+ 
+ llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, llm_graph_type gtype, llama_memory_context_i * mctx, ggml_status & ret) {
++    const llama_rpc_trace_t tr = llama_rpc_trace();
++    int64_t tt[4] = { tr ? ggml_time_us() : 0, 0, 0, 0 };
++    bool    reused = false;
+     if (mctx && !mctx->apply()) {
+         LLAMA_LOG_ERROR("%s: failed to apply memory context\n", __func__);
+         ret = GGML_STATUS_FAILED;
+@@ -1547,6 +1569,7 @@ llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, ll
+         }
+ 
+         n_reused++;
++        reused = true;
+     } else {
+         gf_res_prev_active = nullptr;
+         res->reset();
+@@ -1578,14 +1601,20 @@ llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, ll
+     // set the input data for the input tensors
+     {
+         //const auto t_start_us = ggml_time_us();
++        tt[1] = tr ? ggml_time_us() : 0;
+ 
+         // FIXME this call causes a crash if any model inputs were not used in the graph and were therefore not allocated
+         res->set_inputs(&ubatch);
+ 
+         //LLAMA_LOG_INFO("graph set inputs time: %.3f ms\n", (ggml_time_us() - t_start_us)/1000.0);
+     }
++    tt[2] = tr ? ggml_time_us() : 0;
+ 
+     const auto status = graph_compute(res->get_gf(), ubatch.n_tokens > 1);
++    if (tr) {
++        tt[3] = ggml_time_us();
++        tr(10, ubatch.n_tokens, reused ? 1 : 0, tt, 4);
++    }
+     if (status != GGML_STATUS_SUCCESS) {
+         LLAMA_LOG_ERROR("%s: failed to compute graph, compute status: %d\n", __func__, status);
+         ret = status;
+@@ -4647,7 +4676,13 @@ int32_t llama_encode(
+ int32_t llama_decode(
+         llama_context * ctx,
+           llama_batch   batch) {
++    const llama_rpc_trace_t tr = llama_rpc_trace();
++    int64_t td[2] = { tr ? ggml_time_us() : 0, 0 };
+     const int ret = ctx->decode(batch);
++    if (tr) {
++        td[1] = ggml_time_us();
++        tr(9, (uint32_t) batch.n_tokens, 0, td, 2);
++    }
+     if (ret != 0 && ret != 1) {
+         LLAMA_LOG_ERROR("%s: failed to decode, ret = %d\n", __func__, ret);
+     }
+@@ -4724,7 +4759,16 @@ void llama_opt_epoch(
+ int32_t llama_process(llama_context * ctx, llama_process_type type, llama_batch_ext * batch) {
+     switch (type) {
+         case LLAMA_PROCESS_TYPE_ENCODE: return ctx->encode(*batch);
+-        case LLAMA_PROCESS_TYPE_DECODE: return ctx->decode(*batch);
++        case LLAMA_PROCESS_TYPE_DECODE: {
++            const llama_rpc_trace_t tr = llama_rpc_trace();
++            int64_t td[2] = { tr ? ggml_time_us() : 0, 0 };
++            const int32_t ret = ctx->decode(*batch);
++            if (tr) {
++                td[1] = ggml_time_us();
++                tr(9, 0, 0, td, 2);  // tokens: see the ubatch records
++            }
++            return ret;
++        }
+     }
+     return -1;
+ }
 diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
 index cffd083..c14f008 100644
 --- a/src/llama-graph.cpp

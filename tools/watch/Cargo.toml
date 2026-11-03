@@ -1,0 +1,12 @@
+[package]
+name = "inferwatch"
+version = "0.1.0"
+edition = "2021"
+description = "2-node inference watcher: records the RPC servers' trace rings during inference and writes an A/B timeline + receipt"
+
+# std only (no crates.io downloads)
+[dependencies]
+
+[profile.release]
+opt-level = 3
+debug = false

@@ -21,13 +21,16 @@ export GGML_RDMA_CHUNK=${GGML_RDMA_CHUNK:-65536}   # 64 KiB × 48 수신 칸 + 4
 export GGML_RDMA_RX_DEPTH=${GGML_RDMA_RX_DEPTH:-48}
 export GGML_RDMA_TX_SLOTS=${GGML_RDMA_TX_SLOTS:-4}
 SRV_ENV=${SRV_ENV-GGML_CUDA_DISABLE_GRAPHS=1}  # HIP 그래프 끔: 전체 어텐션 부분그래프에서 hipGraphLaunch 가 ≈620 µs GPU 를 멈춤(RESULTS.md GPU 활용)
+# 추론 감시(tools/watch/inferwatch.sh)용 기록 링: 서버 GGML_RPC_TRACE, 클라이언트 GGML_RPC_TRACE_CLIENT. TRACE=0 이면 끔
+TRACE_SRV=""; TRACE_CLI=""
+if [ "${TRACE:-1}" != 0 ]; then TRACE_SRV="GGML_RPC_TRACE=/dev/shm/ggml-rpc-trace-{port}.bin"; TRACE_CLI="GGML_RPC_TRACE_CLIENT=/dev/shm/ggml-rpc-trace-client.bin"; fi
 export GGML_RPC_COMM_OVERLAP=${GGML_RPC_COMM_OVERLAP:-2}  # AR 뒤 발행 겹치기 2(도우미 수신). 3 은 정확하지만 이 APU 에서 GPU 클럭이 떨어져 느림(RESULTS.md)
 export LLAMA_TP_FFN_GRAN=${LLAMA_TP_FFN_GRAN:-32}  # 전문가 FFN 폭 640 을 320/320 으로(기본 128 알갱이면 층마다 256/384) — RESULTS.md 로드맵 a
 
 TRA=""; TRB=""
 if [ "${TRACE:-0}" = 1 ]; then TRA="GGML_RPC_COMM_PROF_TRACE=$OUT/trace-a.txt"; TRB="GGML_RPC_COMM_PROF_TRACE=$BBIN/trace-b.txt"; fi
 start_local() {  # $1 = port, $2 = bind host
-  env $NORDMA $TRA ${SRV_ENV:-} nohup ${APREFIX:-} "$BIN/ggml-rpc-server" -H "${2:-127.0.0.1}" -p "$1" > "$OUT/rpc-a-$1.log" 2>&1 &
+  env $NORDMA $TRA ${SRV_ENV:-} $TRACE_SRV nohup ${APREFIX:-} "$BIN/ggml-rpc-server" -H "${2:-127.0.0.1}" -p "$1" > "$OUT/rpc-a-$1.log" 2>&1 &
   echo $! >> "$OUT/pids"
 }
 case $TOPO in
@@ -35,12 +38,12 @@ case $TOPO in
          DEVS="RPC0/RPC1"; RPC=127.0.0.1:50052,127.0.0.1:50053 ;;
   2node) start_local 50052 127.0.0.1
          ssh -o BatchMode=yes $B "mkdir -p $BBIN; pkill -x ggml-rpc-server; sleep 1"; scp -q "$BIN/ggml-rpc-server" "$B:$BBIN/" || exit 3
-         ssh -o BatchMode=yes $B "cd $BBIN && LD_LIBRARY_PATH=/opt/rocm/lib GGML_RDMA_RX_DEPTH=$GGML_RDMA_RX_DEPTH GGML_RDMA_CHUNK=$GGML_RDMA_CHUNK GGML_RDMA_TX_SLOTS=$GGML_RDMA_TX_SLOTS GGML_RPC_COMM_PROF=${GGML_RPC_COMM_PROF:-0} GGML_RPC_COMM_OVERLAP=${GGML_RPC_COMM_OVERLAP:-0} $TRB ${SRV_ENV:-} $NORDMA setsid -f ./ggml-rpc-server -H 10.99.0.2 -p 50052 -c > rpc-server.log 2>&1 < /dev/null"
+         ssh -o BatchMode=yes $B "cd $BBIN && LD_LIBRARY_PATH=/opt/rocm/lib GGML_RDMA_RX_DEPTH=$GGML_RDMA_RX_DEPTH GGML_RDMA_CHUNK=$GGML_RDMA_CHUNK GGML_RDMA_TX_SLOTS=$GGML_RDMA_TX_SLOTS GGML_RPC_COMM_PROF=${GGML_RPC_COMM_PROF:-0} GGML_RPC_COMM_OVERLAP=${GGML_RPC_COMM_OVERLAP:-0} $TRB ${SRV_ENV:-} $TRACE_SRV $NORDMA setsid -f ./ggml-rpc-server -H 10.99.0.2 -p 50052 -c > rpc-server.log 2>&1 < /dev/null"
          DEVS="RPC0/RPC1"; RPC=10.99.0.2:50052,127.0.0.1:50052 ;;
   *) echo "모름: $TOPO"; exit 2 ;;
 esac
 sleep 3
-env $NORDMA "$BIN/llama-bench" -m "$M" --rpc "$RPC" -dev "$DEVS" -sm tensor -fa on -ngl 99 ${BENCH:--p 512 -n 128 -r 3} -o md \
+env $NORDMA $TRACE_CLI "$BIN/llama-bench" -m "$M" --rpc "$RPC" -dev "$DEVS" -sm tensor -fa on -ngl 99 ${BENCH:--p 512 -n 128 -r 3} -o md \
   > "$OUT/bench.md" 2> "$OUT/bench.err"
 echo "rc=$?"; cat "$OUT/bench.md"
 grep -iE 'rdma|transport|comm|allreduce|split' "$OUT/bench.err" | head -8
