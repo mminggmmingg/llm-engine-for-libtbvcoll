@@ -1,0 +1,74 @@
+none a1 bin=bin load A=0.51 B=0.24 rdma=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 32.12 tok/s (token-weighted) | srv-2node-none-bs-a1-1104-005111
+   a: n=493 gfx 2434/2800/2875 상한 2629/2900/2900 활동 66/92/95 소켓W 65/70/70 gfxW 22/29/31 코어W 5/8/18 코어상한 1924/2541/4653 
+   b: n=492 gfx 2229/2742/2853 상한 2279/2851/2900 활동 66/91/96 소켓W 63/69/70 gfxW 17/31/34 코어W 3/6/16 코어상한 1602/1952/5147 
+Traceback (most recent call last):
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 16, in <module>
+    print(f"{p.split('/')[-1][:48]:48s} n={len(r):3d} gap {f('gap'):6.1f} sync {f('sync'):6.1f} net {f('net'):5.1f} h2d {f('h2d'):4.1f} cycle {f('gap')+f('sync')+f('net')+f('h2d'):6.1f} | sent->landed {f('pw'):5.1f} (med {st.median(x['pw'] for x in r):5.1f})")
+                                                           ~^^^^^^^
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 15, in <lambda>
+    f = lambda k: st.mean(x[k] for x in r)
+                  ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/statistics.py", line 177, in mean
+    raise StatisticsError('mean requires at least one data point')
+statistics.StatisticsError: mean requires at least one data point
+   cyc: 
+none a2 bin=bin load A=0.55 B=0.20 rdma=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 32.81 tok/s (token-weighted) | srv-2node-none-bs-a2-1104-005723
+   a: n=483 gfx 2436/2802/2876 상한 2644/2900/2900 활동 67/92/95 소켓W 65/70/70 gfxW 22/29/32 코어W 4/8/18 코어상한 1924/2572/4670 
+   b: n=485 gfx 2255/2729/2851 상한 2262/2838/2900 활동 67/92/96 소켓W 64/69/70 gfxW 18/31/34 코어W 3/6/16 코어상한 1938/1956/5124 
+Traceback (most recent call last):
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 16, in <module>
+    print(f"{p.split('/')[-1][:48]:48s} n={len(r):3d} gap {f('gap'):6.1f} sync {f('sync'):6.1f} net {f('net'):5.1f} h2d {f('h2d'):4.1f} cycle {f('gap')+f('sync')+f('net')+f('h2d'):6.1f} | sent->landed {f('pw'):5.1f} (med {st.median(x['pw'] for x in r):5.1f})")
+                                                           ~^^^^^^^
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 15, in <lambda>
+    f = lambda k: st.mean(x[k] for x in r)
+                  ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/statistics.py", line 177, in mean
+    raise StatisticsError('mean requires at least one data point')
+statistics.StatisticsError: mean requires at least one data point
+   cyc: 
+none base bin=bin load A=0.55 B=0.31 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 33.14 tok/s (token-weighted) | srv-2node-none-bs-base-1104-010141
+   a: n=477 gfx 2431/2780/2872 상한 2541/2900/2900 활동 65/88/92 소켓W 65/70/70 gfxW 22/30/32 코어W 5/8/19 코어상한 1924/2113/4671 
+   b: n=480 gfx 2498/2786/2867 상한 2673/2879/2900 활동 67/89/92 소켓W 64/69/70 gfxW 26/32/35 코어W 3/5/13 코어상한 1601/1952/4959 
+   cyc: cycle  309.6
+none a4 bin=bin load A=0.57 B=0.37 rdma=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 32.96 tok/s (token-weighted) | srv-2node-none-bs-a4-1104-010720
+   a: n=483 gfx 2332/2785/2875 상한 2609/2900/2900 활동 66/91/95 소켓W 66/70/70 gfxW 20/29/32 코어W 4/8/19 코어상한 1924/2045/4825 
+   b: n=484 gfx 2211/2710/2846 상한 2241/2832/2900 활동 64/91/96 소켓W 63/69/70 gfxW 17/30/34 코어W 3/7/17 코어상한 1604/1954/5141 
+Traceback (most recent call last):
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 16, in <module>
+    print(f"{p.split('/')[-1][:48]:48s} n={len(r):3d} gap {f('gap'):6.1f} sync {f('sync'):6.1f} net {f('net'):5.1f} h2d {f('h2d'):4.1f} cycle {f('gap')+f('sync')+f('net')+f('h2d'):6.1f} | sent->landed {f('pw'):5.1f} (med {st.median(x['pw'] for x in r):5.1f})")
+                                                           ~^^^^^^^
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 15, in <lambda>
+    f = lambda k: st.mean(x[k] for x in r)
+                  ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/statistics.py", line 177, in mean
+    raise StatisticsError('mean requires at least one data point')
+statistics.StatisticsError: mean requires at least one data point
+   cyc: 
+none zc3 bin=bin load A=0.59 B=0.28 rdma=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 32.35 tok/s (token-weighted) | srv-2node-none-bs-zc3-1104-011229
+   a: n=488 gfx 2437/2809/2882 상한 2565/2900/2900 활동 68/92/95 소켓W 65/70/70 gfxW 22/30/32 코어W 5/8/18 코어상한 1928/2260/4650 
+   b: n=488 gfx 2477/2775/2868 상한 2691/2900/2900 활동 66/90/96 소켓W 63/69/70 gfxW 26/32/35 코어W 3/5/13 코어상한 1607/1954/4959 
+Traceback (most recent call last):
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 16, in <module>
+    print(f"{p.split('/')[-1][:48]:48s} n={len(r):3d} gap {f('gap'):6.1f} sync {f('sync'):6.1f} net {f('net'):5.1f} h2d {f('h2d'):4.1f} cycle {f('gap')+f('sync')+f('net')+f('h2d'):6.1f} | sent->landed {f('pw'):5.1f} (med {st.median(x['pw'] for x in r):5.1f})")
+                                                           ~^^^^^^^
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 15, in <lambda>
+    f = lambda k: st.mean(x[k] for x in r)
+                  ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/statistics.py", line 177, in mean
+    raise StatisticsError('mean requires at least one data point')
+statistics.StatisticsError: mean requires at least one data point
+   cyc: 
+none a1 bin=bin load A=0.58 B=0.10 rdma=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 32.45 tok/s (token-weighted) | srv-2node-none-bs-a1-1104-011804
+   a: n=491 gfx 2384/2791/2871 상한 2529/2900/2900 활동 66/92/95 소켓W 65/70/70 gfxW 21/29/32 코어W 4/8/19 코어상한 1921/2160/4637 
+   b: n=489 gfx 2385/2744/2847 상한 2576/2865/2900 활동 65/91/96 소켓W 63/69/70 gfxW 24/31/34 코어W 3/5/15 코어상한 1601/1953/4969 
+Traceback (most recent call last):
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 16, in <module>
+    print(f"{p.split('/')[-1][:48]:48s} n={len(r):3d} gap {f('gap'):6.1f} sync {f('sync'):6.1f} net {f('net'):5.1f} h2d {f('h2d'):4.1f} cycle {f('gap')+f('sync')+f('net')+f('h2d'):6.1f} | sent->landed {f('pw'):5.1f} (med {st.median(x['pw'] for x in r):5.1f})")
+                                                           ~^^^^^^^
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 15, in <lambda>
+    f = lambda k: st.mean(x[k] for x in r)
+                  ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/statistics.py", line 177, in mean
+    raise StatisticsError('mean requires at least one data point')
+statistics.StatisticsError: mean requires at least one data point
+   cyc: 

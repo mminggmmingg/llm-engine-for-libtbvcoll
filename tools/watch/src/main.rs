@@ -165,6 +165,7 @@ struct BAgent {
     child: Option<Child>,
     count: Arc<Mutex<(u64, u64, i64)>>, // count, capacity, B host us
     metrics: MetricBuf,
+    tbv: LineBuf,
 }
 
 fn start_agent(o: &Opts, ag: &mut BAgent) {
@@ -182,6 +183,7 @@ fn start_agent(o: &Opts, ag: &mut BAgent) {
     let out = child.stdout.take().unwrap();
     let cnt = ag.count.clone();
     let mb = ag.metrics.clone();
+    let tb = ag.tbv.clone();
     thread::spawn(move || {
         for l in BufReader::new(out).lines().map_while(Result::ok) {
             if let Some(r) = l.strip_prefix("C ") {
@@ -193,6 +195,8 @@ fn start_agent(o: &Opts, ag: &mut BAgent) {
                 if let Some(s) = metrics::parse_sample(r) {
                     keep(&mb, s);
                 }
+            } else if let Some(r) = l.strip_prefix("T ") {
+                keep_line(&tb, r.to_string());
             }
         }
     });
@@ -216,6 +220,39 @@ fn deploy_agent(o: &Opts) {
 // node) keeps a readable copy in /dev/shm/tbv-summary.txt, read at the start and end of every session
 
 const TBV_COPY: &str = "/dev/shm/tbv-summary.txt";
+const TBV_KEYS: [&str; 7] = [
+    "data_wr_send",
+    "data_wr_rnr_retransmit",
+    "data_rx_ack_rnr",
+    "data_rx_rnr",
+    "data_wr_no_recv_credit",
+    "data_wr_retransmit",
+    "data_rx_reorder_buffered",
+];
+
+/// "<host us> key=value ..." from the readable copy of the tbv counters, or None without it
+fn tbv_line() -> Option<String> {
+    let s = fs::read_to_string(TBV_COPY).ok()?;
+    let mut line = metrics::now_us().to_string();
+    for l in s.lines() {
+        if let Some((k, v)) = l.split_once(':') {
+            if TBV_KEYS.contains(&k.trim()) {
+                line.push_str(&format!(" {}={}", k.trim(), v.trim()));
+            }
+        }
+    }
+    Some(line)
+}
+
+type LineBuf = Arc<Mutex<VecDeque<String>>>;
+
+fn keep_line(buf: &LineBuf, l: String) {
+    let mut b = buf.lock().unwrap();
+    b.push_back(l);
+    while b.len() > 1200 {
+        b.pop_front();
+    }
+}
 
 fn tbv_snapshot(o: &Opts, dir: &Path, tag: &str) {
     if let Ok(s) = fs::read_to_string(TBV_COPY) {
@@ -255,7 +292,37 @@ fn build_report(dir: &Path, title: &str, started: &str) -> Option<String> {
             })
             .unwrap_or_default()
     };
+    // per-second series: the increments over the decode steps only (B's times moved to A's clock)
+    let dec: Vec<&analyze::Step> = an.steps.iter().filter(|s| !s.prefill).collect();
+    let window = dec.first().zip(dec.last()).map(|(a, b)| (a.start, b.end));
     for n in ["a", "b"] {
+        let Ok(text) = fs::read_to_string(dir.join(format!("tbv_{}_series.txt", n))) else { continue };
+        let Some((w0, w1)) = window else { continue };
+        let mut samples: Vec<(f64, std::collections::HashMap<String, i64>)> = text
+            .lines()
+            .filter_map(|l| {
+                let mut it = l.split_whitespace();
+                let t: f64 = it.next()?.parse().ok()?;
+                let m = it.filter_map(|kv| kv.split_once('=')).filter_map(|(k, v)| Some((k.to_string(), v.parse().ok()?))).collect();
+                Some((if n == "b" { an.b_to_a(t) } else { t }, m))
+            })
+            .collect();
+        samples.sort_by(|x, y| x.0.partial_cmp(&y.0).unwrap());
+        let s0 = samples.iter().rev().find(|x| x.0 <= w0);
+        let s1 = samples.iter().find(|x| x.0 >= w1);
+        if let (Some(s0), Some(s1)) = (s0, s1) {
+            let mut d: Vec<(String, i64)> = s1.1.iter().filter_map(|(k, v)| s0.1.get(k).map(|v0| (k.clone(), v - v0))).collect();
+            d.sort();
+            an.tbv.push((n.to_uppercase(), d));
+        }
+    }
+    if !an.tbv.is_empty() {
+        an.notes.push("tbv 카운터: 1 초 표본으로 첫 decode 단계 앞 ~ 마지막 decode 단계 뒤 구간의 증가분(모델 올리기는 빠짐)".into());
+    }
+    for n in ["a", "b"] {
+        if an.tbv.iter().any(|x| x.0 == n.to_uppercase()) {
+            continue;
+        }
         let (s0, s1) = (counters(&format!("tbv_{}_start.txt", n)), counters(&format!("tbv_{}_end.txt", n)));
         if s0.is_empty() || s1.is_empty() {
             continue;
@@ -296,20 +363,34 @@ fn daemon(o: Opts) {
     let _ = fs::create_dir_all(&o.out);
     log(&format!("감시 시작: A {} · 클라이언트 {} · B {}:{} · 쉼 {} s 뒤 보고서 → {}", o.a_ring, o.c_ring, o.b_host, o.b_ring, o.idle_s, o.out.display()));
     deploy_agent(&o);
-    let mut ag = BAgent { child: None, count: Arc::new(Mutex::new((0, 0, 0))), metrics: Arc::new(Mutex::new(VecDeque::new())) };
+    let mut ag = BAgent {
+        child: None,
+        count: Arc::new(Mutex::new((0, 0, 0))),
+        metrics: Arc::new(Mutex::new(VecDeque::new())),
+        tbv: Arc::new(Mutex::new(VecDeque::new())),
+    };
     start_agent(&o, &mut ag);
-    // A metrics sampler
+    // A metrics sampler (and the tbv counters each second)
     let ma: MetricBuf = Arc::new(Mutex::new(VecDeque::new()));
+    let ta: LineBuf = Arc::new(Mutex::new(VecDeque::new()));
     {
         let ma = ma.clone();
+        let ta = ta.clone();
         thread::spawn(move || {
             let p = metrics::find_gpu_metrics();
+            let mut k = 0u64;
             loop {
                 if let Some(p) = &p {
                     if let Some(s) = metrics::read_sample(p) {
                         keep(&ma, s);
                     }
                 }
+                if k % 10 == 0 {
+                    if let Some(l) = tbv_line() {
+                        keep_line(&ta, l);
+                    }
+                }
+                k += 1;
                 thread::sleep(Duration::from_millis(100));
             }
         });
@@ -396,6 +477,12 @@ fn daemon(o: Opts) {
                 };
                 dump(&ma, "metrics_a.txt");
                 dump(&ag.metrics, "metrics_b.txt");
+                for (buf, n) in [(&ta, "tbv_a_series.txt"), (&ag.tbv, "tbv_b_series.txt")] {
+                    let lines: Vec<String> = buf.lock().unwrap().iter().cloned().collect();
+                    if !lines.is_empty() {
+                        let _ = fs::write(dir.join(n), lines.join("\n") + "\n");
+                    }
+                }
                 finish_session(&o, &dir);
                 idle_b = e_b;
             }
@@ -433,7 +520,16 @@ fn snap(o: Opts) {
 fn agent(o: Opts) {
     let p = metrics::find_gpu_metrics();
     let mut out = std::io::stdout();
+    let mut k = 0u64;
     loop {
+        if k % 10 == 0 {
+            if let Some(l) = tbv_line() {
+                if writeln!(out, "T {}", l).is_err() {
+                    return;
+                }
+            }
+        }
+        k += 1;
         let (c, cap) = local_header(&o.a_ring).map(|h| (h.count, h.capacity)).unwrap_or((0, 0));
         if writeln!(out, "C {} {} {}", c, cap, metrics::now_us()).is_err() {
             return;

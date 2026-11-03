@@ -148,6 +148,7 @@ fn conv_fn(cal: &[(f64, f64)]) -> impl Fn(f64) -> f64 + '_ {
 impl Node {
     pub fn from_records(name: &str, host: &str, recs: &[Rec]) -> Node {
         let mut n = Node { name: name.to_string(), host: host.to_string(), ..Default::default() };
+        let mut proxy: Vec<(u32, u32, f64, f64, f64)> = Vec::new();
         for r in recs {
             let t = |i: usize| r.t[i] as f64;
             match r.typ {
@@ -191,8 +192,23 @@ impl Node {
                 RECV => {
                     n.recv.insert(r.a, (t(0), t(1), r.b));
                 }
+                PROXY => {
+                    proxy.push((r.a, r.b, t(0), t(1), t(2)));
+                }
                 _ => {}
             }
+        }
+        // ZC=3: the exchange runs in the proxy thread, so its record gives the send (flag seen, posted) and the receive
+        for &(q, bytes, seen, posted, landed) in proxy.iter() {
+            if let Some(&i) = n.ar_by_seq.get(&q) {
+                let a = &mut n.ars[i];
+                if a.sent == 0.0 {
+                    a.ready = seen;
+                    a.copied = seen;
+                    a.sent = posted;
+                }
+            }
+            n.recv.entry(q).or_insert((posted, landed, bytes));
         }
         n.cal.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
         n.cal.dedup_by(|a, b| a.0 == b.0);
@@ -320,6 +336,18 @@ pub struct Analysis {
     pub boundary: Vec<(String, Vec<f64>)>,
     /// tbv counter increments over the session per node (filled by the caller when snapshots exist)
     pub tbv: Vec<(String, Vec<(String, i64)>)>,
+    /// B - A clock offset samples (A time, offset) used to move B's times
+    pub offs: Vec<(f64, f64)>,
+    pub off0: f64,
+}
+
+impl Analysis {
+    /// a B host time on A's clock (as the analysis moved B's records)
+    pub fn b_to_a(&self, tb: f64) -> f64 {
+        let mut x = tb - interp(&self.offs, tb - self.off0);
+        x = tb - interp(&self.offs, x);
+        x
+    }
 }
 
 fn median(v: &mut Vec<f64>) -> f64 {
@@ -482,10 +510,15 @@ fn host_row(n: &Node) -> Row {
                 }
                 if ai < ars.len() && ars[ai].entry <= c.end + 1.0 {
                     let a = ars[ai];
-                    push(&mut row, c.start, a.pending, C_H_PENDING);
-                    push(&mut row, a.pending, a.ready, C_H_SYNC);
-                    push(&mut row, a.ready, a.sent, C_H_SEND);
-                    push(&mut row, a.sent, c.end, C_H_ENQ);
+                    if a.ready >= c.start && a.sent <= c.end + 1.0 {
+                        push(&mut row, c.start, a.pending, C_H_PENDING);
+                        push(&mut row, a.pending, a.ready, C_H_SYNC);
+                        push(&mut row, a.ready, a.sent, C_H_SEND);
+                        push(&mut row, a.sent, c.end, C_H_ENQ);
+                    } else {
+                        // ZC=3: the exchange is in the proxy thread; this command only queues the kernels
+                        push(&mut row, c.start, c.end, C_H_ENQ);
+                    }
                     ai += 1;
                 } else {
                     push(&mut row, c.start, c.end, C_H_OTHER);
@@ -703,6 +736,8 @@ pub fn analyze(a_recs: &[Rec], b_recs: &[Rec], c_recs: &[Rec], a_host: &str, b_h
     Analysis {
         boundary,
         tbv: vec![],
+        offs: offs.clone(),
+        off0,
         t0,
         t1,
         rows,

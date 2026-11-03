@@ -1,0 +1,30 @@
+none base bin=bin load A=0.55 B=0.14 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 32.70 tok/s (token-weighted) | srv-2node-none-bs-base-1103-235452
+   a: n=483 gfx 2376/2744/2848 상한 2446/2872/2900 활동 65/87/91 소켓W 66/70/70 gfxW 21/29/31 코어W 5/8/20 코어상한 1586/1931/4823 
+   b: n=486 gfx 2462/2722/2787 상한 2667/2787/2900 활동 65/88/91 소켓W 64/69/70 gfxW 25/30/32 코어W 3/5/13 코어상한 1581/1946/4976 
+   cyc: cycle  313.8
+none zc2 bin=bin load A=0.57 B=0.38 rdma=1 zc=ZC=2/ZC=2: TOTAL tokens 1407, decode 32.88 tok/s (token-weighted) | srv-2node-none-bs-zc2-1103-235939
+   a: n=479 gfx 2458/2809/2881 상한 2622/2900/2900 활동 67/89/92 소켓W 66/70/70 gfxW 22/29/32 코어W 5/8/19 코어상한 1927/3077/4698 
+   b: n=481 gfx 2266/2583/2840 상한 2278/2764/2900 활동 67/89/94 소켓W 64/68/70 gfxW 18/28/34 코어W 3/9/16 코어상한 1940/4105/5131 
+   cyc: cycle  312.2
+none ov3 bin=bin load A=0.33 B=0.56 rdma=1 zc=/: TOTAL tokens 1407, decode 31.08 tok/s (token-weighted) | srv-2node-none-bs-ov3-1104-000421
+   a: n=504 gfx 2428/2793/2871 상한 2653/2900/2900 활동 70/92/95 소켓W 67/70/70 gfxW 21/28/31 코어W 5/9/19 코어상한 1926/2948/4801 
+   b: n=504 gfx 2202/2320/2803 상한 2224/2596/2900 활동 69/91/95 소켓W 63/66/70 gfxW 16/21/32 코어W 3/15/17 코어상한 1937/5000/5150 
+Traceback (most recent call last):
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 16, in <module>
+    print(f"{p.split('/')[-1][:48]:48s} n={len(r):3d} gap {f('gap'):6.1f} sync {f('sync'):6.1f} net {f('net'):5.1f} h2d {f('h2d'):4.1f} cycle {f('gap')+f('sync')+f('net')+f('h2d'):6.1f} | sent->landed {f('pw'):5.1f} (med {st.median(x['pw'] for x in r):5.1f})")
+                                                           ~^^^^^^^
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 15, in <lambda>
+    f = lambda k: st.mean(x[k] for x in r)
+                  ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/statistics.py", line 177, in mean
+    raise StatisticsError('mean requires at least one data point')
+statistics.StatisticsError: mean requires at least one data point
+   cyc: 
+none graph bin=bin load A=0.54 B=0.59 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 29.93 tok/s (token-weighted) | srv-2node-none-bs-graph-1104-000845
+   a: n=521 gfx 2391/2792/2877 상한 2591/2900/2900 활동 64/88/92 소켓W 65/70/70 gfxW 21/29/32 코어W 6/10/19 코어상한 1923/2821/4660 
+   b: n=529 gfx 2438/2789/2866 상한 2694/2900/2900 활동 64/89/92 소켓W 63/69/70 gfxW 25/32/34 코어W 4/6/14 코어상한 1935/1959/4973 
+   cyc: cycle  343.2
+none tx8 bin=bin load A=0.58 B=0.24 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 32.78 tok/s (token-weighted) | srv-2node-none-bs-tx8-1104-001438
+   a: n=486 gfx 2331/2745/2847 상한 2464/2874/2900 활동 64/87/91 소켓W 66/70/70 gfxW 20/29/32 코어W 4/7/20 코어상한 1578/1929/4792 
+   b: n=487 gfx 2428/2720/2783 상한 2676/2786/2900 활동 64/88/91 소켓W 64/69/70 gfxW 25/31/32 코어W 3/5/13 코어상한 1583/1947/4974 
+   cyc: cycle  312.9

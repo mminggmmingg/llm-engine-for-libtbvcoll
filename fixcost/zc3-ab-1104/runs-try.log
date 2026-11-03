@@ -1,0 +1,14 @@
+none zc3 bin=bin load A=0.55 B=0.28 rdma=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 32.28 tok/s (token-weighted) | srv-2node-none-bs-zc3-1104-002216
+   a: n=494 gfx 2323/2796/2880 상한 2629/2900/2900 활동 65/92/96 소켓W 65/70/70 gfxW 20/29/32 코어W 5/8/20 코어상한 1924/2115/4828 
+   b: n=490 gfx 2318/2760/2861 상한 2558/2898/2900 활동 63/90/96 소켓W 62/69/70 gfxW 24/31/35 코어W 3/6/15 코어상한 1601/1951/4982 
+Traceback (most recent call last):
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 16, in <module>
+    print(f"{p.split('/')[-1][:48]:48s} n={len(r):3d} gap {f('gap'):6.1f} sync {f('sync'):6.1f} net {f('net'):5.1f} h2d {f('h2d'):4.1f} cycle {f('gap')+f('sync')+f('net')+f('h2d'):6.1f} | sent->landed {f('pw'):5.1f} (med {st.median(x['pw'] for x in r):5.1f})")
+                                                           ~^^^^^^^
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 15, in <lambda>
+    f = lambda k: st.mean(x[k] for x in r)
+                  ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/statistics.py", line 177, in mean
+    raise StatisticsError('mean requires at least one data point')
+statistics.StatisticsError: mean requires at least one data point
+   cyc: 

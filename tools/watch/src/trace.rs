@@ -16,6 +16,7 @@ pub const ENDP: u32 = 8; //    a = endpoint;           t: endpoint string (48 by
 pub const DECODE: u32 = 9; //                          t: llama_decode start, end
 pub const UBATCH: u32 = 10; // a = tokens, b = reused; t: start, graph ready, inputs set, compute launched
 pub const SYNC: u32 = 11; //                           t: synchronize start, end
+pub const PROXY: u32 = 12; //  a = seq, b = bytes;     t: our partial's flag seen, posted, the peer's partial landed (ZC=3 proxy)
 
 pub const CMD_NAMES: [&str; 24] = [
     "ALLOC_BUFFER", "GET_ALIGNMENT", "GET_MAX_SIZE", "BUFFER_GET_BASE", "FREE_BUFFER", "BUFFER_CLEAR", "SET_TENSOR",

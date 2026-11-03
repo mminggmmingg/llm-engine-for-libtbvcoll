@@ -25,7 +25,8 @@ if [ "$TOPO" = 2node ]; then
   ARGS+=(--rpc 10.99.0.2:50052,127.0.0.1:50052 -sm tensor -dev RPC0,RPC1)
   sleep 3
 fi
-env ${CLI_ENV:-} $TRACE_CLI nohup "$BIN/llama-server" "${ARGS[@]}" > "$OUT/server.log" 2>&1 & echo $! >> "$OUT/pids"
+# CLI_WRAP: 클라이언트 앞에 붙일 명령(예: "taskset -c 7,9,23,25" — RDMA 인터럽트가 몰리는 코어 피하기)
+env ${CLI_ENV:-} $TRACE_CLI nohup ${CLI_WRAP:-} "$BIN/llama-server" "${ARGS[@]}" > "$OUT/server.log" 2>&1 & echo $! >> "$OUT/pids"
 for i in $(seq 600); do curl -sf http://127.0.0.1:$PORT/health > /dev/null && break; sleep 1; done
 curl -sf http://127.0.0.1:$PORT/health > /dev/null || { echo "server not ready"; tail -20 "$OUT/server.log"; }
 PS=${PROBE_S:-80}

@@ -18,10 +18,12 @@ for run in ${RUNS:?}; do
   bx=$(eval echo \${BIN_$cfg}); export BIN=${bx:-$BIN0}
   tr=$(eval echo \${TR_$cfg}); export TRACE=${tr:-${TRACE:-1}}   # 기록 링(tools/watch) 켬/끔: TR_<cfg>=0|1
   export CLI_ENV=$(eval echo \${CL_$cfg})                          # 클라이언트(llama-server) 환경: CL_<cfg>
+  export CLI_WRAP=$(eval echo \${CW_$cfg})                         # 클라이언트 앞 명령(taskset 등): CW_<cfg>
   for i in $(seq 60); do b=$(timeout 10 ssh -o BatchMode=yes parks-zbook@10.99.0.2 "cut -d' ' -f1 /proc/loadavg"); a=$(cut -d' ' -f1 /proc/loadavg); awk "BEGIN{exit !($a<0.6 && $b<0.6)}" && break; sleep 5; done
   # RDMA 가 안 올라와 TCP 로 떨어진 회는 다시(최대 3번)
   for try in 1 2 3; do
-    out=$(SRV_ENV="$BASE $SA" SRV_ENV_B="$BASE $SB" TAG=bs-$cfg bash srv-probe.sh 2node $spec 2>&1); d=$(echo "$out" | tail -1); n=$(basename $d)
+    bb=$(eval echo \${BASE_$cfg}); bb=${bb:-$BASE}                  # 기본 서버 환경 바꾸기: BASE_<cfg>(예: 그래프 켜기)
+    out=$(SRV_ENV="$bb $SA" SRV_ENV_B="$bb $SB" TAG=bs-$cfg bash srv-probe.sh 2node $spec 2>&1); d=$(echo "$out" | tail -1); n=$(basename $d)
     [ "$(grep -c "RDMA activated" $d/rpc-a.log)" -ge 1 ] && break
     echo "   ($n: rdma=0 — 다시 $try)"; sleep 10
   done

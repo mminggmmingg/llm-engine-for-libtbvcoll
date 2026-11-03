@@ -1,0 +1,408 @@
+[comm_prof] 1000 calls, avg us: gap 1248.4 sync 457.8 d2h 0.0 net 75.8 h2d+add 3.8 | avg wire 48666 B
+[comm_prof]   per allreduce: wait-for-cmd 25791.7us | ALLOC_BUFFER 0.01x 1198.8us GET_ALIGNMENT 0.00x 0.0us GET_MAX_SIZE 0.00x 0.0us BUFFER_GET_BASE 0.01x 0.1us FREE_BUFFER 0.00x 0.1us BUFFER_CLEAR 0.01x 4.9us SET_TENSOR 1.76x 1340.8us SET_TENSOR_HASH 0.01x 104.7us GET_TENSOR 0.59x 126.8us GRAPH_COMPUTE 0.48x 461.8us GET_DEVICE_MEMORY 0.01x 0.5us INIT_TENSOR 0.19x 26.8us GET_ALLOC_SIZE 0.11x 1.5us DEVICE_COUNT 0.00x 0.0us GRAPH_RECOMPUTE 0.53x 20.1us SET_TENSOR_2D 0.26x 37093.6us COMM_INIT 0.00x 1.5us COMM_ALLREDUCE 1.00x 542.9us
+[comm_prof]   overlap recv: 810, ours sent -> peer's landed avg 114.7us | send: pending 15.1 copy 1.0 post 5.8us
+[comm_prof] 1000 calls, avg us: gap 61.9 sync 234.7 d2h 0.0 net 9.7 h2d+add 2.5 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 7.8us | SET_TENSOR 0.18x 0.7us GET_TENSOR 0.01x 15.4us GRAPH_RECOMPUTE 1.01x 34.1us COMM_ALLREDUCE 1.00x 250.8us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 14.3us | send: pending 1.3 copy 1.1 post 7.2us
+[comm_prof] 1000 calls, avg us: gap 85.9 sync 196.3 d2h 0.0 net 24.2 h2d+add 3.6 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 9.0us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.1us GRAPH_RECOMPUTE 1.01x 53.9us COMM_ALLREDUCE 1.00x 229.0us
+[comm_prof]   overlap recv: 999, ours sent -> peer's landed avg 30.2us | send: pending 14.6 copy 1.6 post 8.0us
+[comm_prof] 1000 calls, avg us: gap 69.2 sync 216.6 d2h 0.0 net 21.4 h2d+add 2.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 8.6us | SET_TENSOR 0.18x 0.9us GET_TENSOR 0.01x 15.4us GRAPH_RECOMPUTE 1.01x 40.2us COMM_ALLREDUCE 1.00x 245.2us
+[comm_prof]   overlap recv: 1001, ours sent -> peer's landed avg 27.5us | send: pending 12.4 copy 1.3 post 7.8us
+[comm_prof] 1000 calls, avg us: gap 74.4 sync 206.5 d2h 0.0 net 11.8 h2d+add 2.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 9.3us | SET_TENSOR 0.20x 1.0us GET_TENSOR 0.01x 17.3us GRAPH_RECOMPUTE 1.01x 42.7us COMM_ALLREDUCE 1.00x 225.6us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 19.6us | send: pending 3.5 copy 1.3 post 7.0us
+[comm_prof] 1000 calls, avg us: gap 70.2 sync 213.6 d2h 0.0 net 10.3 h2d+add 2.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 8.4us | SET_TENSOR 0.18x 0.9us GET_TENSOR 0.01x 15.4us GRAPH_RECOMPUTE 1.01x 41.3us COMM_ALLREDUCE 1.00x 231.1us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 17.0us | send: pending 1.4 copy 1.1 post 7.8us
+[comm_prof] 1000 calls, avg us: gap 74.8 sync 212.7 d2h 0.0 net 27.6 h2d+add 3.0 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 10.5us | SET_TENSOR 0.18x 1.0us GET_TENSOR 0.01x 15.5us GRAPH_RECOMPUTE 1.01x 43.4us COMM_ALLREDUCE 1.00x 247.8us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 33.2us | send: pending 18.4 copy 1.3 post 7.8us
+[comm_prof] 1000 calls, avg us: gap 76.2 sync 215.7 d2h 0.0 net 10.9 h2d+add 2.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.7us | SET_TENSOR 0.20x 0.9us GET_TENSOR 0.01x 17.0us GRAPH_RECOMPUTE 1.01x 40.4us COMM_ALLREDUCE 1.00x 233.8us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 18.1us | send: pending 2.2 copy 1.3 post 7.4us
+[comm_prof] 1000 calls, avg us: gap 73.6 sync 212.0 d2h 0.0 net 10.9 h2d+add 2.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 11.1us | SET_TENSOR 0.18x 0.8us GET_TENSOR 0.01x 15.4us GRAPH_RECOMPUTE 1.01x 41.9us COMM_ALLREDUCE 1.00x 230.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 16.8us | send: pending 1.6 copy 1.4 post 8.0us
+[comm_prof] 1000 calls, avg us: gap 71.0 sync 219.0 d2h 0.0 net 29.7 h2d+add 2.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 9.1us | SET_TENSOR 0.20x 0.9us GET_TENSOR 0.01x 16.9us GRAPH_RECOMPUTE 1.01x 39.8us COMM_ALLREDUCE 1.00x 255.9us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 35.6us | send: pending 20.7 copy 1.3 post 7.8us
+[comm_prof] 1000 calls, avg us: gap 72.6 sync 210.3 d2h 0.0 net 10.4 h2d+add 2.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 8.7us | SET_TENSOR 0.18x 0.9us GET_TENSOR 0.01x 15.5us GRAPH_RECOMPUTE 1.01x 43.0us COMM_ALLREDUCE 1.00x 228.3us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 17.1us | send: pending 1.3 copy 1.4 post 7.8us
+[comm_prof] 1000 calls, avg us: gap 74.0 sync 213.2 d2h 0.0 net 11.4 h2d+add 2.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 9.8us | SET_TENSOR 0.20x 1.0us GET_TENSOR 0.01x 17.0us GRAPH_RECOMPUTE 1.01x 42.1us COMM_ALLREDUCE 1.00x 231.8us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 16.9us | send: pending 2.2 copy 1.4 post 7.8us
+[comm_prof] 1000 calls, avg us: gap 72.2 sync 210.9 d2h 0.0 net 9.6 h2d+add 3.0 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 8.7us | SET_TENSOR 0.18x 0.9us GET_TENSOR 0.01x 15.4us GRAPH_RECOMPUTE 1.01x 42.7us COMM_ALLREDUCE 1.00x 228.1us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 16.0us | send: pending 0.7 copy 1.4 post 7.5us
+[comm_prof] 1000 calls, avg us: gap 68.5 sync 216.9 d2h 0.0 net 26.5 h2d+add 2.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 8.3us | SET_TENSOR 0.18x 0.9us GET_TENSOR 0.01x 15.4us GRAPH_RECOMPUTE 1.01x 39.6us COMM_ALLREDUCE 1.00x 250.6us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 32.4us | send: pending 17.7 copy 1.2 post 7.6us
+[comm_prof] 1000 calls, avg us: gap 73.5 sync 208.3 d2h 0.0 net 12.6 h2d+add 2.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 9.7us | SET_TENSOR 0.20x 1.0us GET_TENSOR 0.01x 17.0us GRAPH_RECOMPUTE 1.01x 41.6us COMM_ALLREDUCE 1.00x 228.3us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 21.8us | send: pending 4.5 copy 1.1 post 7.0us
+[comm_prof] 1000 calls, avg us: gap 71.3 sync 212.0 d2h 0.0 net 10.6 h2d+add 2.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 8.7us | SET_TENSOR 0.18x 0.9us GET_TENSOR 0.01x 15.5us GRAPH_RECOMPUTE 1.01x 41.9us COMM_ALLREDUCE 1.00x 230.0us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 15.5us | send: pending 1.7 copy 1.1 post 7.8us
+[comm_prof] 1000 calls, avg us: gap 77.1 sync 209.3 d2h 0.0 net 22.6 h2d+add 3.0 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 9.1us | SET_TENSOR 0.20x 1.1us GET_TENSOR 0.01x 17.6us GRAPH_RECOMPUTE 1.01x 45.1us COMM_ALLREDUCE 1.00x 239.3us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 29.1us | send: pending 13.2 copy 1.4 post 8.0us
+[comm_prof] 1000 calls, avg us: gap 250.1 sync 211.0 d2h 0.0 net 22.5 h2d+add 2.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 60.5us | SET_TENSOR 0.18x 1.0us GET_TENSOR 0.01x 15.2us GRAPH_COMPUTE 0.19x 135.3us GET_ALLOC_SIZE 0.00x 0.0us GRAPH_RECOMPUTE 0.82x 34.1us COMM_ALLREDUCE 1.00x 240.6us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 98.8us | send: pending 14.6 copy 1.3 post 6.6us
+[comm_prof] 1000 calls, avg us: gap 78.4 sync 205.2 d2h 0.0 net 13.5 h2d+add 3.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 9.8us | SET_TENSOR 0.18x 1.0us GET_TENSOR 0.01x 15.7us GRAPH_RECOMPUTE 1.01x 47.5us COMM_ALLREDUCE 1.00x 226.6us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 21.7us | send: pending 4.4 copy 1.4 post 7.7us
+[comm_prof] 1000 calls, avg us: gap 94.9 sync 194.2 d2h 0.0 net 35.8 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.0us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.2us GRAPH_RECOMPUTE 1.01x 57.4us COMM_ALLREDUCE 1.00x 239.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 43.8us | send: pending 26.0 copy 1.6 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 132.1 sync 152.8 d2h 0.0 net 15.7 h2d+add 7.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 17.1us | SET_TENSOR 0.18x 1.4us GET_TENSOR 0.01x 16.0us GRAPH_RECOMPUTE 1.01x 91.1us COMM_ALLREDUCE 1.00x 182.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 28.9us | send: pending 5.3 copy 2.0 post 8.4us
+[comm_prof] 1000 calls, avg us: gap 125.3 sync 170.9 d2h 0.0 net 18.9 h2d+add 5.5 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 18.2us | SET_TENSOR 0.20x 1.4us GET_TENSOR 0.01x 17.5us GRAPH_RECOMPUTE 1.01x 81.7us COMM_ALLREDUCE 1.00x 202.1us
+[comm_prof]   overlap recv: 999, ours sent -> peer's landed avg 34.1us | send: pending 7.6 copy 2.3 post 9.1us
+[comm_prof] 1000 calls, avg us: gap 122.3 sync 168.6 d2h 0.0 net 32.1 h2d+add 5.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 16.4us | SET_TENSOR 0.18x 1.3us GET_TENSOR 0.01x 16.0us GRAPH_RECOMPUTE 1.01x 81.9us COMM_ALLREDUCE 1.00x 213.9us
+[comm_prof]   overlap recv: 1001, ours sent -> peer's landed avg 45.6us | send: pending 20.7 copy 2.3 post 9.1us
+[comm_prof] 1000 calls, avg us: gap 121.5 sync 169.6 d2h 0.0 net 15.5 h2d+add 5.0 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 16.8us | SET_TENSOR 0.20x 1.4us GET_TENSOR 0.01x 17.7us GRAPH_RECOMPUTE 1.01x 79.2us COMM_ALLREDUCE 1.00x 196.8us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 26.7us | send: pending 4.5 copy 2.1 post 8.9us
+[comm_prof] 1000 calls, avg us: gap 587.9 sync 230.9 d2h 0.0 net 29.8 h2d+add 5.1 | avg wire 18842 B
+[comm_prof]   per allreduce: wait-for-cmd 408.1us | SET_TENSOR 0.18x 3.0us GET_TENSOR 0.31x 72.0us GRAPH_COMPUTE 0.04x 13.9us GRAPH_RECOMPUTE 0.97x 76.1us GET_TENSOR_2D 0.02x 8.6us COMM_ALLREDUCE 1.00x 270.2us
+[comm_prof]   overlap recv: 958, ours sent -> peer's landed avg 27.6us | send: pending 4.9 copy 2.0 post 8.5us
+[comm_prof] 1000 calls, avg us: gap 698.4 sync 399.0 d2h 0.0 net 72.9 h2d+add 3.3 | avg wire 42982 B
+[comm_prof]   per allreduce: wait-for-cmd 264.6us | SET_TENSOR 0.18x 2.7us GET_TENSOR 0.59x 116.8us GRAPH_COMPUTE 0.40x 287.4us GET_ALLOC_SIZE 0.02x 0.1us GRAPH_RECOMPUTE 0.61x 23.4us COMM_ALLREDUCE 1.00x 481.6us
+[comm_prof]   overlap recv: 852, ours sent -> peer's landed avg 134.2us | send: pending 21.4 copy 1.2 post 5.3us
+[comm_prof] 1000 calls, avg us: gap 107.7 sync 176.0 d2h 0.0 net 14.2 h2d+add 4.7 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.6us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.3us GRAPH_RECOMPUTE 1.01x 69.7us COMM_ALLREDUCE 1.00x 201.2us
+[comm_prof]   overlap recv: 999, ours sent -> peer's landed avg 24.2us | send: pending 3.3 copy 2.1 post 8.8us
+[comm_prof] 1000 calls, avg us: gap 79.5 sync 214.1 d2h 0.0 net 17.2 h2d+add 2.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.5us | SET_TENSOR 0.18x 0.9us GET_TENSOR 0.01x 15.7us GRAPH_RECOMPUTE 1.01x 44.9us COMM_ALLREDUCE 1.00x 238.9us
+[comm_prof]   overlap recv: 1001, ours sent -> peer's landed avg 28.7us | send: pending 7.8 copy 1.4 post 7.9us
+[comm_prof] 1000 calls, avg us: gap 80.3 sync 217.9 d2h 0.0 net 34.9 h2d+add 2.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.7us | SET_TENSOR 0.20x 1.0us GET_TENSOR 0.01x 17.1us GRAPH_RECOMPUTE 1.01x 44.1us COMM_ALLREDUCE 1.00x 260.2us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 44.4us | send: pending 25.4 copy 1.3 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 117.4 sync 166.7 d2h 0.0 net 17.2 h2d+add 4.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.5us | SET_TENSOR 0.18x 1.3us GET_TENSOR 0.01x 16.0us GRAPH_RECOMPUTE 1.01x 79.2us COMM_ALLREDUCE 1.00x 195.7us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 26.8us | send: pending 6.3 copy 2.1 post 8.8us
+[comm_prof] 1000 calls, avg us: gap 119.8 sync 167.0 d2h 0.0 net 21.2 h2d+add 4.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 16.5us | SET_TENSOR 0.18x 1.3us GET_TENSOR 0.01x 15.8us GRAPH_RECOMPUTE 1.01x 79.6us COMM_ALLREDUCE 1.00x 199.9us
+[comm_prof]   overlap recv: 999, ours sent -> peer's landed avg 32.0us | send: pending 10.2 copy 2.1 post 8.9us
+[comm_prof] 1000 calls, avg us: gap 122.5 sync 168.4 d2h 0.0 net 36.7 h2d+add 4.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 16.3us | SET_TENSOR 0.20x 1.4us GET_TENSOR 0.01x 18.4us GRAPH_RECOMPUTE 1.01x 79.7us COMM_ALLREDUCE 1.00x 217.0us
+[comm_prof]   overlap recv: 1001, ours sent -> peer's landed avg 47.8us | send: pending 25.8 copy 2.1 post 8.8us
+[comm_prof] 1000 calls, avg us: gap 118.5 sync 166.1 d2h 0.0 net 12.5 h2d+add 4.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 15.4us | SET_TENSOR 0.18x 1.2us GET_TENSOR 0.01x 16.1us GRAPH_RECOMPUTE 1.01x 79.4us COMM_ALLREDUCE 1.00x 190.3us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 22.7us | send: pending 1.7 copy 2.1 post 8.7us
+[comm_prof] 1000 calls, avg us: gap 123.2 sync 169.3 d2h 0.0 net 14.0 h2d+add 4.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 18.0us | SET_TENSOR 0.20x 1.4us GET_TENSOR 0.01x 17.9us GRAPH_RECOMPUTE 1.01x 79.4us COMM_ALLREDUCE 1.00x 195.1us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 24.1us | send: pending 3.1 copy 2.1 post 8.9us
+[comm_prof] 1000 calls, avg us: gap 118.0 sync 172.1 d2h 0.0 net 16.9 h2d+add 4.7 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 15.0us | SET_TENSOR 0.18x 1.3us GET_TENSOR 0.01x 16.8us GRAPH_RECOMPUTE 1.01x 78.7us COMM_ALLREDUCE 1.00x 200.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 30.3us | send: pending 6.2 copy 2.0 post 8.7us
+[comm_prof] 1000 calls, avg us: gap 121.3 sync 167.7 d2h 0.0 net 34.9 h2d+add 4.7 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 16.6us | SET_TENSOR 0.20x 1.4us GET_TENSOR 0.01x 17.6us GRAPH_RECOMPUTE 1.01x 79.2us COMM_ALLREDUCE 1.00x 214.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 44.8us | send: pending 24.3 copy 2.0 post 8.6us
+[comm_prof] 1000 calls, avg us: gap 118.7 sync 167.3 d2h 0.0 net 14.3 h2d+add 4.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 15.3us | SET_TENSOR 0.18x 1.2us GET_TENSOR 0.01x 15.9us GRAPH_RECOMPUTE 1.01x 79.5us COMM_ALLREDUCE 1.00x 193.5us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 24.3us | send: pending 3.3 copy 2.1 post 8.9us
+[comm_prof] 1000 calls, avg us: gap 118.3 sync 167.1 d2h 0.0 net 17.1 h2d+add 4.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.9us | SET_TENSOR 0.18x 1.3us GET_TENSOR 0.01x 15.9us GRAPH_RECOMPUTE 1.01x 79.5us COMM_ALLREDUCE 1.00x 196.1us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 28.1us | send: pending 6.2 copy 2.1 post 8.8us
+[comm_prof] 1000 calls, avg us: gap 132.5 sync 166.3 d2h 0.0 net 28.9 h2d+add 4.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 15.7us | SET_TENSOR 0.20x 1.4us GET_TENSOR 0.01x 27.5us GRAPH_RECOMPUTE 1.01x 81.0us COMM_ALLREDUCE 1.00x 207.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 51.7us | send: pending 18.0 copy 2.0 post 8.9us
+[comm_prof] 1000 calls, avg us: gap 117.2 sync 168.3 d2h 0.0 net 16.2 h2d+add 4.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 15.0us | SET_TENSOR 0.18x 1.2us GET_TENSOR 0.01x 15.9us GRAPH_RECOMPUTE 1.01x 78.4us COMM_ALLREDUCE 1.00x 196.5us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 27.3us | send: pending 5.2 copy 2.1 post 8.9us
+[comm_prof] 1000 calls, avg us: gap 119.6 sync 168.8 d2h 0.0 net 13.9 h2d+add 4.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 15.5us | SET_TENSOR 0.20x 1.3us GET_TENSOR 0.01x 17.5us GRAPH_RECOMPUTE 1.01x 78.8us COMM_ALLREDUCE 1.00x 194.5us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 24.4us | send: pending 2.9 copy 2.1 post 8.9us
+[comm_prof] 1000 calls, avg us: gap 283.2 sync 193.1 d2h 0.0 net 23.0 h2d+add 3.4 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 64.5us | SET_TENSOR 0.18x 1.2us GET_TENSOR 0.01x 15.6us GRAPH_COMPUTE 0.19x 151.8us GRAPH_RECOMPUTE 0.82x 45.5us COMM_ALLREDUCE 1.00x 224.6us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 41.6us | send: pending 14.5 copy 1.4 post 7.2us
+[comm_prof] 1000 calls, avg us: gap 115.3 sync 166.4 d2h 0.0 net 13.5 h2d+add 4.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.2us | SET_TENSOR 0.18x 1.3us GET_TENSOR 0.01x 15.8us GRAPH_RECOMPUTE 1.01x 77.5us COMM_ALLREDUCE 1.00x 191.6us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 23.2us | send: pending 2.8 copy 2.1 post 8.6us
+[comm_prof] 1000 calls, avg us: gap 119.1 sync 165.5 d2h 0.0 net 14.0 h2d+add 4.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.6us | SET_TENSOR 0.20x 1.4us GET_TENSOR 0.01x 17.6us GRAPH_RECOMPUTE 1.01x 79.0us COMM_ALLREDUCE 1.00x 191.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 23.8us | send: pending 3.1 copy 2.1 post 8.8us
+[comm_prof] 1000 calls, avg us: gap 117.6 sync 164.7 d2h 0.0 net 26.7 h2d+add 4.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 15.0us | SET_TENSOR 0.18x 1.3us GET_TENSOR 0.01x 16.5us GRAPH_RECOMPUTE 1.01x 78.3us COMM_ALLREDUCE 1.00x 203.2us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 36.8us | send: pending 16.0 copy 2.0 post 8.7us
+[comm_prof] 1000 calls, avg us: gap 120.4 sync 166.1 d2h 0.0 net 24.8 h2d+add 4.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 15.0us | SET_TENSOR 0.20x 1.4us GET_TENSOR 0.01x 18.7us GRAPH_RECOMPUTE 1.01x 78.5us COMM_ALLREDUCE 1.00x 203.0us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 35.5us | send: pending 14.3 copy 2.0 post 8.6us
+[comm_prof] 1000 calls, avg us: gap 115.6 sync 165.5 d2h 0.0 net 14.7 h2d+add 4.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.6us | SET_TENSOR 0.18x 1.2us GET_TENSOR 0.01x 16.0us GRAPH_RECOMPUTE 1.01x 78.3us COMM_ALLREDUCE 1.00x 192.1us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 24.4us | send: pending 4.0 copy 2.0 post 8.7us
+[comm_prof] 1000 calls, avg us: gap 118.7 sync 170.4 d2h 0.0 net 15.7 h2d+add 4.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 15.3us | SET_TENSOR 0.20x 1.3us GET_TENSOR 0.01x 17.4us GRAPH_RECOMPUTE 1.01x 78.2us COMM_ALLREDUCE 1.00x 197.7us
+[comm_prof]   overlap recv: 999, ours sent -> peer's landed avg 27.0us | send: pending 5.0 copy 2.0 post 8.7us
+[comm_prof] 1000 calls, avg us: gap 114.9 sync 166.2 d2h 0.0 net 34.2 h2d+add 4.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.8us | SET_TENSOR 0.18x 1.3us GET_TENSOR 0.01x 15.9us GRAPH_RECOMPUTE 1.01x 78.2us COMM_ALLREDUCE 1.00x 212.7us
+[comm_prof]   overlap recv: 1001, ours sent -> peer's landed avg 47.4us | send: pending 23.6 copy 2.0 post 8.5us
+[comm_prof] 1000 calls, avg us: gap 917.7 sync 423.5 d2h 0.0 net 59.1 h2d+add 5.2 | avg wire 52767 B
+[comm_prof]   per allreduce: wait-for-cmd 501.4us | ALLOC_BUFFER 0.00x 0.6us FREE_BUFFER 0.00x 0.4us SET_TENSOR 0.18x 4.9us GET_TENSOR 0.89x 169.4us GRAPH_COMPUTE 0.28x 173.6us GET_ALLOC_SIZE 0.02x 0.1us GRAPH_RECOMPUTE 0.73x 56.6us GET_TENSOR_2D 0.02x 5.4us COMM_ALLREDUCE 1.00x 494.9us
+[comm_prof]   overlap recv: 810, ours sent -> peer's landed avg 53.1us | send: pending 1.9 copy 1.6 post 7.3us
+[comm_prof] 1000 calls, avg us: gap 179.1 sync 223.8 d2h 0.0 net 25.8 h2d+add 2.4 | avg wire 10516 B
+[comm_prof]   per allreduce: wait-for-cmd 35.6us | SET_TENSOR 0.20x 0.9us GET_TENSOR 0.01x 17.5us GRAPH_COMPUTE 0.11x 88.8us GRAPH_RECOMPUTE 0.90x 32.5us COMM_ALLREDUCE 1.00x 256.1us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 55.8us | send: pending 17.8 copy 1.1 post 6.8us
+[comm_prof] 1000 calls, avg us: gap 93.0 sync 195.2 d2h 0.0 net 23.5 h2d+add 3.7 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.2us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.6us GRAPH_RECOMPUTE 1.01x 57.8us COMM_ALLREDUCE 1.00x 228.1us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 33.9us | send: pending 13.4 copy 1.7 post 8.5us
+[comm_prof] 1000 calls, avg us: gap 117.5 sync 169.3 d2h 0.0 net 16.8 h2d+add 4.7 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 15.6us | SET_TENSOR 0.20x 1.3us GET_TENSOR 0.01x 17.5us GRAPH_RECOMPUTE 1.01x 76.9us COMM_ALLREDUCE 1.00x 197.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 26.9us | send: pending 6.1 copy 2.0 post 8.6us
+[comm_prof] 1000 calls, avg us: gap 114.0 sync 166.9 d2h 0.0 net 17.3 h2d+add 4.7 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.5us | SET_TENSOR 0.18x 1.2us GET_TENSOR 0.01x 15.9us GRAPH_RECOMPUTE 1.01x 77.1us COMM_ALLREDUCE 1.00x 195.6us
+[comm_prof]   overlap recv: 999, ours sent -> peer's landed avg 27.1us | send: pending 6.7 copy 2.0 post 8.6us
+[comm_prof] 1000 calls, avg us: gap 110.5 sync 176.2 d2h 0.0 net 38.0 h2d+add 4.5 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.6us | SET_TENSOR 0.18x 1.2us GET_TENSOR 0.01x 15.8us GRAPH_RECOMPUTE 1.01x 72.7us COMM_ALLREDUCE 1.00x 225.4us
+[comm_prof]   overlap recv: 1001, ours sent -> peer's landed avg 50.5us | send: pending 27.6 copy 1.9 post 8.5us
+[comm_prof] 1000 calls, avg us: gap 112.5 sync 175.9 d2h 0.0 net 18.3 h2d+add 4.5 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 15.1us | SET_TENSOR 0.20x 1.3us GET_TENSOR 0.01x 17.5us GRAPH_RECOMPUTE 1.01x 72.7us COMM_ALLREDUCE 1.00x 205.1us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 28.1us | send: pending 7.9 copy 1.9 post 8.5us
+[comm_prof] 1000 calls, avg us: gap 106.9 sync 176.6 d2h 0.0 net 15.2 h2d+add 4.4 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.5us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.9us GRAPH_RECOMPUTE 1.01x 70.6us COMM_ALLREDUCE 1.00x 202.2us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 23.1us | send: pending 4.8 copy 1.9 post 8.5us
+[comm_prof] 1000 calls, avg us: gap 121.9 sync 182.0 d2h 0.0 net 14.0 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 29.8us | SET_TENSOR 0.20x 1.5us GET_TENSOR 0.01x 17.8us GRAPH_RECOMPUTE 1.01x 67.3us COMM_ALLREDUCE 1.00x 206.0us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 22.1us | send: pending 4.1 copy 1.7 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 103.2 sync 176.5 d2h 0.0 net 23.0 h2d+add 4.3 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.6us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.7us GRAPH_RECOMPUTE 1.01x 68.0us COMM_ALLREDUCE 1.00x 209.8us
+[comm_prof]   overlap recv: 999, ours sent -> peer's landed avg 29.0us | send: pending 13.1 copy 1.7 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 103.8 sync 175.7 d2h 0.0 net 11.9 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 11.9us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.2us GRAPH_RECOMPUTE 1.01x 67.9us COMM_ALLREDUCE 1.00x 197.7us
+[comm_prof]   overlap recv: 1001, ours sent -> peer's landed avg 16.9us | send: pending 2.1 copy 1.8 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 101.4 sync 173.7 d2h 0.0 net 11.8 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 11.0us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.8us GRAPH_RECOMPUTE 1.01x 67.9us COMM_ALLREDUCE 1.00x 195.7us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 18.6us | send: pending 2.3 copy 1.8 post 7.8us
+[comm_prof] 1000 calls, avg us: gap 101.6 sync 173.4 d2h 0.0 net 32.5 h2d+add 4.3 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 10.1us | SET_TENSOR 0.18x 1.2us GET_TENSOR 0.01x 16.2us GRAPH_RECOMPUTE 1.01x 68.4us COMM_ALLREDUCE 1.00x 216.3us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 39.7us | send: pending 22.9 copy 1.8 post 7.9us
+[comm_prof] 1000 calls, avg us: gap 104.8 sync 176.8 d2h 0.0 net 12.8 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.8us | SET_TENSOR 0.20x 1.3us GET_TENSOR 0.01x 17.2us GRAPH_RECOMPUTE 1.01x 67.9us COMM_ALLREDUCE 1.00x 199.7us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 19.1us | send: pending 3.0 copy 1.7 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 101.8 sync 174.4 d2h 0.0 net 10.8 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 11.3us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.7us GRAPH_RECOMPUTE 1.01x 68.0us COMM_ALLREDUCE 1.00x 195.5us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 16.9us | send: pending 1.0 copy 1.7 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 102.4 sync 176.0 d2h 0.0 net 31.5 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 11.2us | SET_TENSOR 0.20x 1.3us GET_TENSOR 0.01x 17.3us GRAPH_RECOMPUTE 1.01x 67.0us COMM_ALLREDUCE 1.00x 217.6us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 38.8us | send: pending 21.7 copy 1.7 post 8.0us
+[comm_prof] 1000 calls, avg us: gap 213.6 sync 209.2 d2h 0.0 net 16.0 h2d+add 2.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 56.8us | SET_TENSOR 0.18x 1.0us GET_TENSOR 0.01x 15.7us GRAPH_COMPUTE 0.15x 98.4us GRAPH_RECOMPUTE 0.86x 37.5us COMM_ALLREDUCE 1.00x 232.8us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 57.2us | send: pending 7.0 copy 1.5 post 7.6us
+[comm_prof] 1000 calls, avg us: gap 128.9 sync 190.0 d2h 0.0 net 23.6 h2d+add 3.7 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 10.8us | SET_TENSOR 0.18x 1.0us GET_TENSOR 0.01x 16.0us GRAPH_COMPUTE 0.04x 38.9us GRAPH_RECOMPUTE 0.97x 57.3us COMM_ALLREDUCE 1.00x 222.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 60.7us | send: pending 14.2 copy 1.6 post 7.8us
+[comm_prof] 1000 calls, avg us: gap 102.3 sync 175.0 d2h 0.0 net 35.1 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 11.1us | SET_TENSOR 0.20x 1.3us GET_TENSOR 0.01x 17.2us GRAPH_RECOMPUTE 1.01x 67.0us COMM_ALLREDUCE 1.00x 220.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 42.0us | send: pending 25.2 copy 1.8 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 94.3 sync 183.5 d2h 0.0 net 13.1 h2d+add 3.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 11.8us | SET_TENSOR 0.18x 1.0us GET_TENSOR 0.01x 15.6us GRAPH_RECOMPUTE 1.01x 60.8us COMM_ALLREDUCE 1.00x 205.8us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 18.7us | send: pending 3.2 copy 1.7 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 106.6 sync 177.7 d2h 0.0 net 11.9 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.8us | SET_TENSOR 0.20x 1.3us GET_TENSOR 0.01x 17.3us GRAPH_RECOMPUTE 1.01x 67.7us COMM_ALLREDUCE 1.00x 199.6us
+[comm_prof]   overlap recv: 999, ours sent -> peer's landed avg 18.3us | send: pending 2.1 copy 1.8 post 7.9us
+[comm_prof] 1000 calls, avg us: gap 101.1 sync 179.0 d2h 0.0 net 24.1 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.4us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.9us GRAPH_RECOMPUTE 1.01x 66.0us COMM_ALLREDUCE 1.00x 213.2us
+[comm_prof]   overlap recv: 1001, ours sent -> peer's landed avg 32.9us | send: pending 14.3 copy 1.7 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 104.5 sync 183.4 d2h 0.0 net 27.6 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.2us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 18.2us GRAPH_RECOMPUTE 1.01x 65.2us COMM_ALLREDUCE 1.00x 221.0us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 36.4us | send: pending 17.8 copy 1.7 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 101.3 sync 182.1 d2h 0.0 net 14.8 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.3us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.7us GRAPH_RECOMPUTE 1.01x 65.6us COMM_ALLREDUCE 1.00x 206.9us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 24.1us | send: pending 5.1 copy 1.7 post 8.0us
+[comm_prof] 1000 calls, avg us: gap 103.1 sync 178.6 d2h 0.0 net 13.6 h2d+add 4.3 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.8us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.8us GRAPH_RECOMPUTE 1.01x 67.9us COMM_ALLREDUCE 1.00x 202.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 20.7us | send: pending 3.6 copy 1.8 post 8.3us
+[comm_prof] 1000 calls, avg us: gap 867.3 sync 439.8 d2h 0.0 net 99.2 h2d+add 4.4 | avg wire 60339 B
+[comm_prof]   per allreduce: wait-for-cmd 351.5us | ALLOC_BUFFER 0.00x 0.4us FREE_BUFFER 0.00x 0.4us SET_TENSOR 0.20x 5.6us GET_TENSOR 0.89x 181.6us GRAPH_COMPUTE 0.39x 277.8us GET_ALLOC_SIZE 0.02x 0.1us GRAPH_RECOMPUTE 0.62x 40.9us GET_TENSOR_2D 0.02x 4.6us COMM_ALLREDUCE 1.00x 549.7us
+[comm_prof]   overlap recv: 810, ours sent -> peer's landed avg 116.3us | send: pending 28.8 copy 1.3 post 6.5us
+[comm_prof] 1000 calls, avg us: gap 82.6 sync 200.7 d2h 0.0 net 10.3 h2d+add 3.4 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 8.7us | SET_TENSOR 0.18x 0.9us GET_TENSOR 0.01x 15.5us GRAPH_RECOMPUTE 1.01x 52.6us COMM_ALLREDUCE 1.00x 219.7us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 15.6us | send: pending 0.9 copy 1.5 post 7.9us
+[comm_prof] 1000 calls, avg us: gap 102.6 sync 172.0 d2h 0.0 net 11.0 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 11.6us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.2us GRAPH_RECOMPUTE 1.01x 67.2us COMM_ALLREDUCE 1.00x 193.2us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 16.2us | send: pending 1.0 copy 1.8 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 91.7 sync 187.3 d2h 0.0 net 28.8 h2d+add 3.7 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 10.9us | SET_TENSOR 0.18x 1.0us GET_TENSOR 0.01x 15.5us GRAPH_RECOMPUTE 1.01x 59.0us COMM_ALLREDUCE 1.00x 225.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 35.9us | send: pending 19.3 copy 1.6 post 7.9us
+[comm_prof] 1000 calls, avg us: gap 96.6 sync 182.9 d2h 0.0 net 13.0 h2d+add 3.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.4us | SET_TENSOR 0.18x 1.0us GET_TENSOR 0.01x 15.9us GRAPH_RECOMPUTE 1.01x 62.0us COMM_ALLREDUCE 1.00x 205.5us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 23.5us | send: pending 3.4 copy 1.6 post 8.0us
+[comm_prof] 1000 calls, avg us: gap 103.6 sync 175.8 d2h 0.0 net 13.8 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.7us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.3us GRAPH_RECOMPUTE 1.01x 66.7us COMM_ALLREDUCE 1.00x 199.7us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 19.6us | send: pending 4.1 copy 1.7 post 8.0us
+[comm_prof] 1000 calls, avg us: gap 99.5 sync 173.9 d2h 0.0 net 13.5 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 10.5us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.6us GRAPH_RECOMPUTE 1.01x 66.8us COMM_ALLREDUCE 1.00x 197.4us
+[comm_prof]   overlap recv: 999, ours sent -> peer's landed avg 19.7us | send: pending 3.5 copy 1.7 post 8.3us
+[comm_prof] 1000 calls, avg us: gap 98.2 sync 195.0 d2h 0.0 net 23.2 h2d+add 3.4 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 10.6us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 25.9us GRAPH_RECOMPUTE 1.01x 55.6us COMM_ALLREDUCE 1.00x 226.8us
+[comm_prof]   overlap recv: 1001, ours sent -> peer's landed avg 33.0us | send: pending 14.2 copy 1.4 post 7.5us
+[comm_prof] 1000 calls, avg us: gap 100.8 sync 175.2 d2h 0.0 net 19.1 h2d+add 4.0 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 10.9us | SET_TENSOR 0.18x 1.2us GET_TENSOR 0.01x 15.7us GRAPH_RECOMPUTE 1.01x 67.3us COMM_ALLREDUCE 1.00x 204.5us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 24.4us | send: pending 9.1 copy 1.8 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 106.6 sync 181.4 d2h 0.0 net 15.3 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.8us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 18.7us GRAPH_RECOMPUTE 1.01x 66.4us COMM_ALLREDUCE 1.00x 206.8us
+[comm_prof]   overlap recv: 999, ours sent -> peer's landed avg 27.3us | send: pending 5.5 copy 1.7 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 101.5 sync 181.8 d2h 0.0 net 30.0 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.6us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.6us GRAPH_RECOMPUTE 1.01x 66.7us COMM_ALLREDUCE 1.00x 221.7us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 39.0us | send: pending 19.8 copy 1.8 post 8.4us
+[comm_prof] 1000 calls, avg us: gap 102.4 sync 181.4 d2h 0.0 net 20.8 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.2us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.8us GRAPH_RECOMPUTE 1.01x 66.7us COMM_ALLREDUCE 1.00x 212.5us
+[comm_prof]   overlap recv: 1001, ours sent -> peer's landed avg 29.0us | send: pending 10.6 copy 1.8 post 8.4us
+[comm_prof] 1000 calls, avg us: gap 104.5 sync 181.4 d2h 0.0 net 19.5 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.0us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.3us GRAPH_RECOMPUTE 1.01x 66.6us COMM_ALLREDUCE 1.00x 210.9us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 27.9us | send: pending 9.6 copy 1.8 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 103.5 sync 182.4 d2h 0.0 net 28.8 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.4us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 16.0us GRAPH_RECOMPUTE 1.01x 66.4us COMM_ALLREDUCE 1.00x 221.3us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 39.7us | send: pending 18.8 copy 1.7 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 105.2 sync 185.3 d2h 0.0 net 23.6 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.8us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.2us GRAPH_RECOMPUTE 1.01x 66.4us COMM_ALLREDUCE 1.00x 218.9us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 33.2us | send: pending 13.7 copy 1.7 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 270.0 sync 198.6 d2h 0.0 net 18.3 h2d+add 3.0 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 69.9us | SET_TENSOR 0.18x 1.0us GET_TENSOR 0.01x 16.2us GRAPH_COMPUTE 0.19x 138.4us GRAPH_RECOMPUTE 0.82x 40.4us COMM_ALLREDUCE 1.00x 224.5us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 71.1us | send: pending 10.5 copy 1.4 post 6.5us
+[comm_prof] 1000 calls, avg us: gap 102.1 sync 186.9 d2h 0.0 net 37.6 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.8us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 16.3us GRAPH_RECOMPUTE 1.01x 65.3us COMM_ALLREDUCE 1.00x 234.5us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 49.3us | send: pending 27.4 copy 1.7 post 8.5us
+[comm_prof] 1000 calls, avg us: gap 104.3 sync 182.8 d2h 0.0 net 14.3 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.6us | SET_TENSOR 0.20x 1.3us GET_TENSOR 0.01x 17.5us GRAPH_RECOMPUTE 1.01x 66.4us COMM_ALLREDUCE 1.00x 207.2us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 21.6us | send: pending 4.2 copy 1.7 post 8.4us
+[comm_prof] 1000 calls, avg us: gap 102.7 sync 181.5 d2h 0.0 net 16.9 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.8us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 16.3us GRAPH_RECOMPUTE 1.01x 67.0us COMM_ALLREDUCE 1.00x 208.5us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 23.5us | send: pending 6.9 copy 1.8 post 8.3us
+[comm_prof] 1000 calls, avg us: gap 104.3 sync 180.5 d2h 0.0 net 15.8 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.0us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.3us GRAPH_RECOMPUTE 1.01x 67.0us COMM_ALLREDUCE 1.00x 206.6us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 22.3us | send: pending 6.1 copy 1.8 post 7.9us
+[comm_prof] 1000 calls, avg us: gap 102.0 sync 179.9 d2h 0.0 net 24.5 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.9us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.8us GRAPH_RECOMPUTE 1.01x 66.5us COMM_ALLREDUCE 1.00x 214.7us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 31.4us | send: pending 14.5 copy 1.8 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 103.7 sync 183.3 d2h 0.0 net 12.0 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.3us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.3us GRAPH_RECOMPUTE 1.01x 66.5us COMM_ALLREDUCE 1.00x 205.4us
+[comm_prof]   overlap recv: 999, ours sent -> peer's landed avg 20.3us | send: pending 2.0 copy 1.8 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 101.1 sync 180.9 d2h 0.0 net 15.9 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.3us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.8us GRAPH_RECOMPUTE 1.01x 66.3us COMM_ALLREDUCE 1.00x 207.1us
+[comm_prof]   overlap recv: 1001, ours sent -> peer's landed avg 24.1us | send: pending 6.0 copy 1.8 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 101.1 sync 185.3 d2h 0.0 net 15.0 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.4us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.8us GRAPH_RECOMPUTE 1.01x 65.4us COMM_ALLREDUCE 1.00x 210.3us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 24.9us | send: pending 4.8 copy 1.7 post 8.5us
+[comm_prof] 1000 calls, avg us: gap 102.8 sync 184.5 d2h 0.0 net 21.1 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.7us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.4us GRAPH_RECOMPUTE 1.01x 65.1us COMM_ALLREDUCE 1.00x 215.6us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 29.5us | send: pending 11.3 copy 1.6 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 830.5 sync 472.1 d2h 0.0 net 87.4 h2d+add 4.0 | avg wire 60339 B
+[comm_prof]   per allreduce: wait-for-cmd 361.7us | SET_TENSOR 0.18x 5.4us GET_TENSOR 0.89x 166.7us GRAPH_COMPUTE 0.39x 257.4us GRAPH_RECOMPUTE 0.62x 30.1us GET_TENSOR_2D 0.02x 5.3us COMM_ALLREDUCE 1.00x 567.7us
+[comm_prof]   overlap recv: 810, ours sent -> peer's landed avg 106.2us | send: pending 5.3 copy 1.2 post 6.6us
+[comm_prof] 1000 calls, avg us: gap 95.7 sync 184.9 d2h 0.0 net 11.3 h2d+add 3.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 10.5us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.1us GRAPH_RECOMPUTE 1.01x 61.6us COMM_ALLREDUCE 1.00x 205.7us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 17.7us | send: pending 1.4 copy 1.7 post 8.3us
+[comm_prof] 1000 calls, avg us: gap 102.1 sync 179.4 d2h 0.0 net 22.4 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.7us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 16.1us GRAPH_RECOMPUTE 1.01x 65.5us COMM_ALLREDUCE 1.00x 212.1us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 30.2us | send: pending 12.6 copy 1.7 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 104.6 sync 180.5 d2h 0.0 net 17.1 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.1us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.6us GRAPH_RECOMPUTE 1.01x 66.3us COMM_ALLREDUCE 1.00x 207.6us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 28.7us | send: pending 7.5 copy 1.7 post 7.9us
+[comm_prof] 1000 calls, avg us: gap 101.5 sync 182.5 d2h 0.0 net 14.7 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.9us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.8us GRAPH_RECOMPUTE 1.01x 66.2us COMM_ALLREDUCE 1.00x 207.3us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 23.5us | send: pending 4.7 copy 1.7 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 102.9 sync 181.4 d2h 0.0 net 11.5 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.6us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 17.8us GRAPH_RECOMPUTE 1.01x 65.8us COMM_ALLREDUCE 1.00x 203.1us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 19.1us | send: pending 1.7 copy 1.7 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 106.0 sync 182.4 d2h 0.0 net 21.8 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.5us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.9us GRAPH_RECOMPUTE 1.01x 66.7us COMM_ALLREDUCE 1.00x 214.6us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 30.2us | send: pending 11.7 copy 1.8 post 8.3us
+[comm_prof] 1000 calls, avg us: gap 101.4 sync 183.5 d2h 0.0 net 18.8 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.0us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.8us GRAPH_RECOMPUTE 1.01x 65.9us COMM_ALLREDUCE 1.00x 212.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 27.3us | send: pending 8.9 copy 1.7 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 105.7 sync 181.7 d2h 0.0 net 16.5 h2d+add 4.4 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.0us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.3us GRAPH_RECOMPUTE 1.01x 67.6us COMM_ALLREDUCE 1.00x 208.5us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 24.6us | send: pending 6.4 copy 1.7 post 8.3us
+[comm_prof] 1000 calls, avg us: gap 112.7 sync 181.5 d2h 0.0 net 19.6 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 23.1us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.9us GRAPH_RECOMPUTE 1.01x 66.9us COMM_ALLREDUCE 1.00x 211.3us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 28.5us | send: pending 9.7 copy 1.7 post 8.3us
+[comm_prof] 1000 calls, avg us: gap 101.3 sync 183.0 d2h 0.0 net 20.2 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.5us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.9us GRAPH_RECOMPUTE 1.01x 65.3us COMM_ALLREDUCE 1.00x 213.3us
+[comm_prof]   overlap recv: 999, ours sent -> peer's landed avg 27.7us | send: pending 10.4 copy 1.7 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 104.3 sync 180.5 d2h 0.0 net 16.6 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.7us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.5us GRAPH_RECOMPUTE 1.01x 66.4us COMM_ALLREDUCE 1.00x 207.1us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 24.3us | send: pending 6.8 copy 1.6 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 101.1 sync 181.2 d2h 0.0 net 12.2 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.3us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.9us GRAPH_RECOMPUTE 1.01x 66.4us COMM_ALLREDUCE 1.00x 203.4us
+[comm_prof]   overlap recv: 1001, ours sent -> peer's landed avg 20.7us | send: pending 2.3 copy 1.7 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 104.2 sync 179.5 d2h 0.0 net 31.2 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.6us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.2us GRAPH_RECOMPUTE 1.01x 66.6us COMM_ALLREDUCE 1.00x 220.9us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 39.0us | send: pending 21.2 copy 1.7 post 8.3us
+[comm_prof] 1000 calls, avg us: gap 148.5 sync 181.3 d2h 0.0 net 13.6 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 40.7us | SET_TENSOR 0.18x 1.2us GET_TENSOR 0.01x 15.8us GRAPH_COMPUTE 0.06x 23.4us GRAPH_RECOMPUTE 0.95x 62.2us COMM_ALLREDUCE 1.00x 204.3us
+[comm_prof]   overlap recv: 999, ours sent -> peer's landed avg 29.1us | send: pending 3.9 copy 1.7 post 7.9us
+[comm_prof] 1000 calls, avg us: gap 224.5 sync 193.6 d2h 0.0 net 34.6 h2d+add 3.5 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 32.1us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.3us GRAPH_COMPUTE 0.14x 118.7us GRAPH_RECOMPUTE 0.88x 50.5us COMM_ALLREDUCE 1.00x 237.0us
+[comm_prof]   overlap recv: 1001, ours sent -> peer's landed avg 97.2us | send: pending 25.2 copy 1.6 post 7.8us
+[comm_prof] 1000 calls, avg us: gap 99.8 sync 181.4 d2h 0.0 net 14.4 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.1us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.7us GRAPH_RECOMPUTE 1.01x 65.3us COMM_ALLREDUCE 1.00x 205.8us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 21.8us | send: pending 4.4 copy 1.8 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 101.1 sync 180.1 d2h 0.0 net 13.4 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.0us | SET_TENSOR 0.18x 1.0us GET_TENSOR 0.01x 15.9us GRAPH_RECOMPUTE 1.01x 65.8us COMM_ALLREDUCE 1.00x 203.5us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 21.8us | send: pending 3.5 copy 1.7 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 104.0 sync 181.9 d2h 0.0 net 12.7 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.7us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.3us GRAPH_RECOMPUTE 1.01x 66.3us COMM_ALLREDUCE 1.00x 204.7us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 20.9us | send: pending 2.8 copy 1.7 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 102.3 sync 181.6 d2h 0.0 net 19.0 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.8us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 16.1us GRAPH_RECOMPUTE 1.01x 65.8us COMM_ALLREDUCE 1.00x 210.9us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 30.6us | send: pending 9.8 copy 1.7 post 7.5us
+[comm_prof] 1000 calls, avg us: gap 938.5 sync 447.7 d2h 0.0 net 73.7 h2d+add 3.8 | avg wire 45747 B
+[comm_prof]   per allreduce: wait-for-cmd 447.9us | SET_TENSOR 0.20x 4.2us GET_TENSOR 0.89x 171.8us GRAPH_COMPUTE 0.39x 279.4us GET_ALLOC_SIZE 0.02x 0.1us GRAPH_RECOMPUTE 0.62x 26.6us GET_TENSOR_2D 0.02x 4.7us COMM_ALLREDUCE 1.00x 529.4us
+[comm_prof]   overlap recv: 810, ours sent -> peer's landed avg 72.9us | send: pending 6.2 copy 1.0 post 6.1us
+[comm_prof] 1000 calls, avg us: gap 96.2 sync 183.0 d2h 0.0 net 12.9 h2d+add 4.0 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 10.8us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.6us GRAPH_RECOMPUTE 1.01x 63.6us COMM_ALLREDUCE 1.00x 205.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 21.6us | send: pending 2.9 copy 1.7 post 8.3us
+[comm_prof] 1000 calls, avg us: gap 112.1 sync 177.9 d2h 0.0 net 16.8 h2d+add 4.3 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 21.0us | SET_TENSOR 0.18x 1.2us GET_TENSOR 0.01x 15.8us GRAPH_RECOMPUTE 1.01x 68.5us COMM_ALLREDUCE 1.00x 204.9us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 27.3us | send: pending 6.5 copy 1.8 post 8.6us
+[comm_prof] 1000 calls, avg us: gap 103.9 sync 182.7 d2h 0.0 net 13.3 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.8us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.6us GRAPH_RECOMPUTE 1.01x 66.0us COMM_ALLREDUCE 1.00x 205.9us
+[comm_prof]   overlap recv: 999, ours sent -> peer's landed avg 22.5us | send: pending 3.4 copy 1.7 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 101.4 sync 181.4 d2h 0.0 net 19.0 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.1us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.7us GRAPH_RECOMPUTE 1.01x 66.3us COMM_ALLREDUCE 1.00x 210.3us
+[comm_prof]   overlap recv: 1001, ours sent -> peer's landed avg 27.5us | send: pending 9.2 copy 1.8 post 8.0us
+[comm_prof] 1000 calls, avg us: gap 106.5 sync 185.8 d2h 0.0 net 27.7 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.5us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 19.5us GRAPH_RECOMPUTE 1.01x 66.1us COMM_ALLREDUCE 1.00x 223.1us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 38.7us | send: pending 17.9 copy 1.7 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 100.4 sync 181.5 d2h 0.0 net 15.7 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.0us | SET_TENSOR 0.18x 1.0us GET_TENSOR 0.01x 16.0us GRAPH_RECOMPUTE 1.01x 66.0us COMM_ALLREDUCE 1.00x 207.0us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 24.9us | send: pending 5.9 copy 1.7 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 104.6 sync 182.4 d2h 0.0 net 17.7 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.7us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.5us GRAPH_RECOMPUTE 1.01x 66.9us COMM_ALLREDUCE 1.00x 210.0us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 28.0us | send: pending 7.8 copy 1.7 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 102.0 sync 183.6 d2h 0.0 net 15.4 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.4us | SET_TENSOR 0.18x 1.0us GET_TENSOR 0.01x 16.1us GRAPH_RECOMPUTE 1.01x 66.0us COMM_ALLREDUCE 1.00x 209.0us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 26.0us | send: pending 5.4 copy 1.7 post 8.2us
+[comm_prof] 1000 calls, avg us: gap 101.1 sync 186.0 d2h 0.0 net 26.3 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.8us | SET_TENSOR 0.18x 1.0us GET_TENSOR 0.01x 15.7us GRAPH_RECOMPUTE 1.01x 66.1us COMM_ALLREDUCE 1.00x 222.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 35.6us | send: pending 16.3 copy 1.7 post 8.3us
+[comm_prof] 1000 calls, avg us: gap 108.5 sync 180.8 d2h 0.0 net 13.8 h2d+add 4.3 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.0us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 19.5us GRAPH_RECOMPUTE 1.01x 68.4us COMM_ALLREDUCE 1.00x 204.7us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 22.4us | send: pending 3.9 copy 1.8 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 100.3 sync 184.9 d2h 0.0 net 13.3 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.6us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.9us GRAPH_RECOMPUTE 1.01x 65.4us COMM_ALLREDUCE 1.00x 208.0us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 23.0us | send: pending 3.5 copy 1.7 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 103.1 sync 185.3 d2h 0.0 net 23.3 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.1us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 18.1us GRAPH_RECOMPUTE 1.01x 64.3us COMM_ALLREDUCE 1.00x 218.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 35.5us | send: pending 13.9 copy 1.6 post 7.8us
+[comm_prof] 1000 calls, avg us: gap 99.9 sync 184.2 d2h 0.0 net 12.2 h2d+add 4.2 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.6us | SET_TENSOR 0.18x 1.0us GET_TENSOR 0.01x 15.7us GRAPH_RECOMPUTE 1.01x 64.2us COMM_ALLREDUCE 1.00x 206.3us
+[comm_prof]   overlap recv: 999, ours sent -> peer's landed avg 20.8us | send: pending 2.5 copy 1.6 post 8.1us
+[comm_prof] 1000 calls, avg us: gap 109.0 sync 176.5 d2h 0.0 net 15.1 h2d+add 4.8 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 13.4us | SET_TENSOR 0.18x 1.2us GET_TENSOR 0.01x 16.8us GRAPH_RECOMPUTE 1.01x 71.7us COMM_ALLREDUCE 1.00x 202.7us
+[comm_prof]   overlap recv: 1001, ours sent -> peer's landed avg 24.0us | send: pending 4.8 copy 1.8 post 8.4us
+[comm_prof] 1000 calls, avg us: gap 105.8 sync 181.4 d2h 0.0 net 15.7 h2d+add 4.3 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 14.3us | SET_TENSOR 0.20x 1.2us GET_TENSOR 0.01x 17.4us GRAPH_RECOMPUTE 1.01x 67.3us COMM_ALLREDUCE 1.00x 207.5us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 23.6us | send: pending 5.5 copy 1.7 post 8.5us
+[comm_prof] 1000 calls, avg us: gap 108.7 sync 171.8 d2h 0.0 net 24.7 h2d+add 5.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 12.5us | SET_TENSOR 0.18x 1.1us GET_TENSOR 0.01x 15.9us GRAPH_RECOMPUTE 1.01x 73.3us COMM_ALLREDUCE 1.00x 208.8us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 34.5us | send: pending 15.0 copy 1.8 post 7.9us
