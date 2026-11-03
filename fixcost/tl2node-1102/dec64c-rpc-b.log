@@ -1,0 +1,112 @@
+W20261102 23:25:41.565960 132540917449152 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.000898 sec
+W20261102 23:25:41.579150 132540917449152 simple_timer.cpp:55] [rocprofv3] '/home/parks-zbook/engine2n/bin/ggml-rpc-server -H 10.99.0.2 -p 50052 -c' ::     0.000000 sec
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+WARNING: Host ('10.99.0.2') is != '127.0.0.1'
+         Never expose the RPC server to an open network!
+         This is an experimental feature and is not secure!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+W20261102 23:25:41.749871 132540917449152 tool.cpp:2422] HSA version 8.20.1 initialized (instance=0)
+ggml_cuda_init: found 1 ROCm devices (Total VRAM: 114688 MiB):
+  Device 0: AMD Radeon Graphics, gfx1151 (0x1151), VMM: no, Wave Size: 32, VRAM: 114688 MiB
+Starting RPC server v8.0.1
+  endpoint       : 10.99.0.2:50052
+  local cache    : /home/parks-zbook/.cache/llama.cpp/rpc
+Devices:
+  ROCm0: AMD Radeon Graphics (114688 MiB, 114683 MiB free)
+  transport      : TCP (RDMA auto-negotiate enabled)
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2337 inline=0
+RDMA activated: qpn=2337->2337 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2338 inline=0
+RDMA activated: qpn=2338->2338 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2339 inline=0
+RDMA activated: qpn=2339->2339 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2340 inline=0
+RDMA activated: qpn=2340->2340 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2341 inline=0
+RDMA activated: qpn=2341->2341 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2342 inline=0
+RDMA activated: qpn=2342->2342 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2343 inline=0
+RDMA activated: qpn=2343->2343 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2344 inline=0
+RDMA activated: qpn=2344->2344 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2345 inline=0
+RDMA activated: qpn=2345->2345 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2346 inline=0
+RDMA activated: qpn=2346->2346 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2347 inline=0
+RDMA activated: qpn=2347->2347 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2348 inline=0
+RDMA activated: qpn=2348->2348 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2349 inline=0
+RDMA activated: qpn=2349->2349 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2350 inline=0
+RDMA activated: qpn=2350->2350 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2351 inline=0
+RDMA activated: qpn=2351->2351 mtu=4096 rx_depth=48
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2352 inline=0
+RDMA activated: qpn=2352->2352 mtu=4096 rx_depth=48
+[comm_clock] peer - self = -7212096 us (shortest round trip 19 us)
+[comm_init] device 0 joined pairwise comm as rank 0
+ggml_cuda_gdn_gather_elided: gated_delta_net reads its state from the cache (node_39), the gather is skipped
+[comm_allreduce] zero-copy decode allreduce on (GGML_RPC_COMM_ZC=1)
+[comm_prof] 1000 calls, avg us: gap 427.1 sync 176.2 d2h 0.0 net 27.5 h2d+add 4.1 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 24652.7us | ALLOC_BUFFER 0.01x 1182.0us GET_ALIGNMENT 0.00x 0.0us GET_MAX_SIZE 0.00x 0.0us BUFFER_GET_BASE 0.01x 0.0us BUFFER_CLEAR 0.00x 1.0us SET_TENSOR 1.77x 1445.0us SET_TENSOR_HASH 0.01x 96.9us GET_TENSOR 0.01x 17.4us GRAPH_COMPUTE 0.19x 278.2us GET_DEVICE_MEMORY 0.01x 0.1us INIT_TENSOR 0.19x 29.1us GET_ALLOC_SIZE 0.04x 0.2us DEVICE_COUNT 0.00x 0.0us GRAPH_RECOMPUTE 0.82x 151.2us SET_TENSOR_2D 0.26x 37645.1us COMM_INIT 0.00x 54.9us COMM_ALLREDUCE 1.00x 211.8us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 125.6us | send: pending 22.0 copy 0.9 post 4.6us
+[comm_prof] 1000 calls, avg us: gap 207.7 sync 206.6 d2h 0.0 net 10.6 h2d+add 4.4 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 5.0us | SET_TENSOR 0.18x 4.2us GET_TENSOR 0.01x 16.3us GRAPH_RECOMPUTE 1.01x 178.2us COMM_ALLREDUCE 1.00x 225.9us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 14.8us | send: pending 5.4 copy 0.8 post 4.4us
+[comm_prof] 1000 calls, avg us: gap 219.3 sync 225.7 d2h 0.0 net 17.6 h2d+add 4.3 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 5.1us | SET_TENSOR 0.20x 4.7us GET_TENSOR 0.01x 19.7us GRAPH_RECOMPUTE 1.01x 185.5us COMM_ALLREDUCE 1.00x 252.0us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 22.9us | send: pending 12.4 copy 0.8 post 4.3us
+[comm_prof] 1000 calls, avg us: gap 213.0 sync 223.2 d2h 0.0 net 14.1 h2d+add 4.6 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 4.8us | SET_TENSOR 0.18x 4.0us GET_TENSOR 0.01x 15.9us GRAPH_RECOMPUTE 1.01x 184.1us COMM_ALLREDUCE 1.00x 246.4us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 25.9us | send: pending 8.5 copy 0.9 post 4.7us
+[comm_prof] 1000 calls, avg us: gap 222.8 sync 210.4 d2h 0.0 net 6.4 h2d+add 4.6 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 8.2us | SET_TENSOR 0.20x 4.5us GET_TENSOR 0.01x 17.7us GRAPH_RECOMPUTE 1.01x 187.9us COMM_ALLREDUCE 1.00x 226.1us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 28.6us | send: pending 0.9 copy 0.9 post 4.6us
+[comm_prof] 1000 calls, avg us: gap 221.4 sync 201.8 d2h 0.0 net 17.8 h2d+add 5.0 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 4.5us | SET_TENSOR 0.18x 3.9us GET_TENSOR 0.01x 15.8us GRAPH_RECOMPUTE 1.01x 192.6us COMM_ALLREDUCE 1.00x 229.5us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 44.3us | send: pending 12.6 copy 0.8 post 4.4us
+Client connection closed
+W20261102 23:26:54.081378 132540917449152 tool.cpp:3104] [PPID=1][PID=24295][TID=24295][rocprofv3_error_signal_handler] rocprofv3 caught signal 2...
+W20261102 23:26:54.081468 132540917449152 tool.cpp:3127] [PPID=1][PID=24295][TID=24295][rocprofv3_error_signal_handler] rocprofv3 will wait for 0 children to exit
+W20261102 23:26:54.081471 132540917449152 tool.cpp:3142] [PPID=1][PID=24295][TID=24295][rocprofv3_error_signal_handler] rocprofv3 finalizing after signal 2...
+E20261102 23:26:54.091560 132540917449152 output_stream.cpp:111] Opened result file: prof/a_kernel_trace.csv
+E20261102 23:26:54.298647 132540917449152 output_stream.cpp:111] Opened result file: prof/a_memory_copy_trace.csv
+E20261102 23:26:54.302903 132540917449152 output_stream.cpp:111] Opened result file: prof/a_agent_info.csv
+W20261102 23:26:54.306190 132540917449152 simple_timer.cpp:55] [rocprofv3] output generation ::     0.217178 sec
+W20261102 23:26:54.306843 132540917449152 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.219193 sec
+W20261102 23:26:54.307074 132540917449152 tool.cpp:3184] [PPID=1][PID=24295][TID=24295][rocprofv3_error_signal_handler] rocprofv3 found chained signal handler for 2... executing chained sigaction (SIGINFO)
+W20261102 23:26:54.307101 132540917449152 tool.cpp:3104] [PPID=1][PID=24295][TID=24295][rocprofv3_error_signal_handler] rocprofv3 caught signal 2...

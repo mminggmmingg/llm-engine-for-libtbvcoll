@@ -1,0 +1,38 @@
+none base load A=0.57 B=0.38 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 28.24 tok/s (token-weighted) | srv-2node-none-bs-base-1103-003842
+   a: n=550 gfx 2280/2717/2831 상한 2523/2822/2900 활동 64/89/92 소켓W 65/70/70 gfxW 21/30/32 코어W 5/8/20 코어상한 1915/1938/4738 
+   b: n=556 gfx 2043/2215/2732 상한 2041/2510/2866 활동 64/89/93 소켓W 62/67/70 gfxW 16/20/34 코어W 4/18/24 코어상한 1940/4978/5117 
+   cyc: cycle  364.6
+none off3 load A=0.55 B=0.07 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 26.64 tok/s (token-weighted) | srv-2node-none-bs-off3-1103-004501
+   a: n=581 gfx 2374/2759/2880 상한 2558/2900/2900 활동 68/89/93 소켓W 67/70/70 gfxW 21/30/32 코어W 5/10/21 코어상한 1933/2884/4634 
+   b: n=585 gfx 2062/2258/2757 상한 2058/2503/2900 활동 67/90/94 소켓W 64/68/70 gfxW 15/20/34 코어W 4/21/24 코어상한 1948/4969/5119 
+   cyc: cycle  387.4
+none off3 load A=0.50 B=0.55 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 28.01 tok/s (token-weighted) | srv-2node-none-bs-off3-1103-004912
+   a: n=555 gfx 2378/2808/2887 상한 2622/2900/2900 활동 67/90/93 소켓W 66/70/70 gfxW 22/30/33 코어W 5/10/21 코어상한 1936/3040/4795 
+   b: n=557 gfx 2151/2773/2877 상한 2165/2882/2900 활동 68/90/94 소켓W 64/69/70 gfxW 16/32/37 코어W 4/9/24 코어상한 1948/3688/5072 
+   cyc: cycle  367.5
+none base load A=0.59 B=0.48 rdma=0 zc=/: TOTAL tokens 1394, decode 1.72 tok/s (token-weighted) | srv-2node-none-bs-base-1103-005311
+   a: no busy rows
+   b: no busy rows
+Traceback (most recent call last):
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 14, in <module>
+    r = load(p)
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 11, in load
+    w = min(r['wire'] for r in rows)
+ValueError: min() iterable argument is empty
+   cyc: 
+mtp base load A=0.41 B=0.56 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 40.59 tok/s (token-weighted) | srv-2node-mtp-bs-base-1103-010929
+   a: n=395 gfx 2128/2490/2591 상한 2354/2618/2857 활동 59/84/88 소켓W 64/69/70 gfxW 21/30/33 코어W 5/8/21 코어상한 1572/1920/4799 
+   b: n=379 gfx 1623/1760/1972 상한 1885/2063/2468 활동 55/70/72 소켓W 60/65/66 gfxW 19/21/22 코어W 20/22/22 코어상한 4924/5028/5101 
+   cyc: cycle  738.5
+mtp off3 load A=0.57 B=0.56 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 39.19 tok/s (token-weighted) | srv-2node-mtp-bs-off3-1103-011326
+   a: n=415 gfx 2227/2517/2597 상한 2272/2632/2853 활동 63/85/88 소켓W 67/70/70 gfxW 22/31/33 코어W 5/8/21 코어상한 1574/1922/4855 
+   b: n=406 gfx 1642/1772/2013 상한 1901/2062/2477 활동 56/70/73 소켓W 61/65/66 gfxW 19/21/22 코어W 21/22/23 코어상한 4934/5040/5093 
+   cyc: cycle  764.6
+mtp off3 load A=0.57 B=0.41 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 38.26 tok/s (token-weighted) | srv-2node-mtp-bs-off3-1103-011743
+   a: n=424 gfx 2128/2530/2645 상한 2260/2665/2861 활동 58/84/89 소켓W 64/69/70 gfxW 21/31/34 코어W 5/8/22 코어상한 1574/1923/4856 
+   b: n=399 gfx 1635/1790/1916 상한 1892/2079/2474 활동 55/71/74 소켓W 60/64/66 gfxW 19/21/22 코어W 21/22/23 코어상한 4925/5042/5097 
+   cyc: cycle  784.3
+mtp base load A=0.57 B=0.26 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 39.79 tok/s (token-weighted) | srv-2node-mtp-bs-base-1103-012248
+   a: n=413 gfx 2134/2507/2597 상한 2270/2629/2854 활동 58/84/88 소켓W 64/69/70 gfxW 21/31/33 코어W 5/8/21 코어상한 1570/1920/4786 
+   b: n=388 gfx 1650/1759/1919 상한 1908/2042/2465 활동 55/70/73 소켓W 60/64/66 gfxW 19/21/22 코어W 21/22/23 코어상한 4964/5056/5106 
+   cyc: cycle  751.9

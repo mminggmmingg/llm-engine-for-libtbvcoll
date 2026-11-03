@@ -1,0 +1,99 @@
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+WARNING: Host ('10.99.0.2') is != '127.0.0.1'
+         Never expose the RPC server to an open network!
+         This is an experimental feature and is not secure!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+ggml_cuda_init: found 1 ROCm devices (Total VRAM: 114688 MiB):
+  Device 0: AMD Radeon Graphics, gfx1151 (0x1151), VMM: no, Wave Size: 32, VRAM: 114688 MiB
+Starting RPC server v8.0.1
+  endpoint       : 10.99.0.2:50052
+  local cache    : /home/parks-zbook/.cache/llama.cpp/rpc
+Devices:
+  ROCm0: AMD Radeon Graphics (114688 MiB, 114683 MiB free)
+  transport      : TCP (RDMA auto-negotiate enabled)
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2353 inline=0
+RDMA activated: qpn=2353->2353 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2354 inline=0
+RDMA activated: qpn=2354->2354 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2355 inline=0
+RDMA activated: qpn=2355->2355 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2356 inline=0
+RDMA activated: qpn=2356->2356 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2357 inline=0
+RDMA activated: qpn=2357->2357 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2358 inline=0
+RDMA activated: qpn=2358->2358 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2359 inline=0
+RDMA activated: qpn=2359->2359 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2360 inline=0
+RDMA activated: qpn=2360->2360 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2361 inline=0
+RDMA activated: qpn=2361->2361 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2362 inline=0
+RDMA activated: qpn=2362->2362 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2363 inline=0
+RDMA activated: qpn=2363->2363 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2364 inline=0
+RDMA activated: qpn=2364->2364 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2365 inline=0
+RDMA activated: qpn=2365->2365 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2366 inline=0
+RDMA activated: qpn=2366->2366 mtu=4096 rx_depth=48
+Client connection closed
+Accepted client connection
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2367 inline=0
+RDMA activated: qpn=2367->2367 mtu=4096 rx_depth=48
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=2368 inline=0
+RDMA activated: qpn=2368->2368 mtu=4096 rx_depth=48
+[comm_clock] peer - self = -7203830 us (shortest round trip 19 us)
+[comm_init] device 0 joined pairwise comm as rank 0
+ggml_cuda_gdn_gather_elided: gated_delta_net reads its state from the cache (node_39), the gather is skipped
+[comm_allreduce] zero-copy decode allreduce on (GGML_RPC_COMM_ZC=1)
+[comm_prof] 1000 calls, avg us: gap 262.6 sync 265.6 d2h 0.0 net 29.1 h2d+add 2.3 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 24656.3us | ALLOC_BUFFER 0.01x 1202.7us GET_ALIGNMENT 0.00x 0.0us GET_MAX_SIZE 0.00x 0.0us BUFFER_GET_BASE 0.01x 0.0us BUFFER_CLEAR 0.00x 0.8us SET_TENSOR 1.77x 1435.6us SET_TENSOR_HASH 0.01x 94.6us GET_TENSOR 0.01x 15.7us GRAPH_COMPUTE 0.19x 212.9us GET_DEVICE_MEMORY 0.01x 0.1us INIT_TENSOR 0.19x 27.4us GET_ALLOC_SIZE 0.04x 0.2us DEVICE_COUNT 0.00x 0.0us GRAPH_RECOMPUTE 0.82x 40.2us SET_TENSOR_2D 0.26x 37547.1us COMM_INIT 0.00x 78.4us COMM_ALLREDUCE 1.00x 300.6us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 96.7us | send: pending 21.2 copy 1.0 post 6.9us
+[comm_prof] 1000 calls, avg us: gap 73.3 sync 277.5 d2h 0.0 net 45.9 h2d+add 1.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 5.3us | SET_TENSOR 0.18x 2.7us GET_TENSOR 0.01x 15.8us GRAPH_RECOMPUTE 1.01x 46.0us COMM_ALLREDUCE 1.00x 328.9us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 57.0us | send: pending 40.2 copy 0.9 post 4.8us
+[comm_prof] 1000 calls, avg us: gap 80.4 sync 292.0 d2h 0.0 net 19.5 h2d+add 1.9 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 7.3us | SET_TENSOR 0.20x 3.3us GET_TENSOR 0.01x 17.5us GRAPH_RECOMPUTE 1.01x 48.6us COMM_ALLREDUCE 1.00x 317.3us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 21.1us | send: pending 14.5 copy 0.8 post 4.3us
+[comm_prof] 1000 calls, avg us: gap 77.7 sync 298.4 d2h 0.0 net 34.2 h2d+add 2.0 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 5.0us | SET_TENSOR 0.18x 3.2us GET_TENSOR 0.01x 16.1us GRAPH_RECOMPUTE 1.01x 49.6us COMM_ALLREDUCE 1.00x 338.6us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 34.8us | send: pending 29.3 copy 0.8 post 4.1us
+[comm_prof] 1000 calls, avg us: gap 86.9 sync 290.7 d2h 0.0 net 15.6 h2d+add 2.0 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 9.6us | SET_TENSOR 0.20x 3.7us GET_TENSOR 0.01x 17.6us GRAPH_RECOMPUTE 1.01x 52.1us COMM_ALLREDUCE 1.00x 312.3us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 16.9us | send: pending 10.7 copy 0.8 post 4.1us
+[comm_prof] 1000 calls, avg us: gap 81.7 sync 284.5 d2h 0.0 net 16.0 h2d+add 2.0 | avg wire 10240 B
+[comm_prof]   per allreduce: wait-for-cmd 5.8us | SET_TENSOR 0.18x 3.3us GET_TENSOR 0.01x 16.1us GRAPH_RECOMPUTE 1.01x 52.5us COMM_ALLREDUCE 1.00x 306.8us
+[comm_prof]   overlap recv: 1000, ours sent -> peer's landed avg 19.2us | send: pending 11.1 copy 0.8 post 4.1us
+Client connection closed
