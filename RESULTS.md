@@ -1214,3 +1214,45 @@ B 는 A 가 먼저 올라오면 설정 파일 값(-1)으로 저절로 올라오�
   지금은 걸리는 곳이 없어 커널 수·PPL 그대로(1969, 2.3970/2.3396)이지만 할당이 바뀌면 걸릴 수 있던 경로.
 - 다음: (1) hc_post → norm 을 경쟁 없게(디코드 1토큰은 블록 하나가 hc 줄 4개의 입력을 다 읽은 뒤 씀) → −92/토큰, (2) GDN q/k rms_norm+scale 묶기(−36),
   (3) conv 상태 GET_ROWS 모으기 없애기(제자리일 때 채널별 스레드 필요), (4) 이 묶기들 위에서 hot 폴링 켬/끔 다시.
+
+## 2026-11-03 11:50–13:20 — 남은 묶기 셋: hc_post → norm 을 경쟁 없게, GDN q/k norm 한 커널, conv 상태 gather 없앰(2노드 디코드 +1.3%, 값 그대로)
+자료: `fixcost/fuse-1103b/`(PPL `-ub 1`·`-ub 4` 로그), `fixcost/fuse4-2node-1103/`(2노드 A/B 회별 파일, `runs.log`).
+
+- **hc_post → norm 겹침의 실제 모양**(Flash-Next 디코드, 임시 로그로 셈): norm 출력이 residual 과 같은 원소(같은 주소·모양·stride) 90%, 그중 post([4, T] inject 가중치)까지 덮는 곳 10%, x 와 겹침 0.
+  - residual 과 같은 원소로만 겹치면 기존 4블록 커널도 안전하다(블록마다 자기 줄을 다 읽은 뒤 같은 줄을 씀) → residual 검사를 `ggml_cuda_tensors_overlap_shifted` 로.
+  - x·post 와 겹치거나 residual 과 어긋나게 겹치면 새 커널 `rms_norm_hcpost_one_block`(norm.cu): 블록 하나(1024 스레드)가 hc 줄 × 토큰(≤ 16줄)을 모두 레지스터로 읽고
+    장벽 하나 뒤에 씀. 줄마다 합 순서는 풀어 쓴 norm(`rms_norm_f32<1024, 1, true>`: warp 합 → 32 개 warp 결과의 warp 합)과 같고, 장벽만 줄들이 같이 씀.
+    norm 가중치가 hc 줄마다 따로([2560, 4])라 그것도 받음. 첫 판은 줄마다 읽기·쓰기가 이어져 11.1 µs → 읽기를 모두 먼저 내서 8.4 µs(토큰당 7번, 풀어 쓴 두 커널과 비슷).
+  - 결과: hc_post 커널 토큰당 92 → 1(1노드). 끄기 `GGML_CUDA_NO_HC_POST_NORM_1B`(겹치는 곳은 묶지 않음), 전체 `GGML_CUDA_NO_HC_POST_NORM`.
+- **GDN q/k norm:** `build_gdn_l2_norm` = RMS_NORM(eps/n) → SCALE(1/√n) 을 q·k 에 따로(`rms_norm_f32<32>` 층마다 2개). k 가 같은 conv 출력에서 q 바로 다음 줄들이고 eps·scale 이 같아
+  32줄을 한 번에 돌리고 16줄부터 k 출력에 씀(`rms_norm_scale_pair_f32`, 풀어 쓴 커널과 같은 식). 토큰당 −36. 끄기 `GGML_CUDA_NO_NORM_SCALE_PAIR`.
+- **conv 상태 gather:** GET_ROWS(캐시 → 1줄)를 돌리지 않고 conv 상태 concat 이 캐시 줄 `ids[0]` 을 직접 읽음(`ggml_cuda_gdn_direct_gather` 와 같은 조건 +
+  get_rows 와 concat 사이에 캐시를 쓰는 노드 없음 + 새 꼬리가 캐시 한 줄 전체이거나 캐시 밖). 꼬리가 읽는 줄과 같을 수 있어 채널마다 스레드 하나가 옛 상태를 다 읽은 뒤 씀
+  (`concat_dim0_tail_direct_f32`). 토큰당 −36. 끄기 `GGML_CUDA_NO_CONV_DIRECT`.
+- 1노드 토큰당 커널 **1969 → 1806**(hc_post 92 → 1, `rms_norm_f32<32>` 132 → 60, `k_get_rows_float<float>` 40 → 4). PPL `-ub 1` 2.3970·`-ub 4` 2.3396 그대로.
+- **2노드 A/B**(H5, hot 폴링 끔, 서버 6 프롬프트, decode tok/s, 같은 빌드에서 셋을 끈 'old' 와 번갈아; 12:42–13:18):
+
+| | 셋 켬 | 셋 끔(old) | AR 주기 µs(켬 / 끔) |
+|---|---|---|---|
+| MTP 없음 | 32.24, 32.22 | 31.89, 31.73 (+1.3%) | 318.7, 318.7 / 322.2, 324.1 |
+| MTP | 43.26, 41.49 | 41.49, 41.35 (잡음 안) | 690, 722 / 722, 724 |
+
+  - 6 프롬프트 출력 해시가 모든 회에서 같고 밤의 A/B3 와도 같음(MTP 포함). MTP '켬' 첫 회 43.26 은 B GPU 클럭이 다른 회보다 높았던 회(중앙 2044 vs 1879–2025 MHz).
+  - 줄인 커널 163 개 × ≈3 µs ≈ 0.5 ms/토큰 예상과 비슷(AR 주기 −1.4%).
+- 1노드 시간은 오늘 A 의 메모리 압박(92 GiB 모델 + 페이지 캐시 ≈27 GB, 스왑 2.5 GB, `svm_range_restore_work` 경고) 때문에 들쭉날쭉해(같은 빌드 tg64 27.2 ± 4.8,
+  프로파일러 아래 토큰 37–66 ms) 커널 수만 씀. rocprofv3 한 회가 벤치 출력 뒤 끝나지 않아(스레드 2개 100%, 10분+) 강제 종료 — 저장소의 `.rocprofv3/` 는 그때 남은 기록(커밋 안 함).
+- 다음 후보: conv 상태 concat + ssm_conv 를 한 커널(사이에 다른 노드가 있어 concat 을 conv 자리로 옮겨야 함; −36 ≈ +0.35% 예상이라 2노드 잡음 안 → 보류), hot 폴링 켬/끔 다시(두 노드 sudo).
+
+## 2026-11-03 13:48–14:29 — 새 빌드(1806 커널)에서 tbv hot 폴링 켬/끔: 이제는 끔이 빠름(디코드 +1.2%, pp512 +5%, MTP 같음)
+자료: `fixcost/hotpoll-ab-1103/`(회별 bench·gm·thr·prof, `runs.log`, `pp512-{on,off}-client.log`). 전환은 사용자가 `tools/tbv_hotpoll.sh on|off`, 블록은 `HP_OUT=hotpoll-ab-1103 tools/bench/hp-block.sh on|off`. H5, 서버 6 프롬프트, 켬 블록 다음 바로 끔 블록(B 유휴 확인).
+
+| | hot 폴링 켬(13:48–14:06) | 끔(14:13–14:29) |
+|---|---|---|
+| 디코드 tok/s (AR 주기 µs) | 32.57, 32.25 (313, 317) | **32.96, 32.74** (311, 313) — 끔 +1.2% |
+| MTP tok/s | 42.27, 42.02 | 42.17, 42.16 — 같음 |
+| pp512 (llama-bench 3회) | 465.4 ± 1.3 | **488.6 ± 1.2** — 끔 +5% |
+
+- 8회 모두 6 프롬프트 출력 해시가 같음(오전 A/B 와도 같음).
+- 11-02 의 +12%(켬이 빠름)와 반대. 이유(gpu_metrics 중앙값): 켬이면 A 의 코어 하나가 계속 폴링해 A 코어W 8 → 14 W, A GPU 2776 → 2606 MHz.
+  B 는 끔에서도 GPU 우선(2.7 GHz)이라 hot 폴링이 고쳐 주던 B 의 CPU 우선 상태가 이 빌드·이 날에는 안 나타남. MTP 에서는 켬·끔 모두 B GPU ≈1.9 GHz.
+- 결론: 기본(끔) 유지. B 가 다시 CPU 우선으로 느려지는 날에는 켬을 다시 재 볼 것(11-01·11-02 기록).

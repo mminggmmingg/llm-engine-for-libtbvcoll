@@ -26,7 +26,7 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
 - 가중치 합치기(2026-10-30, RESULTS.md): 입력이 같은 가중치 168쌍(hc down+inject, GDN qkv+gate, beta+alpha)을 불러올 때 한 텐서로 합쳐
   토큰당 커널 3201 → 2865, 1노드 직렬 −7%. TP 분할 규칙까지 넣어 2노드 TP 끔 대비 +9.5%(MTP 없음)·+9.2%(MTP, 36.6 tok/s).
   다음: 남은 같은 입력 묶음, 활성값 양자화 공유. 2노드에서는 B 가 펌웨어 CPU 우선 상태(GPU 1.7–2.2 GHz)로 남는 것이 병목.
-- 작은 연산 묶기·DPP(2026-11-03, RESULTS.md): 토큰당 커널 2720 → 1969, 값 그대로. 2노드 H5(hot 폴링 끔) 디코드 27.3 → **31.7**, MTP 38.7 → **42.2** tok/s.
+- 작은 연산 묶기·DPP(2026-11-03, RESULTS.md): 토큰당 커널 2720 → 1806, 값 그대로. 2노드 H5(hot 폴링 끔) 디코드 27.3 → **32.2**, MTP 38.7 → **42.4**(41.5–43.3) tok/s.
   2노드에서도 커널 하나가 ≈3–4 µs 라 커널 수가 곧 시간(빈 커널 측정).
 
 - 설계: [DESIGN.md](DESIGN.md) (v1, TP). 폐기된 층 분할(PP) 설계는 [DESIGN_v0_pp.md](DESIGN_v0_pp.md), `run_2node.sh` 에 기록용으로만 남김.
@@ -67,7 +67,8 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
   - 2026-11-03 엔진 변경(모두 기본 켬, 값 같음; 끄는 환경변수):
     - 묶기: hc lo SCALE→SILU 가 q8_1 사본도 `GGML_CUDA_NO_SCALE_SILU_Q8`, shexp 게이트 끝 `GGML_CUDA_NO_SHEXP_GATE_FUSE`, 게이트 행렬곱까지
       `GGML_CUDA_NO_SHEXP_GATE_DOT`, GDN 게이트 `GGML_CUDA_NO_GDN_GATES_FUSE`, GDN gated norm `GGML_CUDA_NO_NORM_GATE_FUSE`(q8_1 사본만 `GGML_CUDA_NO_NORM_GATE_Q8`),
-      GDN conv 상태 `GGML_CUDA_NO_CONV_STATE_FUSE`, hc_post → norm `GGML_CUDA_NO_HC_POST_NORM`
+      GDN conv 상태 `GGML_CUDA_NO_CONV_STATE_FUSE`(캐시 줄 직접 읽기만 `GGML_CUDA_NO_CONV_DIRECT`), hc_post → norm `GGML_CUDA_NO_HC_POST_NORM`
+      (출력이 입력과 겹치는 곳의 한 블록 커널만 `GGML_CUDA_NO_HC_POST_NORM_1B`), GDN q/k norm 한 커널 `GGML_CUDA_NO_NORM_SCALE_PAIR`
     - q8_1 사본을 만드는 쪽에서: norm `GGML_CUDA_NO_NORM_Q8`, hc_pre `GGML_CUDA_NO_HC_PRE_Q8`
     - top-k 전용 커널(512 전문가 softmax) `GGML_CUDA_NO_TOPK_LEAN`, warp 교환 DPP(빌드 `-DGGML_CUDA_NO_XOR_DPP` 면 `__shfl_xor`)
     - 묶은 커널은 할당기가 비운 입력 메모리와 출력이 겹치면 묶지 않음(`ggml_cuda_tensors_overlap`)
