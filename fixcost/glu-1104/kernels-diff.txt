@@ -1,0 +1,16 @@
+# python3 tools/bench/kdiff.py runs/prof2node-gluoff-1104-153639 runs/prof2node-gluon-1104-153755  (A 서버, 2노드 llama-bench tg32, rocprofv3)
+runs/prof2node-gluoff-1104-153639: tokens 33.0 kernels/token 1886 kernel us/token 23008
+runs/prof2node-gluon-1104-153755: tokens 33.0 kernels/token 1790 kernel us/token 23513
+  48.0 ->    0.0 /tok    2315.8 ->      0.0 us/tok  mul_mat_vec_q< g10240x10 w32
+  48.0 ->    0.0 /tok     633.4 ->      0.0 us/tok  mul_mat_vec_q< g20480x1 w32
+  48.0 ->    0.0 /tok      69.0 ->      0.0 us/tok  quantize_q8_1 g512x10 w256
+  48.0 ->    0.0 /tok      58.7 ->      0.0 us/tok  quantize_q8_1 g1024x1 w256
+  50.0 ->   50.0 /tok      78.0 ->     93.5 us/tok  quantize_q8_1 g2560x1 w256
+  12.0 ->   12.0 /tok      75.0 ->     95.6 us/tok  flash_attn_tile<256, 256, 1, 4, false> g32x32 w32
+  48.0 ->   48.0 /tok    1576.5 ->   1601.3 us/tok  mul_mat_vec_q< g81920x10 w32
+ 107.9 ->  107.9 /tok     201.6 ->    229.1 us/tok  __amd_rocclr_copyBuffer g1024x1 w512
+  36.0 ->   36.0 /tok      99.3 ->    133.5 us/tok  rms_norm_f32<32, 1, true, true, false, false, true, true, fa g768x1 w32
+  97.0 ->   97.0 /tok    2028.4 ->   2075.0 us/tok  mul_mat_vec_q< g81920x1 w32
+  96.0 ->   96.0 /tok    3504.7 ->   3717.7 us/tok  k_comm_wait_add g1024x1 w1024
+   0.0 ->   48.0 /tok       0.0 ->    647.6 us/tok  mul_mat_vec_q_glu_q8< g20480x1 w1024
+   0.0 ->   48.0 /tok       0.0 ->   2386.3 us/tok  mul_mat_vec_q_glu_q8< g10240x10 w1024

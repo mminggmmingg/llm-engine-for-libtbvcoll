@@ -1,0 +1,13 @@
+# python3 tools/bench/kdiff.py runs/prof2node-gluon-1104-153755 runs/prof2node-shtail-1104-162427  (A 서버, 2노드 llama-bench tg32, rocprofv3)
+runs/prof2node-gluon-1104-153755: tokens 33.0 kernels/token 1790 kernel us/token 23513
+runs/prof2node-shtail-1104-162427: tokens 33.0 kernels/token 1742 kernel us/token 24414
+  97.0 ->   49.0 /tok    2075.0 ->   1630.1 us/tok  mul_mat_vec_q< g81920x1 w32
+  48.0 ->    0.0 /tok     184.7 ->      0.0 us/tok  k_shexp_gate_dot_tail g2560x1 w256
+  48.0 ->   48.0 /tok    2386.3 ->   2371.2 us/tok  mul_mat_vec_q_glu_q8< g10240x10 w1024
+  36.0 ->   36.0 /tok     478.6 ->    495.4 us/tok  gated_delta_net_cuda<128, false, false, 4> g768x4 w32
+  36.0 ->   36.0 /tok      84.8 ->    104.2 us/tok  k_gdn_gates g64x1 w64
+  36.0 ->   36.0 /tok     202.6 ->    224.1 us/tok  mul_mat_vec_q< g1536x1 w32
+  36.0 ->   36.0 /tok      79.3 ->    104.6 us/tok  ssm_conv_f32<true, 128ul, 4ul> g128x40 w128
+  48.0 ->   48.0 /tok    1601.3 ->   1627.9 us/tok  mul_mat_vec_q< g81920x10 w32
+   0.0 ->   48.0 /tok       0.0 ->    653.1 us/tok  mul_mat_vec_q_shexp_tail< g81920x1 w1024
+  96.0 ->   96.0 /tok    3717.7 ->   4457.5 us/tok  k_comm_wait_add g1024x1 w1024

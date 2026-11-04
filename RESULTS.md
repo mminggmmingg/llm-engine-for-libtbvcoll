@@ -1394,3 +1394,39 @@ B 는 A 가 먼저 올라오면 설정 파일 값(-1)으로 저절로 올라오�
   `HIP_FORCE_DEV_KERNARG=0`, `DEBUG_CLR_MAX_BATCH_SIZE`/`ROC_SIGNAL_POOL_SIZE` 도 아님. 미루기와 함께면 GDN 229·attention 419 µs 이지만 전체는 여전히 ZC=1 아래.
 - 클라이언트 느림 진단(`GGML_RPC_DEDUP_TIME=2`): llama-server 안에서 27 KB 해시 벽시계 163 = 스레드 CPU 시간 162 µs(밀려난 것 아님), 레지스터만 쓰는 루프도 162 µs,
   무엇을 재도 ≈162 µs → 시계 호출 비용부터 확인해야 함(미완). 클라이언트를 조용한 코어에 고정(taskset)해도 같음.
+
+## 2026-11-04 14:40–16:50 — 다음 묶기: GLU → q8_1(채택), MoE down + 가중합(느려서 뺌), shared expert down + 게이트 꼬리(채택)
+자료: `fixcost/glu-1104/`, `fixcost/moered-1104/`, `fixcost/shtail-1104/`(각각 검증 실행 로그, 끔/켬 번갈아 4회 A/B, A 서버 rocprofv3 커널 비교
+`kernels-diff.txt` — `tools/bench/kdiff.py`). 모든 실행: 2노드 H5, ZC=1, `GGML_RPC_COMM_DEV=usb4_rdma0`, 기록 링 끔, **해시 6개 같음**.
+커널 수·시간은 A 서버, llama-bench tg32, 토큰 수 = GDN 커널 수 / 36.
+
+### GLU 행렬곱이 q8_1 도 씀 (`mul_mat_vec_q_glu_q8`, mmvq.cu, 기본 켬, `GGML_CUDA_NO_GLU_Q8=1` 끔)
+- 1토큰 gate/up + SWIGLU 결과가 바로 다음 양자화 행렬곱(전문가 down MUL_MAT_ID, shared expert down)의 입력이면, 워프 32개 블록이 연속 32행을 맡아
+  각 워프가 RDNA mmvq(워프 1개 = 1행)와 같은 루프·워프 합·GLU 끝처리로 한 행을 계산하고, 워프 0 이 32개 결과로 quantize_q8_1 과 같은 식의 q8_1 블록을 쓴다.
+  행 패딩 블록(320 → 512, 640 → 1024)은 0 으로. q8 캐시 칸을 미리 잡고(`ggml_cuda_q8_1_cache_reserve`, 패딩 포함 크기로 고침) down 은 그 칸을 찾아 쓴다.
+- 검증: `GGML_CUDA_Q8_VERIFY=1` 로 두 노드 모두 `ffn_moe_down`·`ffn_shexp` 적중이 새 양자화와 **0 블록 다름**(실행 전체에서 다른 블록 없음).
+  처음 검증 표본(앞 40줄)은 모두 2토큰 그래프라 down 적중이 안 보였음 → down 적중을 따로 출력하게 해서 확인.
+- 커널: 토큰당 1886 → **1790**(quantize −96). 시간: MoE GLU 47.5 → 48.9 µs(옛 GLU + 양자화 ≈48.7 과 같음, ≈183 GB/s 로 이미 대역폭 한계), shared expert GLU
+  12.9 + 1.2 → 13.3 µs. 커널 시간은 비슷, 이득은 띄우기 96번.
+- A/B(끔 → 켬 → 켬 → 끔): 끔 33.29·33.67, 켬 33.54·33.68 → **+0.4%**(잡음 안이지만 값 같고 느리지 않아 기본 켬).
+
+### MoE down + 가중합 (`mul_mat_vec_q_moe_reduce`) — 느려서 뺌
+- 1토큰 MUL_MAT_ID(down) → moe_weighted_reduction 꼴(가중치 곱·뷰·더하기)을 한 커널로: 블록 하나 = 출력 1행, 워프 e = 전문가 칸 e 의 그 행, 스레드 0 이
+  moe_weighted_reduction_f32 순서로 합. `GGML_CUDA_MOE_REDUCE_VERIFY=1` 로 두 노드 모두 **0 / 2560 다름**(비트 같음), 해시 같음.
+- 그러나 커널이 40.8 µs(중앙) — 옛 down 31.3 + 가중합 3.0. 블록마다 전문가 10개의 같은 행을 읽어 전문가별로 이어 읽던 접근이 깨짐.
+  A/B: 켬 33.28·33.30 vs 끔 33.54·34.05(AR 주기 308 vs 301–305 µs) → **−1.5%**, 코드에서 뺐다(기록: `fixcost/moered-1104/moe-down-reduce-code.txt`).
+  살리려면 원래 격자(행 × 전문가, 블록당 워프 1개)를 두고 마지막에 끝난 블록이 합하는 방식(원자 카운터)이어야 하는데 이득이 ≈0.5% 이하라 보류.
+
+### shared expert down + 게이트 꼬리 (`mul_mat_vec_q_shexp_tail`, 기본 켬, `GGML_CUDA_NO_SHEXP_DOWN_TAIL=1` 끔)
+- 1토큰 shared expert down(MUL_MAT, Q5_0) → 게이트 MUL_MAT(f32 [2560,1]) → SIGMOID → MUL → ADD(라우팅 출력)를 한 커널로: 워프 32개 블록이 연속 32행,
+  각 워프가 RDNA mmvq 와 같은 루프로 한 행, 앞 256 스레드가 k_shexp_gate_dot_tail 과 같은 게이트 내적(공용 `shexp_gate_dot_256<nthreads>` 로 unary.cuh 에 옮김,
+  256 넘는 스레드는 장벽만), 레인 0 이 같은 반올림(contract off)으로 `moe + 행 × sigmoid(g)`.
+- `GGML_CUDA_SHEXP_TAIL_VERIFY=1`(제자리 출력이라 라우팅 입력을 먼저 저장했다 되돌려 두 번째 실행): 두 노드 모두 **0 / 2560 다름**, 해시 같음.
+- 커널: 1790 → **1742**. 시간: 옛 down ≈9.3 + 꼬리 3.8 µs → 13.0(중앙)·13.6(평균) µs, 토큰당 630 → 653 µs(블록 80개가 내적을 각자 계산).
+- A/B(끔 → 켬 → 켬 → 끔): 끔 33.84·33.90, 켬 33.95·34.13(AR 주기 302.2·302.4 vs 302.0·300.6) → **+0.5%**.
+
+### 정리
+- 오늘 묶기 뒤 A 노드 토큰당 커널 1886 → 1742. 띄우기 하나 줄 때마다 ≈2–4 µs 지만, 묶은 커널이 조금이라도 느려지면(MoE 처럼 메모리 접근 순서가 바뀌면) 바로 상쇄된다
+  → 묶기 전후 커널 시간을 rocprofv3 로 먼저 보고 A/B 를 돌린다.
+- 남은 큰 묶음 후보(토큰당 개수): AR 복사 copyBuffer 108, `k_comm_wait_add` 96, hc_post→norm 89(+ down_inject 행렬곱 96), GDN 층 작은 커널(36씩: conv·norm 쌍·gates·beta_alpha).
+

@@ -1,0 +1,14 @@
+# python3 tools/bench/kdiff.py runs/prof2node-gluon-1104-153755 runs/prof2node-mron-1104-161455  (A 서버, 2노드 llama-bench tg32, rocprofv3)
+runs/prof2node-gluon-1104-153755: tokens 33.0 kernels/token 1790 kernel us/token 23513
+runs/prof2node-mron-1104-161455: tokens 33.0 kernels/token 1742 kernel us/token 22265
+  48.0 ->    0.0 /tok    1601.3 ->      0.0 us/tok  mul_mat_vec_q< g81920x10 w32
+  96.0 ->   96.0 /tok    3717.7 ->   2499.3 us/tok  k_comm_wait_add g1024x1 w1024
+  48.0 ->    0.0 /tok     158.5 ->      0.0 us/tok  moe_weighted_reduction_f32 g256x10 w256
+  97.0 ->   97.0 /tok    2075.0 ->   2028.2 us/tok  mul_mat_vec_q< g81920x1 w32
+  36.0 ->   36.0 /tok     133.5 ->     99.5 us/tok  rms_norm_f32<32, 1, true, true, false, false, true, true, fa g768x1 w32
+ 107.9 ->  107.9 /tok     229.1 ->    200.8 us/tok  __amd_rocclr_copyBuffer g1024x1 w512
+  12.0 ->   12.0 /tok      95.6 ->     74.3 us/tok  flash_attn_tile<256, 256, 1, 4, false> g32x32 w32
+  48.0 ->   48.0 /tok     647.6 ->    627.4 us/tok  mul_mat_vec_q_glu_q8< g20480x1 w1024
+  36.0 ->   36.0 /tok     478.6 ->    459.8 us/tok  gated_delta_net_cuda<128, false, false, 4> g768x4 w32
+  36.0 ->   36.0 /tok     202.6 ->    186.6 us/tok  mul_mat_vec_q< g1536x1 w32
+   0.0 ->   48.0 /tok       0.0 ->   2079.4 us/tok  mul_mat_vec_q_moe_reduce< g819200x1 w320
