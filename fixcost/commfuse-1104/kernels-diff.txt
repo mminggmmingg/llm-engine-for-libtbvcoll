@@ -1,0 +1,13 @@
+# python3 tools/bench/kdiff.py runs/prof2node-convnorm-1104-212200 runs/prof2node-commfuse-1104-215755  (GGML_CUDA_COMM_FUSE=1)
+runs/prof2node-convnorm-1104-212200: tokens 33.0 kernels/token 1670 kernel us/token 21943
+runs/prof2node-commfuse-1104-215755: tokens 33.0 kernels/token 1575 kernel us/token 21590
+  96.0 ->    1.0 /tok    2325.1 ->      6.0 us/tok  k_comm_wait_add g1024x1 w1024
+  96.0 ->   96.0 /tok    2073.7 ->   2051.8 us/tok  k_hc_up_pre<true> g81920x1 w1024
+  36.0 ->   36.0 /tok     120.0 ->    140.6 us/tok  concat_dim0_tail_direct_f32 g5120x1 w256
+  12.0 ->   12.0 /tok      75.5 ->     97.0 us/tok  flash_attn_tile<256, 256, 1, 4, false> g32x32 w32
+  60.0 ->   60.0 /tok     988.3 ->   1011.0 us/tok  mul_mat_vec_f<__hip_bfloat16, float, 1, 256, false, false> g131072x1 w256
+  36.0 ->   36.0 /tok     104.0 ->    133.2 us/tok  rms_norm_f32<32, 1, true, true, false, false, true, true, fa g768x1 w32
+  49.0 ->   49.0 /tok    1577.6 ->   1609.4 us/tok  mul_mat_vec_q< g81920x1 w32
+ 107.9 ->  107.9 /tok     195.2 ->    228.2 us/tok  __amd_rocclr_copyBuffer g1024x1 w512
+  89.0 ->   89.0 /tok     378.8 ->   1218.9 us/tok  rms_norm_f32<1024, 1, true, true, false, false, true, false, g4096x1 w1024
+  48.0 ->   48.0 /tok     675.8 ->   1535.9 us/tok  mul_mat_vec_q_shexp_tail< g81920x1 w1024
