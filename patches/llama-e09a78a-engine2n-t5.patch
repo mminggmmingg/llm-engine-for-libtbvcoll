@@ -990,7 +990,7 @@ index f9bf437..8ce163a 100644
  
  void ggml_cuda_op_gated_delta_net(ggml_backend_cuda_context & ctx, ggml_tensor * dst);
 diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
-index 72e961d..267c75c 100644
+index 72e961d..f1f117b 100644
 --- a/ggml/src/ggml-cuda/ggml-cuda.cu
 +++ b/ggml/src/ggml-cuda/ggml-cuda.cu
 @@ -62,6 +62,7 @@
@@ -1398,7 +1398,7 @@ index 72e961d..267c75c 100644
  // match ssm_scan + the strided cpy that scatters its state snapshots into the cache, so the kernel writes them and skips the cpy
  static int ggml_cuda_try_ssm_scan_cache_fusion(
          const ggml_cgraph * cgraph, int node_idx, ggml_cuda_ssm_scan_fused_cache & fused_state_cpy) {
-@@ -3848,7 +4067,868 @@ static bool ggml_cuda_can_fuse(const struct ggml_cgraph *                cgraph,
+@@ -3848,7 +4067,951 @@ static bool ggml_cuda_can_fuse(const struct ggml_cgraph *                cgraph,
      return false;
  }
  
@@ -1715,9 +1715,10 @@ index 72e961d..267c75c 100644
 +// engine2n: the gated delta net's q and k l2 norms, RMS_NORM -> SCALE [-> views] -> RMS_NORM -> SCALE on adjacent row ranges of
 +// the conv output with the same eps and scale, in one kernel (norm.cu rms_norm_scale_pair_f32, same values). Returns the nodes to
 +// skip, 0 if it does not match. GGML_CUDA_NO_NORM_SCALE_PAIR=1 turns it off.
-+static int ggml_cuda_try_rms_norm_scale_pair(ggml_backend_cuda_context & ctx, ggml_cgraph * cgraph, int i) {
++static int ggml_cuda_rms_norm_scale_pair_match(ggml_cgraph * cgraph, int i) {
 +    static const bool off = getenv("GGML_CUDA_NO_NORM_SCALE_PAIR") != nullptr;
-+    if (off) {
++    if (off || i + 1 >= cgraph->n_nodes || cgraph->nodes[i]->op != GGML_OP_RMS_NORM ||
++            !ggml_cuda_can_fuse(cgraph, i, { GGML_OP_RMS_NORM, GGML_OP_SCALE }, {})) {
 +        return 0;
 +    }
 +    int j = i + 2;
@@ -1751,8 +1752,90 @@ index 72e961d..267c75c 100644
 +            ggml_cuda_tensors_overlap(sc_b, xb)) {
 +        return 0;
 +    }
-+    ggml_cuda_op_rms_norm_scale_pair(ctx, rms_a, sc_a, rms_b, sc_b);
 +    return j + 1 - i;
++}
++
++static int ggml_cuda_try_rms_norm_scale_pair(ggml_backend_cuda_context & ctx, ggml_cgraph * cgraph, int i) {
++    const int n = ggml_cuda_rms_norm_scale_pair_match(cgraph, i);
++    if (n == 0) {
++        return 0;
++    }
++    ggml_cuda_op_rms_norm_scale_pair(ctx, cgraph->nodes[i], cgraph->nodes[i + 1], cgraph->nodes[i + n - 1], cgraph->nodes[i + n]);
++    return n;
++}
++
++// engine2n: one-token SSM_CONV -> SILU [-> views] -> the q/k norm pair above, when the pair's rows are whole 128-channel blocks of
++// the conv output: one kernel (ssm-conv.cu ssm_conv_silu_norm_pair_f32, same values). GGML_CUDA_NO_CONV_NORM_PAIR=1 turns it off;
++// GGML_CUDA_CONV_NORM_VERIFY=1 (debug) also runs the two ordinary kernels and compares bit for bit.
++static int ggml_cuda_try_ssm_conv_norm_pair(ggml_backend_cuda_context & ctx, ggml_cgraph * cgraph, int i) {
++    static const bool off = getenv("GGML_CUDA_NO_CONV_NORM_PAIR") != nullptr;
++    if (off || !ggml_cuda_can_fuse(cgraph, i, { GGML_OP_SSM_CONV, GGML_OP_UNARY }, { GGML_UNARY_OP_SILU })) {
++        return 0;
++    }
++    ggml_tensor * conv = cgraph->nodes[i];
++    ggml_tensor * silu = cgraph->nodes[i + 1];
++    int r = i + 2;
++    while (r < cgraph->n_nodes && ggml_cuda_is_view_or_noop(cgraph->nodes[r])) {
++        r++;
++    }
++    if (r >= cgraph->n_nodes || r - i > 4) {
++        return 0;
++    }
++    const int n = ggml_cuda_rms_norm_scale_pair_match(cgraph, r);
++    if (n == 0) {
++        return 0;
++    }
++    ggml_tensor * rms_a = cgraph->nodes[r];
++    ggml_tensor * sc_a  = cgraph->nodes[r + 1];
++    ggml_tensor * sc_b  = cgraph->nodes[r + n];
++    const ggml_tensor * xa = rms_a->src[0];
++    const ggml_tensor * src0 = conv->src[0];
++    const ggml_tensor * src1 = conv->src[1];
++    const int64_t off_a = (const char *) xa->data - (const char *) silu->data;
++    if (src1->ne[0] != 4 || src0->type != GGML_TYPE_F32 || src0->nb[0] != sizeof(float) || src0->nb[1] != src0->ne[0]*sizeof(float) ||
++            src1->nb[0] != sizeof(float) || silu->type != GGML_TYPE_F32 || silu->ne[1] != 1 || silu->ne[2] != 1 ||
++            silu->ne[0] % 128 != 0 || src0->ne[1] != silu->ne[0] || xa->op != GGML_OP_VIEW || xa->src[0] != silu ||
++            xa->ne[0] != 128 || xa->nb[1] != 128*sizeof(float) || xa->ne[2] != 1 || off_a < 0 || off_a % (128*sizeof(float)) != 0 ||
++            ggml_cuda_tensors_overlap(sc_a, silu) || ggml_cuda_tensors_overlap(sc_b, silu) ||
++            ggml_cuda_tensors_overlap(sc_a, src0) || ggml_cuda_tensors_overlap(sc_b, src0)) {
++        return 0;  // (the norm outputs may be allocated over the conv input, which other blocks are still reading)
++    }
++    float eps, scale_out;
++    memcpy(&eps, rms_a->op_params, sizeof(float));
++    memcpy(&scale_out, sc_a->op_params, sizeof(float));
++    const int nrows_a = (int) xa->ne[1];
++    const int nrows_b = (int) cgraph->nodes[r + n - 1]->src[0]->ne[1];
++    if ((off_a / (int64_t) (128*sizeof(float))) + nrows_a + nrows_b > silu->ne[0] / 128) {
++        return 0;
++    }
++    ggml_cuda_op_ssm_conv_silu_norm_pair(ctx, conv, silu, (int) (off_a / (int64_t) (128*sizeof(float))), nrows_a, nrows_b, sc_a, sc_b,
++        eps, scale_out);
++
++    static const bool verify = getenv("GGML_CUDA_CONV_NORM_VERIFY") != nullptr;
++    if (verify) {
++        const ggml_tensor * outs[3] = { silu, sc_a, sc_b };
++        std::vector<char> a[3], b[3];
++        for (int k = 0; k < 3; k++) {
++            a[k].resize(ggml_nbytes(outs[k]));
++            b[k].resize(ggml_nbytes(outs[k]));
++            CUDA_CHECK(cudaMemcpyAsync(a[k].data(), outs[k]->data, a[k].size(), cudaMemcpyDeviceToHost, ctx.stream()));
++        }
++        ggml_cuda_op_ssm_conv(ctx, conv, nullptr, silu);
++        ggml_cuda_op_rms_norm_scale_pair(ctx, rms_a, sc_a, cgraph->nodes[r + n - 1], sc_b);
++        for (int k = 0; k < 3; k++) {
++            CUDA_CHECK(cudaMemcpyAsync(b[k].data(), outs[k]->data, b[k].size(), cudaMemcpyDeviceToHost, ctx.stream()));
++        }
++        CUDA_CHECK(cudaStreamSynchronize(ctx.stream()));
++        const bool same = a[0] == b[0] && a[1] == b[1] && a[2] == b[2];
++        static int nprint = 0;
++        if (!same || nprint < 8) {
++            nprint++;
++            fprintf(stderr, "conv norm verify: %s head0 %lld rows %d+%d: %s (silu %d q %d k %d)\n", silu->name,
++                (long long) (off_a / (int64_t) (128*sizeof(float))), nrows_a, nrows_b, same ? "same" : "DIFFER", a[0] == b[0], a[1] == b[1],
++                a[2] == b[2]);
++        }
++    }
++    return r + n - i;
 +}
 +
 +// engine2n: DSV4_HC_PRE whose output is the input of a quantized matmul within the next few nodes (attention qkv, MoE gate/up):
@@ -2267,7 +2350,7 @@ index 72e961d..267c75c 100644
  static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph, int i) {
  
      if (ggml_cuda_fusion_disabled()) {
-@@ -3857,6 +4937,51 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+@@ -3857,6 +5020,51 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
  
      ggml_tensor * node = cgraph->nodes[i];
  
@@ -2319,7 +2402,7 @@ index 72e961d..267c75c 100644
      if (node->op == GGML_OP_MUL_MAT_ID && cuda_ctx->stream_context().concurrent_events.empty() &&
              ggml_cuda_match_shared_expert(cgraph, i, i + 3) &&
              ggml_cuda_should_fuse_mul_mat_vec_q(cgraph->nodes[i + 2]->src[1])) {
-@@ -3894,6 +5019,14 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+@@ -3894,6 +5102,14 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
          ggml_cuda_gated_delta_net_fused_cache fused_state_cpy;
          const int nodes_to_skip = ggml_cuda_try_gdn_cache_fusion(cgraph, i, fused_state_cpy);
          if (nodes_to_skip > 0) {
@@ -2334,7 +2417,7 @@ index 72e961d..267c75c 100644
  #ifdef GGML_CUDA_DEBUG
              GGML_LOG_INFO("%s: fused gated_delta_net snapshot copies for %s (skipped %d nodes)\n",
                            __func__, node->name, nodes_to_skip);
-@@ -4422,6 +5555,7 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+@@ -4422,6 +5638,7 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
                  fusion_data.gate      = gate->src[0];
                  fusion_data.glu_op    = ggml_get_glu_op(glu);
                  fusion_data.glu_limit = ggml_get_op_params_f32(glu, 3);
@@ -2342,7 +2425,7 @@ index 72e961d..267c75c 100644
  
                  ggml_cuda_mul_mat_vec_q(*cuda_ctx, src0, src1, ids, glu, &fusion_data);
                  fused_mul_mat_vec = true;
-@@ -4615,11 +5749,19 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+@@ -4615,11 +5832,19 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
      }
  
      if (ggml_cuda_can_fuse(cgraph, i, { GGML_OP_RMS_NORM, GGML_OP_MUL }, {})) {
@@ -2363,7 +2446,20 @@ index 72e961d..267c75c 100644
          ggml_cuda_op_rms_norm_scale_fused(*cuda_ctx, node, cgraph->nodes[i + 1]);
          return 1;
      }
-@@ -4647,6 +5789,10 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+@@ -4629,6 +5854,12 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+         return 2;
+     }
+ 
++    if (node->op == GGML_OP_SSM_CONV) {
++        const int n = ggml_cuda_try_ssm_conv_norm_pair(*cuda_ctx, cgraph, i);
++        if (n > 0) {
++            return n;
++        }
++    }
+     if (ggml_cuda_can_fuse(cgraph, i, { GGML_OP_SSM_CONV, GGML_OP_UNARY }, { GGML_UNARY_OP_SILU })) {
+         ggml_cuda_op_ssm_conv(*cuda_ctx, node, /*bias_add_node=*/ nullptr, cgraph->nodes[i + 1]);
+         return 1;
+@@ -4647,6 +5878,10 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
      }
  
      if (ggml_cuda_can_fuse(cgraph, i, { GGML_OP_SCALE, GGML_OP_UNARY, GGML_OP_SCALE, GGML_OP_DSV4_HC_POST }, { GGML_UNARY_OP_SIGMOID })) {
@@ -2374,7 +2470,7 @@ index 72e961d..267c75c 100644
          ggml_cuda_op_dsv4_hc_post(*cuda_ctx, cgraph->nodes[i + 3], node, cgraph->nodes[i + 2]);
          return 3;
      }
-@@ -4659,6 +5805,31 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+@@ -4659,6 +5894,31 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
      return 0;
  }
  
@@ -2406,7 +2502,7 @@ index 72e961d..267c75c 100644
  static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph, const bool use_cuda_graph, const bool cuda_graph_update_required, const void * graph_key) {
      bool graph_evaluated_or_captured = false;
  
-@@ -4764,6 +5935,18 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
+@@ -4764,6 +6024,18 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
                  stream_ctx.concurrent_events.clear();
              }
  
@@ -2425,7 +2521,7 @@ index 72e961d..267c75c 100644
              for (int i = 0; i < cgraph->n_nodes; i++) {
                  ggml_tensor * node = cgraph->nodes[i];
  #ifdef USE_CUDA_GRAPH
-@@ -4815,9 +5998,81 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
+@@ -4815,9 +6087,81 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
                      continue;
                  }
  
@@ -2507,7 +2603,7 @@ index 72e961d..267c75c 100644
  #ifdef GGML_CUDA_DEBUG
                      const int last_fused = i + nodes_to_skip;
                      GGML_LOG_INFO("nodes_fused: %d, first: %s (%s), last: %s (%s)\n",
-@@ -4844,16 +6099,33 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
+@@ -4844,16 +6188,33 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
                  GGML_UNUSED(integrated);
  #endif  // NDEBUG
  
@@ -2542,7 +2638,7 @@ index 72e961d..267c75c 100644
          }
  
  #ifdef USE_CUDA_GRAPH
-@@ -4878,8 +6150,12 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
+@@ -4878,8 +6239,12 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
  
      if (use_cuda_graph && !cuda_graph_update_required) {
          // the chunks were launched during capture, otherwise launch them here
@@ -2557,7 +2653,7 @@ index 72e961d..267c75c 100644
          }
  #else
          GGML_UNUSED(graph_key);
-@@ -4910,6 +6186,18 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend,
+@@ -4910,6 +6275,18 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend,
  
      ggml_cuda_set_device(cuda_ctx->device);
  
@@ -2576,7 +2672,7 @@ index 72e961d..267c75c 100644
      bool use_cuda_graph             = false;
      bool cuda_graph_update_required = false;
      const void * graph_key = nullptr;
-@@ -4970,6 +6258,7 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend,
+@@ -4970,6 +6347,7 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend,
  
  static void ggml_backend_cuda_event_record(ggml_backend_t backend, ggml_backend_event_t event) {
      ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *)backend->context;
@@ -2584,7 +2680,7 @@ index 72e961d..267c75c 100644
  
      CUDA_CHECK(cudaEventRecord((cudaEvent_t)event->context, cuda_ctx->stream()));
  }
-@@ -6282,8 +7571,269 @@ static ggml_backend_feature * ggml_backend_cuda_get_features(ggml_backend_reg_t
+@@ -6282,8 +7660,269 @@ static ggml_backend_feature * ggml_backend_cuda_get_features(ggml_backend_reg_t
      GGML_UNUSED(reg);
  }
  
@@ -2854,6 +2950,559 @@ index 72e961d..267c75c 100644
      if (strcmp(name, "ggml_backend_comm_init") == 0) {
          return (void *)ggml_backend_cuda_comm_init;
      }
+diff --git a/ggml/src/ggml-cuda/hc-mix.cu b/ggml/src/ggml-cuda/hc-mix.cu
+new file mode 100644
+index 0000000..78a57f8
+--- /dev/null
++++ b/ggml/src/ggml-cuda/hc-mix.cu
+@@ -0,0 +1,532 @@
++#include "hc-mix.cuh"
++
++#include <cmath>
++#include <cstdlib>
++#include <cstring>
++#include <vector>
++
++static constexpr int HC_MIX_HC          = 4;   // hyper-connection streams
++static constexpr int HC_MIX_WARP        = 32;  // the kernels map lanes to the 32 values of a quant block
++static constexpr int HC_MIX_WARPS       = 8;
++static constexpr int HC_MIX_UP_EMBD     = HC_MIX_WARPS / HC_MIX_HC;  // embedding positions per up block
++static constexpr int HC_MIX_MAX_TOKENS  = 4;   // decode and MTP verify (3 drafts + 1)
++
++// round a value the way quantize_q8_1 does for the unfused mmvq path (32 values per block = the 32 lanes of a warp,
++// scale amax/127 stored as f16), so that the fused result keeps the unfused numerics
++static __device__ __forceinline__ float hc_mix_q8_1(const float x) {
++    const float amax = warp_reduce_max<HC_MIX_WARP>(fabsf(x));
++    const float d    = amax / 127.0f;
++    return amax == 0.0f ? 0.0f : roundf(x / d) * __half2float(__float2half(d));
++}
++
++// xq = xn rounded as q8_1, n a multiple of 32: one warp per 32 values
++static __global__ void hc_mix_round_x(const float * __restrict__ x, float * __restrict__ xq, const int n) {
++    const int i = blockIdx.x*blockDim.x + threadIdx.x;
++    if (i < n) {
++        xq[i] = hc_mix_q8_1(x[i]);
++    }
++}
++
++// blocks of hc_mix_down that have finished; the last one rounds lo and resets it
++static __device__ unsigned int hc_mix_down_done = 0;
++
++// one 256-value group g of a down row against the nt token vectors xv[t][k] = xn_t[256*g + lane + 32*k], k = 0..7
++// (a Q6_K half h takes its values lane, lane+32, lane+64, lane+96 = xv[t][4h + 0..3]); the weights are decoded once
++template <ggml_type type, int nt>
++static __device__ __forceinline__ void hc_mix_dot256(const char * row, int g, int lane, const float (&xv)[nt][8], float (&acc)[nt]) {
++    if constexpr (type == GGML_TYPE_Q6_K) {
++        const block_q6_K * b = (const block_q6_K *) row + g;
++        const float d = __half2float(b->d);
++#pragma unroll
++        for (int h = 0; h < 2; ++h) {
++            const int ql0 = b->ql[h*64 + lane];
++            const int ql1 = b->ql[h*64 + lane + 32];
++            const int qh  = b->qh[h*32 + lane];
++            const int8_t * sc = b->scales + h*8 + lane/16;
++            const float w1 = d*sc[0]*(((ql0 & 0xF) | (((qh >> 0) & 3) << 4)) - 32);
++            const float w2 = d*sc[2]*(((ql1 & 0xF) | (((qh >> 2) & 3) << 4)) - 32);
++            const float w3 = d*sc[4]*(((ql0 >>  4) | (((qh >> 4) & 3) << 4)) - 32);
++            const float w4 = d*sc[6]*(((ql1 >>  4) | (((qh >> 6) & 3) << 4)) - 32);
++#pragma unroll
++            for (int t = 0; t < nt; ++t) {
++                acc[t] += w1*xv[t][4*h + 0] + w2*xv[t][4*h + 1] + w3*xv[t][4*h + 2] + w4*xv[t][4*h + 3];
++            }
++        }
++    } else {
++        static_assert(type == GGML_TYPE_Q8_0, "hc mix: unsupported down type");
++        const block_q8_0 * b = (const block_q8_0 *) row + 8*g;
++#pragma unroll
++        for (int k = 0; k < 8; ++k) {
++            const float wk = __half2float(b[k].d) * b[k].qs[lane];
++#pragma unroll
++            for (int t = 0; t < nt; ++t) {
++                acc[t] += wk*xv[t][k];
++            }
++        }
++    }
++}
++
++// for each of nt tokens: raw_t[r] = down_inject[r] . xn_t; lo_t[r] = silu(scale*raw_t[r] + bias) for the first n_lo rows
++// (q8a: xn already rounded as q8_1 by hc_mix_round_x, and lo is rounded the same way at the end).
++// A block takes `rows` rows, which share the activation loads; its warps split the row length in 256-value groups.
++// gpw > 0: each warp takes exactly gpw groups, unrolled so that all their loads are in flight at once.
++template <ggml_type type, int gpw, int nt, int rows, bool q8a>
++static __global__ void hc_mix_down(const char * __restrict__ w, const size_t row_bytes, const float * __restrict__ xn,
++        float * __restrict__ raw, float * __restrict__ lo, const int n_rows, const int n_lo, const int n_groups,
++        const float scale, const float bias) {
++    const int lane = threadIdx.x % HC_MIX_WARP;
++    const int warp = threadIdx.x / HC_MIX_WARP;
++    const int r0   = blockIdx.x*rows;
++    const int K    = n_groups*256;
++
++    float acc[rows][nt] = {};
++    auto step = [&](const int g) {
++        float xv[nt][8];
++#pragma unroll
++        for (int t = 0; t < nt; ++t) {
++#pragma unroll
++            for (int k = 0; k < 8; ++k) {
++                xv[t][k] = xn[t*K + g*256 + lane + 32*k];
++            }
++        }
++#pragma unroll
++        for (int r = 0; r < rows; ++r) {
++            if (r0 + r < n_rows) {
++                hc_mix_dot256<type, nt>(w + (size_t) (r0 + r)*row_bytes, g, lane, xv, acc[r]);
++            }
++        }
++    };
++    if constexpr (gpw > 0) {
++#pragma unroll
++        for (int j = 0; j < gpw; ++j) {
++            step(warp + j*HC_MIX_WARPS);
++        }
++    } else {
++        for (int g = warp; g < n_groups; g += HC_MIX_WARPS) {
++            step(g);
++        }
++    }
++
++    __shared__ float part[rows*nt][HC_MIX_WARPS];
++#pragma unroll
++    for (int r = 0; r < rows; ++r) {
++#pragma unroll
++        for (int t = 0; t < nt; ++t) {
++            const float s = warp_reduce_sum<HC_MIX_WARP>(acc[r][t]);
++            if (lane == 0) {
++                part[r*nt + t][warp] = s;
++            }
++        }
++    }
++    __syncthreads();
++
++    if (threadIdx.x < rows*nt) {
++        const int r = r0 + threadIdx.x / nt;
++        const int t = threadIdx.x % nt;
++        if (r < n_rows) {
++            float s = 0.0f;
++#pragma unroll
++            for (int k = 0; k < HC_MIX_WARPS; ++k) {
++                s += part[threadIdx.x][k];
++            }
++            raw[t*n_rows + r] = s;
++            if (r < n_lo) {
++                const float v = scale*s + bias;
++                lo[t*n_lo + r] = v / (1.0f + expf(-v));
++            }
++        }
++    }
++
++    if constexpr (q8a) {
++        // the last block to finish rounds all of lo as q8_1 (the input of the up matmul in the unfused graph)
++        __shared__ bool last;
++        __threadfence();
++        __syncthreads();
++        if (threadIdx.x == 0) {
++            last = atomicAdd(&hc_mix_down_done, 1u) == gridDim.x - 1;
++        }
++        __syncthreads();
++        if (last) {
++            __threadfence();
++            volatile float * lv = lo;
++            for (int k = threadIdx.x; k < nt*n_lo; k += blockDim.x) {  // n_lo is a multiple of 32: warps take whole blocks
++                lv[k] = hc_mix_q8_1(lv[k]);
++            }
++            if (threadIdx.x == 0) {
++                hc_mix_down_done = 0;
++            }
++        }
++    }
++}
++
++// for each of nt tokens: gate_t[s*n_embd + e] = up[s*n_embd + e] . lo_t (Q8_0 rows of n_lo values);
++// dst_t[e] = pre_scale * sum_s xn_t[s*n_embd + e] * sigmoid(gate_t[s*n_embd + e]).
++// nq > 0: rows of exactly nq quant blocks, unrolled so that all their loads are in flight at once.
++// Two layouts (rocprofv3, gfx1151, 10240 rows of 320): one warp per row reading lo from L2 is faster for one token
++// (22 vs 29 us), one warp per position with lo in shared memory for four (30 vs 39 us).
++
++// one warp per (position, stream) row, a block takes HC_MIX_UP_EMBD positions
++template <int nq, int nt>
++static __global__ void hc_mix_up_row(const char * __restrict__ w, const size_t row_bytes, const float * __restrict__ lo,
++        const float * __restrict__ xn, float * __restrict__ dst, const int n_embd, const int n_qblocks, const float pre_scale) {
++    const int lane = threadIdx.x % HC_MIX_WARP;
++    const int warp = threadIdx.x / HC_MIX_WARP;
++    const int s    = warp % HC_MIX_HC;
++    const int e    = blockIdx.x*HC_MIX_UP_EMBD + warp / HC_MIX_HC;
++    const int n_lo = n_qblocks*32;
++
++    const block_q8_0 * b = (const block_q8_0 *) (w + (size_t) (s*n_embd + e)*row_bytes);
++    float acc[nt] = {};
++    if constexpr (nq > 0) {
++        float wq[nq];
++#pragma unroll
++        for (int k = 0; k < nq; ++k) {
++            wq[k] = __half2float(b[k].d) * b[k].qs[lane];
++        }
++#pragma unroll
++        for (int k = 0; k < nq; ++k) {
++#pragma unroll
++            for (int t = 0; t < nt; ++t) {
++                acc[t] += wq[k] * lo[t*n_lo + 32*k + lane];
++            }
++        }
++    } else {
++        for (int k = 0; k < n_qblocks; ++k) {
++            const float wk = __half2float(b[k].d) * b[k].qs[lane];
++#pragma unroll
++            for (int t = 0; t < nt; ++t) {
++                acc[t] += wk * lo[t*n_lo + 32*k + lane];
++            }
++        }
++    }
++
++    __shared__ float part[nt][HC_MIX_WARPS];
++#pragma unroll
++    for (int t = 0; t < nt; ++t) {
++        const float g = warp_reduce_sum<HC_MIX_WARP>(acc[t]);
++        if (lane == 0) {
++            part[t][warp] = xn[t*HC_MIX_HC*n_embd + s*n_embd + e] / (1.0f + expf(-g));
++        }
++    }
++    __syncthreads();
++
++    if (threadIdx.x < HC_MIX_UP_EMBD*nt) {
++        const int el = threadIdx.x % HC_MIX_UP_EMBD;
++        const int t  = threadIdx.x / HC_MIX_UP_EMBD;
++        float sum = 0.0f;
++#pragma unroll
++        for (int k = 0; k < HC_MIX_HC; ++k) {
++            sum += part[t][el*HC_MIX_HC + k];
++        }
++        dst[t*n_embd + blockIdx.x*HC_MIX_UP_EMBD + el] = pre_scale*sum;
++    }
++}
++
++// one warp per position and its HC_MIX_HC stream rows, a block takes HC_MIX_WARPS positions and keeps lo in shared memory
++template <int nq, int nt>
++static __global__ void hc_mix_up_pos(const char * __restrict__ w, const size_t row_bytes, const float * __restrict__ lo,
++        const float * __restrict__ xn, float * __restrict__ dst, const int n_embd, const int n_qblocks, const float pre_scale) {
++    const int lane = threadIdx.x % HC_MIX_WARP;
++    const int warp = threadIdx.x / HC_MIX_WARP;
++    const int e    = blockIdx.x*HC_MIX_WARPS + warp;
++    const int n_lo = n_qblocks*32;
++
++    extern __shared__ float lo_s[];  // [nt][n_lo]
++    for (int k = threadIdx.x; k < nt*n_lo; k += blockDim.x) {
++        lo_s[k] = lo[k];
++    }
++    __syncthreads();
++
++    float acc[HC_MIX_HC][nt] = {};
++#pragma unroll
++    for (int s = 0; s < HC_MIX_HC; ++s) {
++        const block_q8_0 * b = (const block_q8_0 *) (w + (size_t) (s*n_embd + e)*row_bytes);
++        if constexpr (nq > 0) {
++            float wq[nq];
++#pragma unroll
++            for (int k = 0; k < nq; ++k) {
++                wq[k] = __half2float(b[k].d) * b[k].qs[lane];
++            }
++#pragma unroll
++            for (int k = 0; k < nq; ++k) {
++#pragma unroll
++                for (int t = 0; t < nt; ++t) {
++                    acc[s][t] += wq[k] * lo_s[t*n_lo + 32*k + lane];
++                }
++            }
++        } else {
++            for (int k = 0; k < n_qblocks; ++k) {
++                const float wk = __half2float(b[k].d) * b[k].qs[lane];
++#pragma unroll
++                for (int t = 0; t < nt; ++t) {
++                    acc[s][t] += wk * lo_s[t*n_lo + 32*k + lane];
++                }
++            }
++        }
++    }
++
++#pragma unroll
++    for (int t = 0; t < nt; ++t) {
++        float sum = 0.0f;
++#pragma unroll
++        for (int s = 0; s < HC_MIX_HC; ++s) {
++            const float g = warp_reduce_sum<HC_MIX_WARP>(acc[s][t]);
++            sum += xn[t*HC_MIX_HC*n_embd + s*n_embd + e] / (1.0f + expf(-g));
++        }
++        if (lane == 0) {
++            dst[t*n_embd + e] = pre_scale*sum;
++        }
++    }
++}
++
++// GGML_CUDA_HC_MIX=1: fuse, rounding the activations as q8_1 like the unfused path (same quality, no measured 2-node gain);
++// GGML_CUDA_HC_MIX=f32: fuse with exact f32 activations (2-node MTP +2.5%, but KLD to the Q8_0 model 0.077 vs 0.071 and
++// higher PPL; the Q8_0 model's own PPL also rises with f32 hc activations). Off by default (RESULTS.md 2026-10-31).
++static const char * hc_mix_mode() {
++    static const char * v = getenv("GGML_CUDA_HC_MIX");
++    return v;
++}
++
++static bool hc_mix_disabled() {
++    return hc_mix_mode() == nullptr || strcmp(hc_mix_mode(), "0") == 0;
++}
++
++static bool hc_mix_overlap(const void * a, size_t na, const void * b, size_t nb) {
++    const char * pa = (const char *) a;
++    const char * pb = (const char *) b;
++    return pa < pb + nb && pb < pa + na;
++}
++
++bool ggml_cuda_hc_mix_match(const ggml_cgraph * cgraph, int i) {
++    if (hc_mix_disabled() || i + 7 > cgraph->n_nodes) {
++        return false;
++    }
++    if (ggml_cuda_info().devices[ggml_cuda_get_device()].warp_size != HC_MIX_WARP) {
++        return false;
++    }
++    const ggml_tensor * down  = cgraph->nodes[i];
++    const ggml_tensor * view  = cgraph->nodes[i + 1];
++    const ggml_tensor * scale = cgraph->nodes[i + 2];
++    const ggml_tensor * silu  = cgraph->nodes[i + 3];
++    const ggml_tensor * up    = cgraph->nodes[i + 4];
++    const ggml_tensor * gate  = cgraph->nodes[i + 5];
++    const ggml_tensor * pre   = cgraph->nodes[i + 6];
++
++    if (down->op != GGML_OP_MUL_MAT || view->op != GGML_OP_VIEW || scale->op != GGML_OP_SCALE ||
++            silu->op != GGML_OP_UNARY || ggml_get_unary_op(silu) != GGML_UNARY_OP_SILU ||
++            up->op != GGML_OP_MUL_MAT || gate->op != GGML_OP_RESHAPE || pre->op != GGML_OP_DSV4_HC_PRE) {
++        return false;
++    }
++    if (!ggml_can_fuse_subgraph(cgraph, i, { GGML_OP_MUL_MAT, GGML_OP_VIEW, GGML_OP_SCALE, GGML_OP_UNARY,
++                GGML_OP_MUL_MAT, GGML_OP_RESHAPE, GGML_OP_DSV4_HC_PRE }, { i, i + 6 })) {
++        return false;
++    }
++    // edges
++    if (view->view_src != down || view->view_offs != 0 || scale->src[0] != view || silu->src[0] != scale ||
++            up->src[1] != silu || gate->src[0] != up || pre->src[1] != gate) {
++        return false;
++    }
++    // 1..HC_MIX_MAX_TOKENS tokens, contiguous f32 activations
++    const ggml_tensor * x = down->src[1];
++    const ggml_tensor * w_down = down->src[0];
++    const ggml_tensor * w_up = up->src[0];
++    const ggml_tensor * xn3 = pre->src[0];
++    const int64_t n_embd = xn3->ne[0];
++    const int64_t n_lo   = view->ne[0];
++    const int64_t nt     = x->ne[1];
++    if (nt < 1 || nt > HC_MIX_MAX_TOKENS) {
++        return false;
++    }
++    if (x->type != GGML_TYPE_F32 || !ggml_is_contiguous(x) || x->ne[2] != 1 || x->ne[3] != 1 ||
++            xn3->type != GGML_TYPE_F32 || !ggml_is_contiguous(xn3) || xn3->data != x->data ||
++            xn3->ne[1] != HC_MIX_HC || xn3->ne[2] != nt || x->ne[0] != n_embd*HC_MIX_HC) {
++        return false;
++    }
++    if ((w_down->type != GGML_TYPE_Q6_K && w_down->type != GGML_TYPE_Q8_0) || !ggml_is_contiguous(w_down) ||
++            w_down->ne[0] != x->ne[0] || w_down->ne[0] % 256 != 0 || w_down->ne[2] != 1 || w_down->ne[1] < n_lo) {
++        return false;
++    }
++    if (w_up->type != GGML_TYPE_Q8_0 || !ggml_is_contiguous(w_up) || w_up->ne[0] != n_lo || n_lo % 32 != 0 ||
++            w_up->ne[1] != n_embd*HC_MIX_HC || w_up->ne[2] != 1 || n_embd % HC_MIX_WARPS != 0) {
++        return false;
++    }
++    if (ggml_get_op_params_i32(pre, 1) != 1 || view->ne[1] != nt || view->nb[1] != down->nb[1] ||
++            !ggml_is_contiguous(down) || down->ne[1] != nt || up->ne[1] != nt ||
++            !ggml_is_contiguous(pre) || pre->ne[0] != n_embd || pre->ne[1] != nt) {
++        return false;
++    }
++    // memory: lo goes to the up product's buffer, which is live until hc_pre and is not an input
++    const size_t raw_bytes = ggml_nbytes(down);
++    const size_t lo_bytes  = nt*n_lo*sizeof(float);
++    const size_t xn_bytes  = ggml_nbytes(x);
++    const size_t dst_bytes = ggml_nbytes(pre);
++    if (ggml_nbytes(up) < lo_bytes ||
++            hc_mix_overlap(up->data, lo_bytes, x->data, xn_bytes) || hc_mix_overlap(up->data, lo_bytes, down->data, raw_bytes) ||
++            hc_mix_overlap(down->data, raw_bytes, x->data, xn_bytes) ||
++            hc_mix_overlap(pre->data, dst_bytes, x->data, xn_bytes) || hc_mix_overlap(pre->data, dst_bytes, up->data, lo_bytes)) {
++        return false;
++    }
++    return true;
++}
++
++template <int nt, bool q8a>
++static void hc_mix_launch(ggml_backend_cuda_context & ctx, const ggml_tensor * w_down, const ggml_tensor * w_up, const float * xn,
++        float * raw, float * lo, float * dst, int n_rows, int n_lo, int n_groups, int n_embd, float s, float b, float pre_s) {
++    cudaStream_t stream = ctx.stream();
++    const dim3 block(HC_MIX_WARP*HC_MIX_WARPS);
++
++    const int n_x = nt*n_groups*256;
++    ggml_cuda_pool_alloc<float> xq(ctx.pool());
++    const float * xd = xn;
++    if constexpr (q8a) {
++        xq.alloc(n_x);
++        hc_mix_round_x<<<(n_x + 255)/256, 256, 0, stream>>>(xn, xq.get(), n_x);
++        CUDA_CHECK(cudaGetLastError());
++        xd = xq.get();
++    }
++    // more tokens: more rows per block, so each block reads the nt activation vectors for more rows
++    constexpr int rows = nt == 1 ? 2 : 4;
++    const dim3 grid_down((n_rows + rows - 1)/rows);
++    // qwen4exp: 10240 = 40 groups = 5 per warp
++    const bool g5 = n_groups == 5*HC_MIX_WARPS;
++    auto down_k = w_down->type == GGML_TYPE_Q6_K ? (g5 ? hc_mix_down<GGML_TYPE_Q6_K, 5, nt, rows, q8a> : hc_mix_down<GGML_TYPE_Q6_K, 0, nt, rows, q8a>)
++                                                 : (g5 ? hc_mix_down<GGML_TYPE_Q8_0, 5, nt, rows, q8a> : hc_mix_down<GGML_TYPE_Q8_0, 0, nt, rows, q8a>);
++    down_k<<<grid_down, block, 0, stream>>>((const char *) w_down->data, w_down->nb[1], xd, raw, lo, n_rows, n_lo, n_groups, s, b);
++    CUDA_CHECK(cudaGetLastError());
++
++    // qwen4exp: low rank 320 = 10 quant blocks
++    if constexpr (nt == 1) {
++        auto up_k = n_lo == 320 ? hc_mix_up_row<10, nt> : hc_mix_up_row<0, nt>;
++        up_k<<<n_embd/HC_MIX_UP_EMBD, block, 0, stream>>>((const char *) w_up->data, w_up->nb[1], lo, xn, dst, n_embd, n_lo/32, pre_s);
++    } else {
++        auto up_k = n_lo == 320 ? hc_mix_up_pos<10, nt> : hc_mix_up_pos<0, nt>;
++        up_k<<<n_embd/HC_MIX_WARPS, block, nt*n_lo*sizeof(float), stream>>>((const char *) w_up->data, w_up->nb[1], lo, xn, dst,
++                n_embd, n_lo/32, pre_s);
++    }
++    CUDA_CHECK(cudaGetLastError());
++}
++
++void ggml_cuda_op_hc_mix(ggml_backend_cuda_context & ctx, const ggml_cgraph * cgraph, int i) {
++    const ggml_tensor * down  = cgraph->nodes[i];
++    const ggml_tensor * view  = cgraph->nodes[i + 1];
++    const ggml_tensor * scale = cgraph->nodes[i + 2];
++    const ggml_tensor * up    = cgraph->nodes[i + 4];
++    ggml_tensor *       pre   = cgraph->nodes[i + 6];
++
++    const ggml_tensor * w_down = down->src[0];
++    const ggml_tensor * w_up   = up->src[0];
++    const float * xn  = (const float *) down->src[1]->data;
++    float *       raw = (float *) down->data;
++    float *       lo  = (float *) up->data;
++    float *       dst = (float *) pre->data;
++
++    const int nt       = (int) down->ne[1];
++    const int n_rows   = (int) w_down->ne[1];
++    const int n_lo     = (int) view->ne[0];
++    const int n_groups = (int) (w_down->ne[0] / 256);
++    const int n_embd   = (int) pre->ne[0];
++    const float s      = ggml_get_op_params_f32(scale, 0);
++    const float b      = ggml_get_op_params_f32(scale, 1);
++    const float pre_s  = ggml_get_op_params_f32(pre, 0);
++
++    static bool logged = false;
++    if (!logged) {
++        logged = true;
++        GGML_LOG_INFO("%s: fused hc mix: down %s [%d rows], up %s [%d rows of %d]\n", __func__,
++                ggml_type_name(w_down->type), n_rows, ggml_type_name(w_up->type), (int) w_up->ne[1], n_lo);
++    }
++    static int64_t n_calls = 0;
++    static const bool count = getenv("GGML_CUDA_HC_MIX_COUNT") != nullptr;  // debug: log every 1000 calls
++    if (count && ++n_calls % 1000 == 0) {
++        GGML_LOG_INFO("%s: %lld calls (this one %d tokens)\n", __func__, (long long) n_calls, nt);
++    }
++
++    static const bool f32 = strcmp(hc_mix_mode(), "f32") == 0;
++    cudaStream_t stream = ctx.stream();
++#define HC_MIX_LAUNCH(n) (f32 ? hc_mix_launch<n, false>(ctx, w_down, w_up, xn, raw, lo, dst, n_rows, n_lo, n_groups, n_embd, s, b, pre_s) \
++                              : hc_mix_launch<n, true >(ctx, w_down, w_up, xn, raw, lo, dst, n_rows, n_lo, n_groups, n_embd, s, b, pre_s))
++    switch (nt) {
++        case 1: HC_MIX_LAUNCH(1); break;
++        case 2: HC_MIX_LAUNCH(2); break;
++        case 3: HC_MIX_LAUNCH(3); break;
++        case 4: HC_MIX_LAUNCH(4); break;
++        default: GGML_ABORT("hc mix: %d tokens", nt);
++    }
++#undef HC_MIX_LAUNCH
++
++    // GGML_CUDA_HC_MIX_CHECK=<n>: compare the first n calls with a host reference in double (debug; needs HIP graphs off)
++    static int n_check = getenv("GGML_CUDA_HC_MIX_CHECK") ? atoi(getenv("GGML_CUDA_HC_MIX_CHECK")) : 0;
++    if (n_check > 0) {
++        n_check--;
++        CUDA_CHECK(cudaStreamSynchronize(stream));
++        const int64_t K = w_down->ne[0];
++        std::vector<char>  wd(ggml_nbytes(w_down)), wu(ggml_nbytes(w_up));
++        std::vector<float> hx(K*nt), hraw((size_t) n_rows*nt), hdst((size_t) n_embd*nt), row(K);
++        CUDA_CHECK(cudaMemcpy(wd.data(), w_down->data, wd.size(), cudaMemcpyDeviceToHost));
++        CUDA_CHECK(cudaMemcpy(wu.data(), w_up->data, wu.size(), cudaMemcpyDeviceToHost));
++        CUDA_CHECK(cudaMemcpy(hx.data(), xn, hx.size()*sizeof(float), cudaMemcpyDeviceToHost));
++        CUDA_CHECK(cudaMemcpy(hraw.data(), raw, hraw.size()*sizeof(float), cudaMemcpyDeviceToHost));
++        CUDA_CHECK(cudaMemcpy(hdst.data(), dst, hdst.size()*sizeof(float), cudaMemcpyDeviceToHost));
++        const auto * td = ggml_get_type_traits(w_down->type);
++        const auto * tu = ggml_get_type_traits(w_up->type);
++        double e_raw = 0, m_raw = 0, e_dst = 0, m_dst = 0;
++        // the reference rounds the activations the same way as the kernel (q8_1 unless GGML_CUDA_HC_MIX=f32)
++        auto q8_1_ref = [&](double * v, int n) {
++            for (int i0 = 0; i0 < n; i0 += 32) {
++                double amax = 0;
++                for (int i = i0; i < i0 + 32; ++i) {
++                    amax = std::max(amax, std::fabs(v[i]));
++                }
++                const float d = (float) amax / 127.0f;
++                const float dh = ggml_fp16_to_fp32(ggml_fp32_to_fp16(d));
++                for (int i = i0; i < i0 + 32; ++i) {
++                    v[i] = amax == 0 ? 0.0 : (double) roundf((float) v[i] / d) * dh;
++                }
++            }
++        };
++        for (int t = 0; t < nt; ++t) {
++            std::vector<double> xd(hx.begin() + t*K, hx.begin() + (t + 1)*K);
++            if (!f32) {
++                q8_1_ref(xd.data(), (int) K);
++            }
++            const double * x = xd.data();
++            const float * xr = hx.data() + t*K;  // hc_pre uses the unrounded xn
++            std::vector<double> lo_ref(n_lo), gate_ref((size_t) n_embd*HC_MIX_HC);
++            for (int r = 0; r < n_rows; ++r) {
++                td->to_float(wd.data() + r*w_down->nb[1], row.data(), K);
++                double acc = 0;
++                for (int64_t k = 0; k < K; ++k) {
++                    acc += (double) row[k]*x[k];
++                }
++                e_raw = std::max(e_raw, std::fabs(acc - hraw[(size_t) t*n_rows + r]));
++                m_raw = std::max(m_raw, std::fabs(acc));
++                if (r < n_lo) {
++                    const double v = s*acc + b;
++                    lo_ref[r] = v/(1.0 + std::exp(-v));
++                }
++            }
++            if (!f32) {
++                q8_1_ref(lo_ref.data(), n_lo);
++            }
++            for (int j = 0; j < n_embd*HC_MIX_HC; ++j) {
++                tu->to_float(wu.data() + j*w_up->nb[1], row.data(), n_lo);
++                double acc = 0;
++                for (int k = 0; k < n_lo; ++k) {
++                    acc += (double) row[k]*lo_ref[k];
++                }
++                gate_ref[j] = acc;
++            }
++            for (int e = 0; e < n_embd; ++e) {
++                double sum = 0;
++                for (int h = 0; h < HC_MIX_HC; ++h) {
++                    sum += xr[h*n_embd + e] / (1.0 + std::exp(-gate_ref[h*n_embd + e]));
++                }
++                sum *= pre_s;
++                e_dst = std::max(e_dst, std::fabs(sum - hdst[(size_t) t*n_embd + e]));
++                m_dst = std::max(m_dst, std::fabs(sum));
++            }
++        }
++        GGML_LOG_INFO("%s: check %s (%d tokens): raw max err %.3g (max |ref| %.3g), hc_pre max err %.3g (max |ref| %.3g)\n",
++                __func__, down->name, nt, e_raw, m_raw, e_dst, m_dst);
++    }
++}
+diff --git a/ggml/src/ggml-cuda/hc-mix.cuh b/ggml/src/ggml-cuda/hc-mix.cuh
+new file mode 100644
+index 0000000..e961a51
+--- /dev/null
++++ b/ggml/src/ggml-cuda/hc-mix.cuh
+@@ -0,0 +1,9 @@
++#include "common.cuh"
++
++// qwen4exp hyper-connection mix for 1..4 tokens (decode, MTP verify), fused from the graph nodes
++//   MUL_MAT(down_inject, xn) -> VIEW -> SCALE -> SILU -> MUL_MAT(up, .) -> RESHAPE -> DSV4_HC_PRE(xn, ., gated)
++// in two kernels (plus one that rounds the activations as q8_1, unless GGML_CUDA_HC_MIX=f32). Off unless GGML_CUDA_HC_MIX is set.
++// Writes the raw down_inject product (its inject rows feed the later hc_post) and the hc_pre result;
++// the up product is used as scratch.
++bool ggml_cuda_hc_mix_match(const ggml_cgraph * cgraph, int node_idx);
++void ggml_cuda_op_hc_mix(ggml_backend_cuda_context & ctx, const ggml_cgraph * cgraph, int node_idx);
 diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
 index 930f1ad..93b6b6d 100644
 --- a/ggml/src/ggml-cuda/mmvq.cu
@@ -3858,6 +4507,108 @@ index 95618df..91e1ffd 100644
 +        const ggml_tensor * gate_scale_out, ggml_tensor * rms, ggml_tensor * mul_tensor, void * q8, bool one_block = false);
 +bool ggml_cuda_rms_norm_hc_post_one_block_ok(const ggml_tensor * hcp, const ggml_tensor * gate_scale_in, const ggml_tensor * rms,
 +        const ggml_tensor * mul_tensor);
+diff --git a/ggml/src/ggml-cuda/ssm-conv.cu b/ggml/src/ggml-cuda/ssm-conv.cu
+index f41438b..714407c 100644
+--- a/ggml/src/ggml-cuda/ssm-conv.cu
++++ b/ggml/src/ggml-cuda/ssm-conv.cu
+@@ -205,3 +205,84 @@ void ggml_cuda_op_ssm_conv(ggml_backend_cuda_context & ctx, ggml_tensor * dst, g
+                           out->nb[2], nc, nr, n_t, n_s, stream);
+     }
+ }
++
++// engine2n: ssm_conv_f32<true, 128, d_conv> for one token and one sequence, where the blocks of the q and k heads (rows head0 ..
++// head0 + nrows_a + nrows_b of 128 channels) also keep their conv outputs in shared memory and warp 0 runs rms_norm_scale_pair_f32's
++// code on them. Same values; the norm pair kernel goes away.
++template <size_t d_conv>
++static __global__ void __launch_bounds__(128) ssm_conv_silu_norm_pair_f32(const float * src0, const float * src1, const float * bias,
++        const int src0_nb1, const int src1_nb1, float * dst, const int dst_nb0, const int head0, const int nrows_a, const int nrows_b,
++        float * dst_a, float * dst_b, const int ncols, const float eps, const float scale_out) {
++    constexpr int split_d_inner = 128;
++    const int tid  = threadIdx.x;
++    const int bidy = blockIdx.y;
++
++    const float * x_block = (const float *) ((const char *) src0 + bidy * split_d_inner * src0_nb1);
++    const float * w_block = (const float *) ((const char *) src1 + bidy * split_d_inner * src1_nb1);
++    float *       y_block = (float *) ((char *) dst + bidy * split_d_inner * dst_nb0);
++
++    const int stride_x = src0_nb1 / sizeof(float);
++    const int stride_w = src1_nb1 / sizeof(float);
++
++    float x[d_conv] = { 0.0f };
++    float w[d_conv] = { 0.0f };
++#pragma unroll
++    for (size_t j = 0; j < d_conv; j++) {
++        w[j] = w_block[tid * stride_w + j];
++    }
++    const float b = bias != nullptr ? bias[bidy * split_d_inner + tid] : 0.0f;
++    for (size_t j = 0; j < d_conv; j++) {
++        x[j] = x_block[tid * stride_x + j];
++    }
++    float sumf = 0.0f;
++#pragma unroll
++    for (size_t j = 0; j < d_conv; j++) {
++        sumf += x[j % d_conv] * w[j];
++    }
++    sumf += b;
++    const float y = ggml_cuda_op_silu_single(sumf);
++    y_block[tid] = y;
++
++    const int row = bidy - head0;
++    if (row < 0 || row >= nrows_a + nrows_b) {
++        return;  // a v head (the whole block)
++    }
++    __shared__ __align__(16) float ys[split_d_inner];
++    ys[tid] = y;
++    __syncthreads();
++    if (tid >= WARP_SIZE) {
++        return;
++    }
++    const float4 * x4   = (const float4 *) ys;
++    float4 *       dst4 = (float4 *) (row < nrows_a ? dst_a + (int64_t) row*ncols : dst_b + (int64_t) (row - nrows_a)*ncols);
++    float4 xs  = make_float4(0.0f, 0.0f, 0.0f, 0.0f);
++    float  tmp = 0.0f;
++    if (tid < ncols/4) {
++        xs = x4[tid];
++        tmp += xs.x*xs.x + xs.y*xs.y + xs.z*xs.z + xs.w*xs.w;
++    }
++    tmp = warp_reduce_sum(tmp);
++    const float scale = rsqrtf(tmp / ncols + eps);
++    if (tid < ncols/4) {
++        float4 r = make_float4(scale*xs.x, scale*xs.y, scale*xs.z, scale*xs.w);
++        r.x *= scale_out;
++        r.y *= scale_out;
++        r.z *= scale_out;
++        r.w *= scale_out;
++        dst4[tid] = r;
++    }
++}
++
++void ggml_cuda_op_ssm_conv_silu_norm_pair(ggml_backend_cuda_context & ctx, const ggml_tensor * conv, ggml_tensor * silu, int head0,
++        int nrows_a, int nrows_b, ggml_tensor * dst_a, ggml_tensor * dst_b, float eps, float scale_out) {
++    const ggml_tensor * src0 = conv->src[0];
++    const ggml_tensor * src1 = conv->src[1];
++    const int64_t nr = src0->ne[1];
++    GGML_ASSERT(src1->ne[0] == 4 && nr % 128 == 0 && silu->ne[0] == nr && silu->ne[1] == 1 && silu->ne[2] == 1);
++    GGML_ASSERT(src0->type == GGML_TYPE_F32 && silu->type == GGML_TYPE_F32 && src0->nb[0] == sizeof(float) && src1->nb[0] == sizeof(float));
++    const dim3 blocks(1, nr / 128, 1);
++    ssm_conv_silu_norm_pair_f32<4><<<blocks, 128, 0, ctx.stream()>>>((const float *) src0->data, (const float *) src1->data, nullptr,
++        src0->nb[1], src1->nb[1], (float *) silu->data, silu->nb[0], head0, nrows_a, nrows_b, (float *) dst_a->data,
++        (float *) dst_b->data, 128, eps, scale_out);
++    CUDA_CHECK(cudaGetLastError());
++}
+diff --git a/ggml/src/ggml-cuda/ssm-conv.cuh b/ggml/src/ggml-cuda/ssm-conv.cuh
+index 8514ca8..8c43ea2 100644
+--- a/ggml/src/ggml-cuda/ssm-conv.cuh
++++ b/ggml/src/ggml-cuda/ssm-conv.cuh
+@@ -1,3 +1,8 @@
+ #include "common.cuh"
+ 
+ void ggml_cuda_op_ssm_conv(ggml_backend_cuda_context & ctx, ggml_tensor * dst, ggml_tensor * bias_add_node = nullptr, ggml_tensor * silu_dst = nullptr);
++
++// engine2n: one-token SSM_CONV -> SILU followed by the gated delta net's q/k RMS_NORM -> SCALE pair on rows [head0, head0 +
++// nrows_a + nrows_b) of 128 channels of the conv output, in one kernel (same values as ssm_conv_f32 and rms_norm_scale_pair_f32)
++void ggml_cuda_op_ssm_conv_silu_norm_pair(ggml_backend_cuda_context & ctx, const ggml_tensor * conv, ggml_tensor * silu, int head0,
++        int nrows_a, int nrows_b, ggml_tensor * dst_a, ggml_tensor * dst_b, float eps, float scale_out);
 diff --git a/ggml/src/ggml-cuda/topk-moe.cu b/ggml/src/ggml-cuda/topk-moe.cu
 index a93d3a9..28ecf3c 100644
 --- a/ggml/src/ggml-cuda/topk-moe.cu
@@ -6954,556 +7705,3 @@ index 2bd1ab9..454ab6d 100644
              } catch (std::exception & e) {
                  std::string err_msg = std::string("Failed to initialize samplers: ") + e.what();
                  send_error(task, err_msg, ERROR_TYPE_INVALID_REQUEST);
-diff --git a/ggml/src/ggml-cuda/hc-mix.cu b/ggml/src/ggml-cuda/hc-mix.cu
-new file mode 100644
-index 0000000..78a57f8
---- /dev/null
-+++ b/ggml/src/ggml-cuda/hc-mix.cu
-@@ -0,0 +1,532 @@
-+#include "hc-mix.cuh"
-+
-+#include <cmath>
-+#include <cstdlib>
-+#include <cstring>
-+#include <vector>
-+
-+static constexpr int HC_MIX_HC          = 4;   // hyper-connection streams
-+static constexpr int HC_MIX_WARP        = 32;  // the kernels map lanes to the 32 values of a quant block
-+static constexpr int HC_MIX_WARPS       = 8;
-+static constexpr int HC_MIX_UP_EMBD     = HC_MIX_WARPS / HC_MIX_HC;  // embedding positions per up block
-+static constexpr int HC_MIX_MAX_TOKENS  = 4;   // decode and MTP verify (3 drafts + 1)
-+
-+// round a value the way quantize_q8_1 does for the unfused mmvq path (32 values per block = the 32 lanes of a warp,
-+// scale amax/127 stored as f16), so that the fused result keeps the unfused numerics
-+static __device__ __forceinline__ float hc_mix_q8_1(const float x) {
-+    const float amax = warp_reduce_max<HC_MIX_WARP>(fabsf(x));
-+    const float d    = amax / 127.0f;
-+    return amax == 0.0f ? 0.0f : roundf(x / d) * __half2float(__float2half(d));
-+}
-+
-+// xq = xn rounded as q8_1, n a multiple of 32: one warp per 32 values
-+static __global__ void hc_mix_round_x(const float * __restrict__ x, float * __restrict__ xq, const int n) {
-+    const int i = blockIdx.x*blockDim.x + threadIdx.x;
-+    if (i < n) {
-+        xq[i] = hc_mix_q8_1(x[i]);
-+    }
-+}
-+
-+// blocks of hc_mix_down that have finished; the last one rounds lo and resets it
-+static __device__ unsigned int hc_mix_down_done = 0;
-+
-+// one 256-value group g of a down row against the nt token vectors xv[t][k] = xn_t[256*g + lane + 32*k], k = 0..7
-+// (a Q6_K half h takes its values lane, lane+32, lane+64, lane+96 = xv[t][4h + 0..3]); the weights are decoded once
-+template <ggml_type type, int nt>
-+static __device__ __forceinline__ void hc_mix_dot256(const char * row, int g, int lane, const float (&xv)[nt][8], float (&acc)[nt]) {
-+    if constexpr (type == GGML_TYPE_Q6_K) {
-+        const block_q6_K * b = (const block_q6_K *) row + g;
-+        const float d = __half2float(b->d);
-+#pragma unroll
-+        for (int h = 0; h < 2; ++h) {
-+            const int ql0 = b->ql[h*64 + lane];
-+            const int ql1 = b->ql[h*64 + lane + 32];
-+            const int qh  = b->qh[h*32 + lane];
-+            const int8_t * sc = b->scales + h*8 + lane/16;
-+            const float w1 = d*sc[0]*(((ql0 & 0xF) | (((qh >> 0) & 3) << 4)) - 32);
-+            const float w2 = d*sc[2]*(((ql1 & 0xF) | (((qh >> 2) & 3) << 4)) - 32);
-+            const float w3 = d*sc[4]*(((ql0 >>  4) | (((qh >> 4) & 3) << 4)) - 32);
-+            const float w4 = d*sc[6]*(((ql1 >>  4) | (((qh >> 6) & 3) << 4)) - 32);
-+#pragma unroll
-+            for (int t = 0; t < nt; ++t) {
-+                acc[t] += w1*xv[t][4*h + 0] + w2*xv[t][4*h + 1] + w3*xv[t][4*h + 2] + w4*xv[t][4*h + 3];
-+            }
-+        }
-+    } else {
-+        static_assert(type == GGML_TYPE_Q8_0, "hc mix: unsupported down type");
-+        const block_q8_0 * b = (const block_q8_0 *) row + 8*g;
-+#pragma unroll
-+        for (int k = 0; k < 8; ++k) {
-+            const float wk = __half2float(b[k].d) * b[k].qs[lane];
-+#pragma unroll
-+            for (int t = 0; t < nt; ++t) {
-+                acc[t] += wk*xv[t][k];
-+            }
-+        }
-+    }
-+}
-+
-+// for each of nt tokens: raw_t[r] = down_inject[r] . xn_t; lo_t[r] = silu(scale*raw_t[r] + bias) for the first n_lo rows
-+// (q8a: xn already rounded as q8_1 by hc_mix_round_x, and lo is rounded the same way at the end).
-+// A block takes `rows` rows, which share the activation loads; its warps split the row length in 256-value groups.
-+// gpw > 0: each warp takes exactly gpw groups, unrolled so that all their loads are in flight at once.
-+template <ggml_type type, int gpw, int nt, int rows, bool q8a>
-+static __global__ void hc_mix_down(const char * __restrict__ w, const size_t row_bytes, const float * __restrict__ xn,
-+        float * __restrict__ raw, float * __restrict__ lo, const int n_rows, const int n_lo, const int n_groups,
-+        const float scale, const float bias) {
-+    const int lane = threadIdx.x % HC_MIX_WARP;
-+    const int warp = threadIdx.x / HC_MIX_WARP;
-+    const int r0   = blockIdx.x*rows;
-+    const int K    = n_groups*256;
-+
-+    float acc[rows][nt] = {};
-+    auto step = [&](const int g) {
-+        float xv[nt][8];
-+#pragma unroll
-+        for (int t = 0; t < nt; ++t) {
-+#pragma unroll
-+            for (int k = 0; k < 8; ++k) {
-+                xv[t][k] = xn[t*K + g*256 + lane + 32*k];
-+            }
-+        }
-+#pragma unroll
-+        for (int r = 0; r < rows; ++r) {
-+            if (r0 + r < n_rows) {
-+                hc_mix_dot256<type, nt>(w + (size_t) (r0 + r)*row_bytes, g, lane, xv, acc[r]);
-+            }
-+        }
-+    };
-+    if constexpr (gpw > 0) {
-+#pragma unroll
-+        for (int j = 0; j < gpw; ++j) {
-+            step(warp + j*HC_MIX_WARPS);
-+        }
-+    } else {
-+        for (int g = warp; g < n_groups; g += HC_MIX_WARPS) {
-+            step(g);
-+        }
-+    }
-+
-+    __shared__ float part[rows*nt][HC_MIX_WARPS];
-+#pragma unroll
-+    for (int r = 0; r < rows; ++r) {
-+#pragma unroll
-+        for (int t = 0; t < nt; ++t) {
-+            const float s = warp_reduce_sum<HC_MIX_WARP>(acc[r][t]);
-+            if (lane == 0) {
-+                part[r*nt + t][warp] = s;
-+            }
-+        }
-+    }
-+    __syncthreads();
-+
-+    if (threadIdx.x < rows*nt) {
-+        const int r = r0 + threadIdx.x / nt;
-+        const int t = threadIdx.x % nt;
-+        if (r < n_rows) {
-+            float s = 0.0f;
-+#pragma unroll
-+            for (int k = 0; k < HC_MIX_WARPS; ++k) {
-+                s += part[threadIdx.x][k];
-+            }
-+            raw[t*n_rows + r] = s;
-+            if (r < n_lo) {
-+                const float v = scale*s + bias;
-+                lo[t*n_lo + r] = v / (1.0f + expf(-v));
-+            }
-+        }
-+    }
-+
-+    if constexpr (q8a) {
-+        // the last block to finish rounds all of lo as q8_1 (the input of the up matmul in the unfused graph)
-+        __shared__ bool last;
-+        __threadfence();
-+        __syncthreads();
-+        if (threadIdx.x == 0) {
-+            last = atomicAdd(&hc_mix_down_done, 1u) == gridDim.x - 1;
-+        }
-+        __syncthreads();
-+        if (last) {
-+            __threadfence();
-+            volatile float * lv = lo;
-+            for (int k = threadIdx.x; k < nt*n_lo; k += blockDim.x) {  // n_lo is a multiple of 32: warps take whole blocks
-+                lv[k] = hc_mix_q8_1(lv[k]);
-+            }
-+            if (threadIdx.x == 0) {
-+                hc_mix_down_done = 0;
-+            }
-+        }
-+    }
-+}
-+
-+// for each of nt tokens: gate_t[s*n_embd + e] = up[s*n_embd + e] . lo_t (Q8_0 rows of n_lo values);
-+// dst_t[e] = pre_scale * sum_s xn_t[s*n_embd + e] * sigmoid(gate_t[s*n_embd + e]).
-+// nq > 0: rows of exactly nq quant blocks, unrolled so that all their loads are in flight at once.
-+// Two layouts (rocprofv3, gfx1151, 10240 rows of 320): one warp per row reading lo from L2 is faster for one token
-+// (22 vs 29 us), one warp per position with lo in shared memory for four (30 vs 39 us).
-+
-+// one warp per (position, stream) row, a block takes HC_MIX_UP_EMBD positions
-+template <int nq, int nt>
-+static __global__ void hc_mix_up_row(const char * __restrict__ w, const size_t row_bytes, const float * __restrict__ lo,
-+        const float * __restrict__ xn, float * __restrict__ dst, const int n_embd, const int n_qblocks, const float pre_scale) {
-+    const int lane = threadIdx.x % HC_MIX_WARP;
-+    const int warp = threadIdx.x / HC_MIX_WARP;
-+    const int s    = warp % HC_MIX_HC;
-+    const int e    = blockIdx.x*HC_MIX_UP_EMBD + warp / HC_MIX_HC;
-+    const int n_lo = n_qblocks*32;
-+
-+    const block_q8_0 * b = (const block_q8_0 *) (w + (size_t) (s*n_embd + e)*row_bytes);
-+    float acc[nt] = {};
-+    if constexpr (nq > 0) {
-+        float wq[nq];
-+#pragma unroll
-+        for (int k = 0; k < nq; ++k) {
-+            wq[k] = __half2float(b[k].d) * b[k].qs[lane];
-+        }
-+#pragma unroll
-+        for (int k = 0; k < nq; ++k) {
-+#pragma unroll
-+            for (int t = 0; t < nt; ++t) {
-+                acc[t] += wq[k] * lo[t*n_lo + 32*k + lane];
-+            }
-+        }
-+    } else {
-+        for (int k = 0; k < n_qblocks; ++k) {
-+            const float wk = __half2float(b[k].d) * b[k].qs[lane];
-+#pragma unroll
-+            for (int t = 0; t < nt; ++t) {
-+                acc[t] += wk * lo[t*n_lo + 32*k + lane];
-+            }
-+        }
-+    }
-+
-+    __shared__ float part[nt][HC_MIX_WARPS];
-+#pragma unroll
-+    for (int t = 0; t < nt; ++t) {
-+        const float g = warp_reduce_sum<HC_MIX_WARP>(acc[t]);
-+        if (lane == 0) {
-+            part[t][warp] = xn[t*HC_MIX_HC*n_embd + s*n_embd + e] / (1.0f + expf(-g));
-+        }
-+    }
-+    __syncthreads();
-+
-+    if (threadIdx.x < HC_MIX_UP_EMBD*nt) {
-+        const int el = threadIdx.x % HC_MIX_UP_EMBD;
-+        const int t  = threadIdx.x / HC_MIX_UP_EMBD;
-+        float sum = 0.0f;
-+#pragma unroll
-+        for (int k = 0; k < HC_MIX_HC; ++k) {
-+            sum += part[t][el*HC_MIX_HC + k];
-+        }
-+        dst[t*n_embd + blockIdx.x*HC_MIX_UP_EMBD + el] = pre_scale*sum;
-+    }
-+}
-+
-+// one warp per position and its HC_MIX_HC stream rows, a block takes HC_MIX_WARPS positions and keeps lo in shared memory
-+template <int nq, int nt>
-+static __global__ void hc_mix_up_pos(const char * __restrict__ w, const size_t row_bytes, const float * __restrict__ lo,
-+        const float * __restrict__ xn, float * __restrict__ dst, const int n_embd, const int n_qblocks, const float pre_scale) {
-+    const int lane = threadIdx.x % HC_MIX_WARP;
-+    const int warp = threadIdx.x / HC_MIX_WARP;
-+    const int e    = blockIdx.x*HC_MIX_WARPS + warp;
-+    const int n_lo = n_qblocks*32;
-+
-+    extern __shared__ float lo_s[];  // [nt][n_lo]
-+    for (int k = threadIdx.x; k < nt*n_lo; k += blockDim.x) {
-+        lo_s[k] = lo[k];
-+    }
-+    __syncthreads();
-+
-+    float acc[HC_MIX_HC][nt] = {};
-+#pragma unroll
-+    for (int s = 0; s < HC_MIX_HC; ++s) {
-+        const block_q8_0 * b = (const block_q8_0 *) (w + (size_t) (s*n_embd + e)*row_bytes);
-+        if constexpr (nq > 0) {
-+            float wq[nq];
-+#pragma unroll
-+            for (int k = 0; k < nq; ++k) {
-+                wq[k] = __half2float(b[k].d) * b[k].qs[lane];
-+            }
-+#pragma unroll
-+            for (int k = 0; k < nq; ++k) {
-+#pragma unroll
-+                for (int t = 0; t < nt; ++t) {
-+                    acc[s][t] += wq[k] * lo_s[t*n_lo + 32*k + lane];
-+                }
-+            }
-+        } else {
-+            for (int k = 0; k < n_qblocks; ++k) {
-+                const float wk = __half2float(b[k].d) * b[k].qs[lane];
-+#pragma unroll
-+                for (int t = 0; t < nt; ++t) {
-+                    acc[s][t] += wk * lo_s[t*n_lo + 32*k + lane];
-+                }
-+            }
-+        }
-+    }
-+
-+#pragma unroll
-+    for (int t = 0; t < nt; ++t) {
-+        float sum = 0.0f;
-+#pragma unroll
-+        for (int s = 0; s < HC_MIX_HC; ++s) {
-+            const float g = warp_reduce_sum<HC_MIX_WARP>(acc[s][t]);
-+            sum += xn[t*HC_MIX_HC*n_embd + s*n_embd + e] / (1.0f + expf(-g));
-+        }
-+        if (lane == 0) {
-+            dst[t*n_embd + e] = pre_scale*sum;
-+        }
-+    }
-+}
-+
-+// GGML_CUDA_HC_MIX=1: fuse, rounding the activations as q8_1 like the unfused path (same quality, no measured 2-node gain);
-+// GGML_CUDA_HC_MIX=f32: fuse with exact f32 activations (2-node MTP +2.5%, but KLD to the Q8_0 model 0.077 vs 0.071 and
-+// higher PPL; the Q8_0 model's own PPL also rises with f32 hc activations). Off by default (RESULTS.md 2026-10-31).
-+static const char * hc_mix_mode() {
-+    static const char * v = getenv("GGML_CUDA_HC_MIX");
-+    return v;
-+}
-+
-+static bool hc_mix_disabled() {
-+    return hc_mix_mode() == nullptr || strcmp(hc_mix_mode(), "0") == 0;
-+}
-+
-+static bool hc_mix_overlap(const void * a, size_t na, const void * b, size_t nb) {
-+    const char * pa = (const char *) a;
-+    const char * pb = (const char *) b;
-+    return pa < pb + nb && pb < pa + na;
-+}
-+
-+bool ggml_cuda_hc_mix_match(const ggml_cgraph * cgraph, int i) {
-+    if (hc_mix_disabled() || i + 7 > cgraph->n_nodes) {
-+        return false;
-+    }
-+    if (ggml_cuda_info().devices[ggml_cuda_get_device()].warp_size != HC_MIX_WARP) {
-+        return false;
-+    }
-+    const ggml_tensor * down  = cgraph->nodes[i];
-+    const ggml_tensor * view  = cgraph->nodes[i + 1];
-+    const ggml_tensor * scale = cgraph->nodes[i + 2];
-+    const ggml_tensor * silu  = cgraph->nodes[i + 3];
-+    const ggml_tensor * up    = cgraph->nodes[i + 4];
-+    const ggml_tensor * gate  = cgraph->nodes[i + 5];
-+    const ggml_tensor * pre   = cgraph->nodes[i + 6];
-+
-+    if (down->op != GGML_OP_MUL_MAT || view->op != GGML_OP_VIEW || scale->op != GGML_OP_SCALE ||
-+            silu->op != GGML_OP_UNARY || ggml_get_unary_op(silu) != GGML_UNARY_OP_SILU ||
-+            up->op != GGML_OP_MUL_MAT || gate->op != GGML_OP_RESHAPE || pre->op != GGML_OP_DSV4_HC_PRE) {
-+        return false;
-+    }
-+    if (!ggml_can_fuse_subgraph(cgraph, i, { GGML_OP_MUL_MAT, GGML_OP_VIEW, GGML_OP_SCALE, GGML_OP_UNARY,
-+                GGML_OP_MUL_MAT, GGML_OP_RESHAPE, GGML_OP_DSV4_HC_PRE }, { i, i + 6 })) {
-+        return false;
-+    }
-+    // edges
-+    if (view->view_src != down || view->view_offs != 0 || scale->src[0] != view || silu->src[0] != scale ||
-+            up->src[1] != silu || gate->src[0] != up || pre->src[1] != gate) {
-+        return false;
-+    }
-+    // 1..HC_MIX_MAX_TOKENS tokens, contiguous f32 activations
-+    const ggml_tensor * x = down->src[1];
-+    const ggml_tensor * w_down = down->src[0];
-+    const ggml_tensor * w_up = up->src[0];
-+    const ggml_tensor * xn3 = pre->src[0];
-+    const int64_t n_embd = xn3->ne[0];
-+    const int64_t n_lo   = view->ne[0];
-+    const int64_t nt     = x->ne[1];
-+    if (nt < 1 || nt > HC_MIX_MAX_TOKENS) {
-+        return false;
-+    }
-+    if (x->type != GGML_TYPE_F32 || !ggml_is_contiguous(x) || x->ne[2] != 1 || x->ne[3] != 1 ||
-+            xn3->type != GGML_TYPE_F32 || !ggml_is_contiguous(xn3) || xn3->data != x->data ||
-+            xn3->ne[1] != HC_MIX_HC || xn3->ne[2] != nt || x->ne[0] != n_embd*HC_MIX_HC) {
-+        return false;
-+    }
-+    if ((w_down->type != GGML_TYPE_Q6_K && w_down->type != GGML_TYPE_Q8_0) || !ggml_is_contiguous(w_down) ||
-+            w_down->ne[0] != x->ne[0] || w_down->ne[0] % 256 != 0 || w_down->ne[2] != 1 || w_down->ne[1] < n_lo) {
-+        return false;
-+    }
-+    if (w_up->type != GGML_TYPE_Q8_0 || !ggml_is_contiguous(w_up) || w_up->ne[0] != n_lo || n_lo % 32 != 0 ||
-+            w_up->ne[1] != n_embd*HC_MIX_HC || w_up->ne[2] != 1 || n_embd % HC_MIX_WARPS != 0) {
-+        return false;
-+    }
-+    if (ggml_get_op_params_i32(pre, 1) != 1 || view->ne[1] != nt || view->nb[1] != down->nb[1] ||
-+            !ggml_is_contiguous(down) || down->ne[1] != nt || up->ne[1] != nt ||
-+            !ggml_is_contiguous(pre) || pre->ne[0] != n_embd || pre->ne[1] != nt) {
-+        return false;
-+    }
-+    // memory: lo goes to the up product's buffer, which is live until hc_pre and is not an input
-+    const size_t raw_bytes = ggml_nbytes(down);
-+    const size_t lo_bytes  = nt*n_lo*sizeof(float);
-+    const size_t xn_bytes  = ggml_nbytes(x);
-+    const size_t dst_bytes = ggml_nbytes(pre);
-+    if (ggml_nbytes(up) < lo_bytes ||
-+            hc_mix_overlap(up->data, lo_bytes, x->data, xn_bytes) || hc_mix_overlap(up->data, lo_bytes, down->data, raw_bytes) ||
-+            hc_mix_overlap(down->data, raw_bytes, x->data, xn_bytes) ||
-+            hc_mix_overlap(pre->data, dst_bytes, x->data, xn_bytes) || hc_mix_overlap(pre->data, dst_bytes, up->data, lo_bytes)) {
-+        return false;
-+    }
-+    return true;
-+}
-+
-+template <int nt, bool q8a>
-+static void hc_mix_launch(ggml_backend_cuda_context & ctx, const ggml_tensor * w_down, const ggml_tensor * w_up, const float * xn,
-+        float * raw, float * lo, float * dst, int n_rows, int n_lo, int n_groups, int n_embd, float s, float b, float pre_s) {
-+    cudaStream_t stream = ctx.stream();
-+    const dim3 block(HC_MIX_WARP*HC_MIX_WARPS);
-+
-+    const int n_x = nt*n_groups*256;
-+    ggml_cuda_pool_alloc<float> xq(ctx.pool());
-+    const float * xd = xn;
-+    if constexpr (q8a) {
-+        xq.alloc(n_x);
-+        hc_mix_round_x<<<(n_x + 255)/256, 256, 0, stream>>>(xn, xq.get(), n_x);
-+        CUDA_CHECK(cudaGetLastError());
-+        xd = xq.get();
-+    }
-+    // more tokens: more rows per block, so each block reads the nt activation vectors for more rows
-+    constexpr int rows = nt == 1 ? 2 : 4;
-+    const dim3 grid_down((n_rows + rows - 1)/rows);
-+    // qwen4exp: 10240 = 40 groups = 5 per warp
-+    const bool g5 = n_groups == 5*HC_MIX_WARPS;
-+    auto down_k = w_down->type == GGML_TYPE_Q6_K ? (g5 ? hc_mix_down<GGML_TYPE_Q6_K, 5, nt, rows, q8a> : hc_mix_down<GGML_TYPE_Q6_K, 0, nt, rows, q8a>)
-+                                                 : (g5 ? hc_mix_down<GGML_TYPE_Q8_0, 5, nt, rows, q8a> : hc_mix_down<GGML_TYPE_Q8_0, 0, nt, rows, q8a>);
-+    down_k<<<grid_down, block, 0, stream>>>((const char *) w_down->data, w_down->nb[1], xd, raw, lo, n_rows, n_lo, n_groups, s, b);
-+    CUDA_CHECK(cudaGetLastError());
-+
-+    // qwen4exp: low rank 320 = 10 quant blocks
-+    if constexpr (nt == 1) {
-+        auto up_k = n_lo == 320 ? hc_mix_up_row<10, nt> : hc_mix_up_row<0, nt>;
-+        up_k<<<n_embd/HC_MIX_UP_EMBD, block, 0, stream>>>((const char *) w_up->data, w_up->nb[1], lo, xn, dst, n_embd, n_lo/32, pre_s);
-+    } else {
-+        auto up_k = n_lo == 320 ? hc_mix_up_pos<10, nt> : hc_mix_up_pos<0, nt>;
-+        up_k<<<n_embd/HC_MIX_WARPS, block, nt*n_lo*sizeof(float), stream>>>((const char *) w_up->data, w_up->nb[1], lo, xn, dst,
-+                n_embd, n_lo/32, pre_s);
-+    }
-+    CUDA_CHECK(cudaGetLastError());
-+}
-+
-+void ggml_cuda_op_hc_mix(ggml_backend_cuda_context & ctx, const ggml_cgraph * cgraph, int i) {
-+    const ggml_tensor * down  = cgraph->nodes[i];
-+    const ggml_tensor * view  = cgraph->nodes[i + 1];
-+    const ggml_tensor * scale = cgraph->nodes[i + 2];
-+    const ggml_tensor * up    = cgraph->nodes[i + 4];
-+    ggml_tensor *       pre   = cgraph->nodes[i + 6];
-+
-+    const ggml_tensor * w_down = down->src[0];
-+    const ggml_tensor * w_up   = up->src[0];
-+    const float * xn  = (const float *) down->src[1]->data;
-+    float *       raw = (float *) down->data;
-+    float *       lo  = (float *) up->data;
-+    float *       dst = (float *) pre->data;
-+
-+    const int nt       = (int) down->ne[1];
-+    const int n_rows   = (int) w_down->ne[1];
-+    const int n_lo     = (int) view->ne[0];
-+    const int n_groups = (int) (w_down->ne[0] / 256);
-+    const int n_embd   = (int) pre->ne[0];
-+    const float s      = ggml_get_op_params_f32(scale, 0);
-+    const float b      = ggml_get_op_params_f32(scale, 1);
-+    const float pre_s  = ggml_get_op_params_f32(pre, 0);
-+
-+    static bool logged = false;
-+    if (!logged) {
-+        logged = true;
-+        GGML_LOG_INFO("%s: fused hc mix: down %s [%d rows], up %s [%d rows of %d]\n", __func__,
-+                ggml_type_name(w_down->type), n_rows, ggml_type_name(w_up->type), (int) w_up->ne[1], n_lo);
-+    }
-+    static int64_t n_calls = 0;
-+    static const bool count = getenv("GGML_CUDA_HC_MIX_COUNT") != nullptr;  // debug: log every 1000 calls
-+    if (count && ++n_calls % 1000 == 0) {
-+        GGML_LOG_INFO("%s: %lld calls (this one %d tokens)\n", __func__, (long long) n_calls, nt);
-+    }
-+
-+    static const bool f32 = strcmp(hc_mix_mode(), "f32") == 0;
-+    cudaStream_t stream = ctx.stream();
-+#define HC_MIX_LAUNCH(n) (f32 ? hc_mix_launch<n, false>(ctx, w_down, w_up, xn, raw, lo, dst, n_rows, n_lo, n_groups, n_embd, s, b, pre_s) \
-+                              : hc_mix_launch<n, true >(ctx, w_down, w_up, xn, raw, lo, dst, n_rows, n_lo, n_groups, n_embd, s, b, pre_s))
-+    switch (nt) {
-+        case 1: HC_MIX_LAUNCH(1); break;
-+        case 2: HC_MIX_LAUNCH(2); break;
-+        case 3: HC_MIX_LAUNCH(3); break;
-+        case 4: HC_MIX_LAUNCH(4); break;
-+        default: GGML_ABORT("hc mix: %d tokens", nt);
-+    }
-+#undef HC_MIX_LAUNCH
-+
-+    // GGML_CUDA_HC_MIX_CHECK=<n>: compare the first n calls with a host reference in double (debug; needs HIP graphs off)
-+    static int n_check = getenv("GGML_CUDA_HC_MIX_CHECK") ? atoi(getenv("GGML_CUDA_HC_MIX_CHECK")) : 0;
-+    if (n_check > 0) {
-+        n_check--;
-+        CUDA_CHECK(cudaStreamSynchronize(stream));
-+        const int64_t K = w_down->ne[0];
-+        std::vector<char>  wd(ggml_nbytes(w_down)), wu(ggml_nbytes(w_up));
-+        std::vector<float> hx(K*nt), hraw((size_t) n_rows*nt), hdst((size_t) n_embd*nt), row(K);
-+        CUDA_CHECK(cudaMemcpy(wd.data(), w_down->data, wd.size(), cudaMemcpyDeviceToHost));
-+        CUDA_CHECK(cudaMemcpy(wu.data(), w_up->data, wu.size(), cudaMemcpyDeviceToHost));
-+        CUDA_CHECK(cudaMemcpy(hx.data(), xn, hx.size()*sizeof(float), cudaMemcpyDeviceToHost));
-+        CUDA_CHECK(cudaMemcpy(hraw.data(), raw, hraw.size()*sizeof(float), cudaMemcpyDeviceToHost));
-+        CUDA_CHECK(cudaMemcpy(hdst.data(), dst, hdst.size()*sizeof(float), cudaMemcpyDeviceToHost));
-+        const auto * td = ggml_get_type_traits(w_down->type);
-+        const auto * tu = ggml_get_type_traits(w_up->type);
-+        double e_raw = 0, m_raw = 0, e_dst = 0, m_dst = 0;
-+        // the reference rounds the activations the same way as the kernel (q8_1 unless GGML_CUDA_HC_MIX=f32)
-+        auto q8_1_ref = [&](double * v, int n) {
-+            for (int i0 = 0; i0 < n; i0 += 32) {
-+                double amax = 0;
-+                for (int i = i0; i < i0 + 32; ++i) {
-+                    amax = std::max(amax, std::fabs(v[i]));
-+                }
-+                const float d = (float) amax / 127.0f;
-+                const float dh = ggml_fp16_to_fp32(ggml_fp32_to_fp16(d));
-+                for (int i = i0; i < i0 + 32; ++i) {
-+                    v[i] = amax == 0 ? 0.0 : (double) roundf((float) v[i] / d) * dh;
-+                }
-+            }
-+        };
-+        for (int t = 0; t < nt; ++t) {
-+            std::vector<double> xd(hx.begin() + t*K, hx.begin() + (t + 1)*K);
-+            if (!f32) {
-+                q8_1_ref(xd.data(), (int) K);
-+            }
-+            const double * x = xd.data();
-+            const float * xr = hx.data() + t*K;  // hc_pre uses the unrounded xn
-+            std::vector<double> lo_ref(n_lo), gate_ref((size_t) n_embd*HC_MIX_HC);
-+            for (int r = 0; r < n_rows; ++r) {
-+                td->to_float(wd.data() + r*w_down->nb[1], row.data(), K);
-+                double acc = 0;
-+                for (int64_t k = 0; k < K; ++k) {
-+                    acc += (double) row[k]*x[k];
-+                }
-+                e_raw = std::max(e_raw, std::fabs(acc - hraw[(size_t) t*n_rows + r]));
-+                m_raw = std::max(m_raw, std::fabs(acc));
-+                if (r < n_lo) {
-+                    const double v = s*acc + b;
-+                    lo_ref[r] = v/(1.0 + std::exp(-v));
-+                }
-+            }
-+            if (!f32) {
-+                q8_1_ref(lo_ref.data(), n_lo);
-+            }
-+            for (int j = 0; j < n_embd*HC_MIX_HC; ++j) {
-+                tu->to_float(wu.data() + j*w_up->nb[1], row.data(), n_lo);
-+                double acc = 0;
-+                for (int k = 0; k < n_lo; ++k) {
-+                    acc += (double) row[k]*lo_ref[k];
-+                }
-+                gate_ref[j] = acc;
-+            }
-+            for (int e = 0; e < n_embd; ++e) {
-+                double sum = 0;
-+                for (int h = 0; h < HC_MIX_HC; ++h) {
-+                    sum += xr[h*n_embd + e] / (1.0 + std::exp(-gate_ref[h*n_embd + e]));
-+                }
-+                sum *= pre_s;
-+                e_dst = std::max(e_dst, std::fabs(sum - hdst[(size_t) t*n_embd + e]));
-+                m_dst = std::max(m_dst, std::fabs(sum));
-+            }
-+        }
-+        GGML_LOG_INFO("%s: check %s (%d tokens): raw max err %.3g (max |ref| %.3g), hc_pre max err %.3g (max |ref| %.3g)\n",
-+                __func__, down->name, nt, e_raw, m_raw, e_dst, m_dst);
-+    }
-+}
-diff --git a/ggml/src/ggml-cuda/hc-mix.cuh b/ggml/src/ggml-cuda/hc-mix.cuh
-new file mode 100644
-index 0000000..e961a51
---- /dev/null
-+++ b/ggml/src/ggml-cuda/hc-mix.cuh
-@@ -0,0 +1,9 @@
-+#include "common.cuh"
-+
-+// qwen4exp hyper-connection mix for 1..4 tokens (decode, MTP verify), fused from the graph nodes
-+//   MUL_MAT(down_inject, xn) -> VIEW -> SCALE -> SILU -> MUL_MAT(up, .) -> RESHAPE -> DSV4_HC_PRE(xn, ., gated)
-+// in two kernels (plus one that rounds the activations as q8_1, unless GGML_CUDA_HC_MIX=f32). Off unless GGML_CUDA_HC_MIX is set.
-+// Writes the raw down_inject product (its inject rows feed the later hc_post) and the hc_pre result;
-+// the up product is used as scratch.
-+bool ggml_cuda_hc_mix_match(const ggml_cgraph * cgraph, int node_idx);
-+void ggml_cuda_op_hc_mix(ggml_backend_cuda_context & ctx, const ggml_cgraph * cgraph, int node_idx);

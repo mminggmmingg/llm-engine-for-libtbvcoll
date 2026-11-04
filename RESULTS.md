@@ -1440,3 +1440,12 @@ B 는 A 가 먼저 올라오면 설정 파일 값(-1)으로 저절로 올라오�
   GDN 층 작은 커널(36씩: concat·conv·q/k norm 쌍·gated norm).
 - 미완: conv + q/k norm 한 커널(−36 예상)은 코드만 쓰고 빌드·검증 전에 정리 → `fixcost/convnorm-wip-1104/`(패치·절차).
 
+## 2026-11-04 21:15–21:50 — conv + q/k norm 한 커널(채택, +0.5–1%)
+자료: `fixcost/convnorm-1104/`(검증 실행, 켬/끔 6회 A/B, 커널 비교). 재부팅 뒤(두 노드 1015, 케이블 2개) 첫 측정. 모든 실행 해시 6개 같음.
+- 17:40 에 코드만 써 두었던 `fixcost/convnorm-wip-1104/convnorm-wip.patch` 를 적용(파일 끝 빈 줄만 고침): 1토큰 SSM_CONV → SILU → q/k RMS_NORM/SCALE 쌍을
+  `ssm_conv_silu_norm_pair_f32`(ssm-conv.cu) 하나로. 128 채널 블록마다 ssm_conv_f32 와 같은 식, q/k 머리 블록은 출력 128개를 공유 메모리에 두고 워프 0 이
+  rms_norm_scale_pair_f32 와 같은 코드로 정규화. 기본 켬, `GGML_CUDA_NO_CONV_NORM_PAIR=1` 끔, 검증 `GGML_CUDA_CONV_NORM_VERIFY=1`.
+- 검증: 두 노드 모두 silu·q·k 출력이 따로 돌린 결과와 비트 같음("same", DIFFER 없음), 해시 같음.
+- 커널(A, 토큰당): 1706 → **1670**. ssm_conv 91 + norm 쌍 66 = 157 µs → 105 µs.
+- A/B(끔 → 켬 → 켬 → 끔 → 끔 → 켬): 켬 **34.91·34.66·34.90**, 끔 33.14·34.16·34.79(AR 주기 켬 293.8–295.8, 끔 293.2–310.0).
+  끔 첫 회(33.14, 주기 310)는 재부팅 뒤 첫 실행이라 따로 봄 → 그것을 빼도 켬이 +0.5–1%.

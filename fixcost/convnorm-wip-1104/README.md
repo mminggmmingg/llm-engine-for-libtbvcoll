@@ -9,3 +9,6 @@
 - 다음: 적용 → 빌드 → `GGML_CUDA_CONV_NORM_VERIFY=1` 2노드 실행(같음 + 해시 6개) → prof2node.sh + `tools/bench/kdiff.py` 로 커널 시간 → 끔/켬 A/B.
 - 같은 사슬의 다음 단계: conv 상태 concat(`concat_dim0_tail_direct_f32`)까지 합치기. 그래프에서 CONCAT 과 SSM_CONV 사이에 뷰·생략된 gather 노드가 끼어 있어
   연속 묶음이 아님 → 사이 노드가 모두 실행 안 되는지 확인하고, 나중 노드를 건너뛰는 장치가 필요.
+
+**2026-11-04 21:50 — 끝냄**: 적용·빌드·검증(두 노드 비트 같음)·A/B(+0.5–1%) 뒤 본 패치(`patches/llama-e09a78a-engine2n-t5.patch`)에 들어갔다.
+결과는 `fixcost/convnorm-1104/`, RESULTS.md "21:15–21:50" 절. 이 폴더의 패치는 기록으로 둔다.
