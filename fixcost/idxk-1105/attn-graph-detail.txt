@@ -1,0 +1,66 @@
+attn node   20 SILU           node_488                           [  320     1   1   1] node_487 | - | f32 
+   detail 20: type f32 nb [1280 1280 1280] view_offs 0 view_src - data 0x75e797eeb080 | src0 0x75e797eeb080 nb [1280 1280 1280] ne [320 1 1] | src1 (nil) - ne [0 0] | params 10 0 0 0 1.4013e-44 0
+attn node   21 MUL_MAT        hc_gate-3                          [10240     1   1   1] blk.3.hc_attn_up.weight | node_488 | q8_0 
+   detail 21: type f32 nb [40960 40960 40960] view_offs 0 view_src - data 0x75e79b27de00 | src0 0x75e841e5ad00 nb [340 3481600 3481600] ne [320 10240 1] | src1 0x75e797eeb080 f32 ne [320 1] | params 0 0 0 0 0 0
+attn node   22 RESHAPE        hc_gate-3 (reshaped)               [ 2560     4   1   1] hc_gate-3 | - | f32 (noop)
+   detail 22: type f32 nb [10240 40960 40960] view_offs 0 view_src hc_gate-3 data 0x75e79b27de00 | src0 0x75e79b27de00 nb [40960 40960 40960] ne [10240 1 1] | src1 (nil) - ne [0 0] | params 0 0 0 0 0 0
+attn node   23 DSV4_HC_PRE    hc_mixed-3                         [ 2560     1   1   1] hc_norm-3 (reshaped) | hc_gate-3 (reshaped) | f32 
+   detail 23: type f32 nb [10240 10240 10240] view_offs 0 view_src - data 0x75e796f48000 | src0 0x75e799e7de00 nb [10240 40960 40960] ne [2560 4 1] | src1 0x75e79b27de00 f32 ne [2560 4] | params 1048576000 1 0 0 0.25 1.4013e-45
+attn node   24 MUL_MAT        indexer_k_raw-3                    [  128     1   1   1] blk.3.indexer.k_proj.weight | hc_mixed-3 | bf16 
+   detail 24: type f32 nb [512 512 512] view_offs 0 view_src - data 0x75e797eeb080 | src0 0x75e843fde600 nb [5120 655360 655360] ne [2560 128 1] | src1 0x75e796f48000 f32 ne [2560 1] | params 0 0 0 0 0 0
+attn node   25 FILL           node_493                           [  128     1   1   1] leaf_97 | - | f32 
+   detail 25: type f32 nb [512 512 512] view_offs 0 view_src - data 0x75e796c00000 | src0 0x75e796c00000 nb [512 512 512] ne [128 1 1] | src1 (nil) - ne [0 0] | params 0 0 0 0 0 0
+attn node   26 CONCAT         node_494                           [  256     1   1   1] indexer_k_raw-3 | node_493 | f32 
+   detail 26: type f32 nb [1024 1024 1024] view_offs 0 view_src - data 0x75e797f2b080 | src0 0x75e797eeb080 nb [512 512 512] ne [128 1 1] | src1 0x75e796c00000 f32 ne [128 1] | params 0 0 0 0 0 0
+attn node   27 RESHAPE         (reshaped)                        [  256     1   1   1] node_494 | - | f32 (noop)
+   detail 27: type f32 nb [1024 1024 1024] view_offs 0 view_src node_494 data 0x75e797f2b080 | src0 0x75e797f2b080 nb [1024 1024 1024] ne [256 1 1] | src1 (nil) - ne [0 0] | params 0 0 0 0 0 0
+attn node   28 VIEW            (reshaped) (view)                 [  256     1   1   1]  (reshaped) | - | f32 (noop)
+   detail 28: type f32 nb [1024 1024 1024] view_offs 0 view_src node_494 data 0x75e797f2b080 | src0 0x75e797f2b080 nb [1024 1024 1024] ne [256 1 1] | src1 (nil) - ne [0 0] | params 0 0 0 0 0 0
+attn node   29 SET_ROWS       cache_idx_k_l3 (view)              [  256  8192   1   1]  (reshaped) (view) | Meta(RPC0,RPC1)#attn_inp_k_idxs#0 | f32 
+   detail 29: type f16 nb [512 4194304 4194304] view_offs 0 view_src cache_idx_k_l3 data 0x75e7a0600000 | src0 0x75e797f2b080 nb [1024 1024 1024] ne [256 1 1] | src1 0x75e798349080 i64 ne [1 1] | params 0 0 0 0 0 0
+attn node   30 VIEW           cache_idx_k_l3 (view)              [  128  8192   1   1] cache_idx_k_l3 | - | f16 (noop)
+   detail 30: type f16 nb [512 4194304 4194304] view_offs 0 view_src cache_idx_k_l3 data 0x75e7a0600000 | src0 0x75e7a0600000 nb [512 4194304 4194304] ne [256 8192 1] | src1 (nil) - ne [0 0] | params 0 0 0 0 0 0
+attn node   31 RESHAPE         (reshaped)                        [    4     1   1   1] leaf_13 | - | i32 (noop)
+   detail 31: type i32 nb [16 16 16] view_offs 0 view_src leaf_13 data (nil) | src0 (nil) nb [16 16 16] ne [4 1 1] | src1 (nil) - ne [0 0] | params 0 0 0 0 0 0
+attn node   32 GET_ROWS       node_500                           [  128     4   1   1] cache_idx_k_l3 (view) | Meta(RPC0,RPC1)# (reshaped)#0 | f16 
+   detail 32: type f32 nb [512 2048 2048] view_offs 0 view_src - data 0x75e797eeb080 | src0 0x75e7a0600000 nb [512 4194304 4194304] ne [128 8192 1] | src1 0x75e79834a080 i32 ne [4 1] | params 0 0 0 0 0 0
+attn node   33 RESHAPE         (reshaped)                        [  128     4   1   1] node_500 | - | f32 (noop)
+   detail 33: type f32 nb [512 2048 2048] view_offs 0 view_src node_500 data 0x75e797eeb080 | src0 0x75e797eeb080 nb [512 2048 2048] ne [128 4 1] | src1 (nil) - ne [0 0] | params 0 0 0 0 0 0
+attn node   34 VIEW            (reshaped) (view)                 [  128     1   1   1]  (reshaped) | - | f32 (noop)
+   detail 34: type f32 nb [2048 2048 2048] view_offs 0 view_src node_500 data 0x75e797eeb080 | src0 0x75e797eeb080 nb [512 2048 2048] ne [128 4 1] | src1 (nil) - ne [0 0] | params 0 0 0 0 0 0
+attn node   35 CONT            (reshaped) (view) (cont)          [  128     1   1   1]  (reshaped) (view) | - | f32 
+   detail 35: type f32 nb [512 512 512] view_offs 0 view_src - data 0x75e797448000 | src0 0x75e797eeb080 nb [2048 2048 2048] ne [128 1 1] | src1 (nil) - ne [0 0] | params 0 0 0 0 0 0
+attn node   36 VIEW            (reshaped) (view)                 [  128     1   1   1]  (reshaped) | - | f32 (noop)
+   detail 36: type f32 nb [2048 2048 2048] view_offs 512 view_src node_500 data 0x75e797eeb280 | src0 0x75e797eeb080 nb [512 2048 2048] ne [128 4 1] | src1 (nil) - ne [0 0] | params 512 0 0 0 7.17465e-43 0
+attn node   37 ADD            node_505                           [  128     1   1   1]  (reshaped) (view) (cont) |  (reshaped) (view) | f32 
+   detail 37: type f32 nb [512 512 512] view_offs 0 view_src - data 0x75e797448000 | src0 0x75e797448000 nb [512 512 512] ne [128 1 1] | src1 0x75e797eeb280 f32 ne [128 1] | params 0 0 0 0 0 0
+attn node   38 VIEW            (reshaped) (view)                 [  128     1   1   1]  (reshaped) | - | f32 (noop)
+   detail 38: type f32 nb [2048 2048 2048] view_offs 1024 view_src node_500 data 0x75e797eeb480 | src0 0x75e797eeb080 nb [512 2048 2048] ne [128 4 1] | src1 (nil) - ne [0 0] | params 1024 0 0 0 1.43493e-42 0
+attn node   39 ADD            node_507                           [  128     1   1   1] node_505 |  (reshaped) (view) | f32 
+   detail 39: type f32 nb [512 512 512] view_offs 0 view_src - data 0x75e797448000 | src0 0x75e797448000 nb [512 512 512] ne [128 1 1] | src1 0x75e797eeb480 f32 ne [128 1] | params 0 0 0 0 0 0
+attn node   40 VIEW            (reshaped) (view)                 [  128     1   1   1]  (reshaped) | - | f32 (noop)
+   detail 40: type f32 nb [2048 2048 2048] view_offs 1536 view_src node_500 data 0x75e797eeb680 | src0 0x75e797eeb080 nb [512 2048 2048] ne [128 4 1] | src1 (nil) - ne [0 0] | params 1536 0 0 0 2.15239e-42 0
+attn node   41 ADD            node_509                           [  128     1   1   1] node_507 |  (reshaped) (view) | f32 
+   detail 41: type f32 nb [512 512 512] view_offs 0 view_src - data 0x75e797448000 | src0 0x75e797448000 nb [512 512 512] ne [128 1 1] | src1 0x75e797eeb680 f32 ne [128 1] | params 0 0 0 0 0 0
+attn node   42 SCALE          node_510                           [  128     1   1   1] node_509 | - | f32 
+   detail 42: type f32 nb [512 512 512] view_offs 0 view_src - data 0x75e797448000 | src0 0x75e797448000 nb [512 512 512] ne [128 1 1] | src1 (nil) - ne [0 0] | params 1048576000 0 0 0 0.25 0
+attn node   43 RMS_NORM       norm-3                             [  128     1   1   1] node_510 | - | f32 
+   detail 43: type f32 nb [512 512 512] view_offs 0 view_src - data 0x75e797448000 | src0 0x75e797448000 nb [512 512 512] ne [128 1 1] | src1 (nil) - ne [0 0] | params 897988541 0 0 0 1e-06 0
+attn node   44 MUL            node_512                           [  128     1   1   1] norm-3 | blk.3.indexer.k_norm.weight | f32 
+   detail 44: type f32 nb [512 512 512] view_offs 0 view_src - data 0x75e797448000 | src0 0x75e797448000 nb [512 512 512] ne [128 1 1] | src1 0x75e84407e800 f32 ne [128 1] | params 0 0 0 0 0 0
+attn node   45 RESHAPE         (reshaped)                        [  128     1   1   1] node_512 | - | f32 (noop)
+   detail 45: type f32 nb [512 512 512] view_offs 0 view_src node_512 data 0x75e797448000 | src0 0x75e797448000 nb [512 512 512] ne [128 1 1] | src1 (nil) - ne [0 0] | params 0 0 0 0 0 0
+attn node   46 ROPE           node_514                           [  128     1   1   1]  (reshaped) | Meta(RPC0,RPC1)#leaf_15#0 | f32 
+   detail 46: type f32 nb [512 512 512] view_offs 0 view_src - data 0x75e797eeb080 | src0 0x75e797448000 nb [512 512 512] ne [128 1 1] | src1 0x75e798352080 i32 ne [4 1] | params 0 64 40 0 0 8.96831e-44
+attn node   47 RESHAPE        indexer_pool_k_new-3               [  128     1   1   1] node_514 | - | f32 (noop)
+   detail 47: type f32 nb [512 512 512] view_offs 0 view_src node_514 data 0x75e797eeb080 | src0 0x75e797eeb080 nb [512 512 512] ne [128 1 1] | src1 (nil) - ne [0 0] | params 0 0 0 0 0 0
+attn node   48 VIEW           cache_idx_k_l3 (view)              [  128  8192   1   1] cache_idx_k_l3 | - | f16 (noop)
+   detail 48: type f16 nb [512 4194304 4194304] view_offs 256 view_src cache_idx_k_l3 data 0x75e7a0600100 | src0 0x75e7a0600000 nb [512 4194304 4194304] ne [256 8192 1] | src1 (nil) - ne [0 0] | params 256 0 0 0 3.58732e-43 0
+attn node   49 SET_ROWS       cache_idx_k_l3 (view) (view)       [  128  8192   1   1] indexer_pool_k_new-3 | Meta(RPC0,RPC1)#leaf_14#0 | f32 
+   detail 49: type f16 nb [512 4194304 4194304] view_offs 256 view_src cache_idx_k_l3 data 0x75e7a0600100 | src0 0x75e797eeb080 nb [512 512 512] ne [128 1 1] | src1 0x75e79835a080 i64 ne [1 1] | params 0 0 0 0 0 0
+attn node   50 MUL_MAT        Qcur_full-3                        [ 6144     1   1   1] blk.3.attn_q.weight | hc_mixed-3 | q5_0 
+   detail 50: type f32 nb [24576 24576 24576] view_offs 0 view_src - data 0x75e799e7de00 | src0 0x75e842a39e00 nb [1760 10813440 10813440] ne [2560 6144 1] | src1 0x75e796f48000 f32 ne [2560 1] | params 0 0 0 0 0 0
+attn node   51 VIEW           Qcur_reshaped-3                    [  256    12   1   1] Qcur_full-3 | - | f32 (noop)
+   detail 51: type f32 nb [2048 24576 24576] view_offs 0 view_src Qcur_full-3 data 0x75e799e7de00 | src0 0x75e799e7de00 nb [24576 24576 24576] ne [6144 1 1] | src1 (nil) - ne [0 0] | params 0 0 0 0 0 0
+attn node   52 RMS_NORM       norm-3                             [  256    12   1   1] Qcur_reshaped-3 | - | f32 
+   detail 52: type f32 nb [1024 12288 12288] view_offs 0 view_src - data 0x75e79b67de00 | src0 0x75e799e7de00 nb [2048 24576 24576] ne [256 12 1] | src1 (nil) - ne [0 0] | params 897988541 0 0 0 1e-06 0

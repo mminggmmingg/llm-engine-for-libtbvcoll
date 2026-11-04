@@ -1,0 +1,29 @@
+# python3 tools/bench/kdiff.py runs/prof2node-normrope-1105-012918 runs/prof2node-idxk-1105-032614
+runs/prof2node-normrope-1105-012918: tokens 33.0 kernels/token 1445 kernel us/token 20511
+runs/prof2node-idxk-1105-032614: tokens 33.0 kernels/token 1313 kernel us/token 20293
+  48.0 ->   48.0 /tok    1668.9 ->   1504.2 us/tok  mul_mat_vec_q< g81920x10 w32
+  12.0 ->    0.0 /tok      65.5 ->      0.0 us/tok  rope_multi<true, false, float, float> g1x256 w1
+  36.0 ->    0.0 /tok      53.6 ->      0.0 us/tok  k_bin_bcast<& g64x1 w64
+  49.0 ->   49.0 /tok    1618.6 ->   1573.4 us/tok  mul_mat_vec_q< g81920x1 w32
+  36.0 ->   12.0 /tok      69.1 ->     25.5 us/tok  k_set_rows<float, long, __half> g256x1 w256
+  96.0 ->   96.0 /tok    2052.1 ->   2012.8 us/tok  k_hc_up_pre<true> g81920x1 w1024
+  48.0 ->   48.0 /tok     165.1 ->    132.8 us/tok  moe_weighted_reduction_f32 g256x10 w256
+  12.0 ->    0.0 /tok      29.1 ->      0.0 us/tok  rms_norm_f32<32, 1, true, true, false, false, false, false,  g32x1 w32
+  33.8 ->   33.8 /tok     148.3 ->    119.9 us/tok  ssm_conv_silu_norm_pair_f32<4ul, true> g128x40 w128
+  48.0 ->   48.0 /tok    2368.6 ->   2340.4 us/tok  mul_mat_vec_q_glu_q8< g10240x10 w1024
+  60.0 ->   60.0 /tok    1016.1 ->    990.7 us/tok  mul_mat_vec_f<__hip_bfloat16, float, 1, 256, false, false> g131072x1 w256
+  12.0 ->    0.0 /tok      25.1 ->      0.0 us/tok  k_get_rows_float<__half, float> g1024x1 w256
+  36.0 ->   36.0 /tok     212.2 ->    187.4 us/tok  mul_mat_vec_q_gdn_gates< g1536x1 w32
+  12.0 ->    0.0 /tok      23.2 ->      0.0 us/tok  concat_cont<unsigned int, 0> g256x1 w256
+  36.0 ->   36.0 /tok    2540.3 ->   2517.8 us/tok  mul_mat_vec_q< g262144x1 w32
+  36.0 ->   36.0 /tok     561.2 ->    538.8 us/tok  gated_delta_net_cuda<128, false, false, 4, true> g768x4 w32
+  12.0 ->   12.0 /tok      94.9 ->     75.3 us/tok  flash_attn_tile<256, 256, 1, 4, false> g32x32 w32
+  12.0 ->   12.0 /tok      85.7 ->     66.6 us/tok  rms_norm_mul_rope_multi_f32<32, false, float> g128x1 w32
+  15.0 ->    3.0 /tok      23.1 ->      4.9 us/tok  scale_f32<float> g256x1 w256
+  24.0 ->   12.0 /tok      33.8 ->     16.6 us/tok  fill_kernel<float> g256x1 w256
+   1.0 ->    1.0 /tok    1147.0 ->   1130.8 us/tok  mul_mat_vec_q< g3973120x1 w32
+  12.0 ->   12.0 /tok      96.1 ->     80.0 us/tok  k_argsort_f32_i32< g64x1 w64
+  35.1 ->   23.1 /tok      57.2 ->     43.7 us/tok  __amd_rocclr_copyBuffer g512x1 w512
+   0.0 ->   12.0 /tok       0.0 ->    104.9 us/tok  idx_k_pool_f32<false> g32x1 w32
+  48.0 ->   48.0 /tok     999.1 ->   1129.3 us/tok  mul_mat_vec_q_shexp_tail< g81920x1 w1024
+  89.0 ->   89.0 /tok     817.5 ->   1269.6 us/tok  rms_norm_f32<1024, 1, true, true, false, false, true, false, g4096x1 w1024
