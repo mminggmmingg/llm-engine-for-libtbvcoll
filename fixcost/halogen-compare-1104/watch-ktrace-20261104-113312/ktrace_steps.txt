@@ -1,0 +1,21 @@
+kernels 159612, zero-length 0
+decode-like steps 221 (of 306 argmax-to-argmax), kernels/step median 644
+per step: span 27.75 ms, kernels running 25.55 ms (92.1%), idle 2.19 ms
+  idle split: small gaps between kernels (<=100 us) 1.59 ms, long waits (>100 us) 0.49 ms
+gaps between kernels (us): p10 2.1 med 2.2 p90 5.0 p99 8.1 max 2671.4
+kernels that start after a >100 us gap (per step): {'__amd_rocclr_copyBuffer': 1.51, 'halogen::k_embed_gather': 0.01, 'halogen::k_gather_fp8': 0.0, 'halogen::k_rmsnorm_grouped': 0.0}
+top kernels per step (us, count):
+    5294.8 us  x 48.0  halogen::k_ht_lin_grp
+    4775.0 us  x 44.1  halogen::k_i4r_rows_gl
+    4677.5 us  x 94.0  halogen::k_hc6_fused3
+    4382.0 us  x 61.4  halogen::k_ht_lin
+    2157.0 us  x 44.1  halogen::k_i4r_rows_fl
+    1824.1 us  x 48.0  halogen::k_ht_lin_grp_rt
+     863.9 us  x 31.0  halogen::k_dn_recur_step
+     755.5 us  x  3.5  halogen::k_i4r_rows_gl_o_sdp
+     338.6 us  x  3.5  halogen::k_i4r_rows_fl_o
+     317.2 us  x  2.0  halogen::k_lbfw
+     223.7 us  x 12.0  halogen::k_attn_fd
+     222.6 us  x 31.0  halogen::k_lq4w_grp
+     182.8 us  x  4.9  halogen::k_dn_recur_rows_reg
+     121.1 us  x  0.4  halogen::k_i4r_rows_gl_g

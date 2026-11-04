@@ -1,0 +1,52 @@
+none hcoff bin=bin load A=0.58 B=0.57 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 33.02 tok/s (token-weighted) | srv-2node-none-bs-hcoff-1104-131813
+   a: n=479 gfx 2416/2773/2867 상한 2510/2900/2900 활동 66/88/92 소켓W 66/70/70 gfxW 22/30/32 코어W 5/8/19 코어상한 1917/1937/4665 fclk 1607/1630/1683 uclk 1000/1000/1000 dramR 13875/31069/51255 dramW 3417/3564/4811 
+   b: n=478 gfx 2493/2778/2857 상한 2675/2859/2900 활동 66/89/92 소켓W 64/69/70 gfxW 24/31/34 코어W 4/5/14 코어상한 1585/1948/4948 fclk 1601/1606/1626 uclk 1000/1000/1000 dramR 12975/30351/50867 dramW 2899/2993/3447 
+   cyc: cycle  310.5
+none hc bin=bin load A=0.58 B=0.38 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 33.93 tok/s (token-weighted) | srv-2node-none-bs-hc-1104-132333
+   a: n=469 gfx 2353/2712/2838 상한 2587/2847/2900 활동 65/87/91 소켓W 66/70/70 gfxW 21/29/32 코어W 5/8/20 코어상한 1587/1932/4698 fclk 1607/1630/1685 uclk 1000/1000/1000 dramR 14585/33791/51330 dramW 3466/3627/4891 
+   b: n=463 gfx 2452/2688/2807 상한 2635/2783/2900 활동 65/88/91 소켓W 64/69/70 gfxW 24/30/33 코어W 4/5/14 코어상한 1578/1944/4950 fclk 1601/1607/1627 uclk 1000/1000/1000 dramR 13444/32763/50594 dramW 2945/3057/3490 
+   cyc: cycle  302.3
+none cdd bin=bin load A=1.01 B=0.21 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 33.79 tok/s (token-weighted) | srv-2node-none-bs-cdd-1104-133050
+   a: n=469 gfx 2304/2751/2846 상한 2558/2900/2900 활동 61/86/90 소켓W 63/69/70 gfxW 21/31/33 코어W 5/8/19 코어상한 1832/1932/4655 fclk 1605/1628/1676 uclk 1000/1000/1000 dramR 15021/32959/50053 dramW 3490/3622/4503 
+   b: n=460 gfx 2377/2764/2838 상한 2689/2869/2900 활동 61/85/90 소켓W 62/69/70 gfxW 24/33/35 코어W 4/6/14 코어상한 1587/1944/4960 fclk 1601/1606/1619 uclk 1000/1000/1000 dramR 13665/32025/50348 dramW 2895/2999/3240 
+   cyc: cycle  303.2
+none zc3d bin=bin load A=0.78 B=0.17 rdma=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 32.78 tok/s (token-weighted) | srv-2node-none-bs-zc3d-1104-133809
+   a: n=482 gfx 2382/2762/2850 상한 2575/2888/2900 활동 67/91/95 소켓W 65/70/70 gfxW 21/30/32 코어W 4/8/18 코어상한 1917/1935/4636 fclk 1607/1636/1689 uclk 1000/1000/1000 dramR 13630/29779/49634 dramW 3381/3607/4745 
+   b: n=480 gfx 1989/2700/2813 상한 2043/2801/2900 활동 65/89/94 소켓W 62/68/70 gfxW 14/31/34 코어W 3/6/19 코어상한 1596/1946/5103 fclk 1602/1611/1639 uclk 1000/1000/1000 dramR 12274/28896/50583 dramW 2782/2943/3463 
+Traceback (most recent call last):
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 16, in <module>
+    print(f"{p.split('/')[-1][:48]:48s} n={len(r):3d} gap {f('gap'):6.1f} sync {f('sync'):6.1f} net {f('net'):5.1f} h2d {f('h2d'):4.1f} cycle {f('gap')+f('sync')+f('net')+f('h2d'):6.1f} | sent->landed {f('pw'):5.1f} (med {st.median(x['pw'] for x in r):5.1f})")
+                                                           ~^^^^^^^
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 15, in <lambda>
+    f = lambda k: st.mean(x[k] for x in r)
+                  ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/park2/miniconda3/lib/python3.14/statistics.py", line 177, in mean
+    raise StatisticsError('mean requires at least one data point')
+statistics.StatisticsError: mean requires at least one data point
+   cyc: 
+none zc3d bin=bin load A=0.59 B=0.30 rdma=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 32.62 tok/s (token-weighted) | srv-2node-none-bs-zc3d-1104-134406
+   a: n=485 gfx 2372/2742/2850 상한 2557/2872/2900 활동 66/91/95 소켓W 65/70/70 gfxW 22/29/32 코어W 4/8/18 코어상한 1751/1932/4653 fclk 1612/1640/1684 uclk 1000/1000/1000 dramR 13081/30253/49369 dramW 3340/3586/4754 
+   b: n=480 gfx 1962/2660/2825 상한 2002/2788/2900 활동 64/89/95 소켓W 62/68/70 gfxW 14/30/34 코어W 3/7/19 코어상한 1600/1948/5106 fclk 1602/1612/1641 uclk 1000/1000/1000 dramR 12594/28951/50407 dramW 2778/2979/3417 
+Traceback (most recent call last):
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 16, in <module>
+    print(f"{p.split('/')[-1][:48]:48s} n={len(r):3d} gap {f('gap'):6.1f} sync {f('sync'):6.1f} net {f('net'):5.1f} h2d {f('h2d'):4.1f} cycle {f('gap')+f('sync')+f('net')+f('h2d'):6.1f} | sent->landed {f('pw'):5.1f} (med {st.median(x['pw'] for x in r):5.1f})")
+                                                           ~^^^^^^^
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 15, in <lambda>
+    f = lambda k: st.mean(x[k] for x in r)
+                  ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/park2/miniconda3/lib/python3.14/statistics.py", line 177, in mean
+    raise StatisticsError('mean requires at least one data point')
+statistics.StatisticsError: mean requires at least one data point
+   cyc: 
+none cdd bin=bin load A=0.59 B=0.29 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 33.39 tok/s (token-weighted) | srv-2node-none-bs-cdd-1104-134814
+   a: n=475 gfx 2384/2740/2844 상한 2507/2880/2900 활동 64/86/90 소켓W 65/70/70 gfxW 22/30/33 코어W 5/8/20 코어상한 1754/1934/4657 fclk 1608/1633/1690 uclk 1000/1000/1000 dramR 15194/32678/51396 dramW 3492/3653/4841 
+   b: n=466 gfx 2460/2747/2815 상한 2666/2826/2900 활동 64/85/90 소켓W 64/69/70 gfxW 25/32/34 코어W 4/6/14 코어상한 1592/1946/4967 fclk 1601/1606/1624 uclk 1000/1000/1000 dramR 13821/31500/50207 dramW 2889/3002/3425 
+   cyc: cycle  307.0
+none hc bin=bin load A=0.58 B=0.24 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 33.15 tok/s (token-weighted) | srv-2node-none-bs-hc-1104-135527
+   a: n=476 gfx 2401/2747/2854 상한 2430/2900/2900 활동 66/88/92 소켓W 66/70/70 gfxW 22/30/32 코어W 5/8/20 코어상한 1915/1936/4730 fclk 1608/1638/1699 uclk 1000/1000/1000 dramR 13988/32043/50737 dramW 3470/3672/4921 
+   b: n=471 gfx 2496/2719/2819 상한 2652/2814/2900 활동 67/89/92 소켓W 64/69/70 gfxW 24/30/33 코어W 4/6/13 코어상한 1585/1944/4946 fclk 1601/1605/1620 uclk 1000/1000/1000 dramR 13529/31031/50276 dramW 2876/2989/3427 
+   cyc: cycle  309.2
+none hcoff bin=bin load A=0.56 B=0.15 rdma=1 zc=ZC=1/ZC=1: TOTAL tokens 1407, decode 33.08 tok/s (token-weighted) | srv-2node-none-bs-hcoff-1104-140230
+   a: n=482 gfx 2395/2778/2867 상한 2571/2900/2900 활동 63/88/92 소켓W 65/70/70 gfxW 22/30/32 코어W 5/8/19 코어상한 1917/1937/4604 fclk 1607/1629/1687 uclk 1000/1000/1000 dramR 14952/32077/50311 dramW 3402/3578/4749 
+   b: n=475 gfx 2433/2760/2842 상한 2645/2867/2900 활동 64/88/92 소켓W 63/69/70 gfxW 24/31/33 코어W 4/6/14 코어상한 1597/1948/4958 fclk 1601/1606/1625 uclk 1000/1000/1000 dramR 13651/30748/50485 dramW 2878/2973/3395 
+   cyc: cycle  310.1

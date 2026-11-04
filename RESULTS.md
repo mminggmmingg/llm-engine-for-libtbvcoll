@@ -1366,3 +1366,31 @@ B 는 A 가 먼저 올라오면 설정 파일 값(-1)으로 저절로 올라오�
 - 출력층 분할 0.43(계산한 균형점), AR + 다음 norm/quantize 융합(MoE 첫 커널은 다중 블록 hc_post 라 제자리 쓰기 경쟁부터),
   attention 의 작은 커널 묶기(QSA 인덱서 풀링 12개 ≈0.4 ms/토큰, rms_norm→rope_multi 짝 4개/층 — 기존 융합 커널은 multi-rope 를 못 받음).
 - ZC=3 의 깊은 큐 비용 기전(ROCclr 신호 풀·배치 정리).
+
+## 2026-11-04 11:00–14:10 — halogen 과 GPU 사용률 비교, hc 블록 묶기(+1.5–2%), AR 미루기, ZC=3 재시험
+자료: `fixcost/halogen-compare-1104/`(halogen 측정·커널 기록 분석, 우리 엔진 같은 표본기), `fixcost/fuse-1104/`(q8 캐시 유지 검증·A/B, 미루기 기록 실행),
+`fixcost/zc3re-1104/`(ZC=3 재시험, 기록 켬), `fixcost/hc-ab-1104/`(정식 A/B), `fixcost/slow-1104/`·`diag-1104/`(클라이언트 느림 진단). 모든 A/B: 해시 6개 같음.
+
+### halogen(1노드)에 관측 붙이기
+- 작업 표시줄 그래프와 같은 값(`gpu_busy_percent`)을 20 ms 마다: halogen serial 평균 91% · 중앙 97% · **95% 이상 표본 61%** (mtp 86/91/37%),
+  우리 2노드 노드마다 82/88% · **95% 이상 0%**(최대 92–93). 같은 6 프롬프트 decode: halogen serial 36.6–37.9, mtp 48.9–68.5, 우리 32.9 tok/s.
+- rocprofv3 `--kernel-trace` 로 halogen 디코드 한 토큰(221 토큰 중앙): 커널 **644개**(층당 ≈13, 우리는 노드마다 1806개·층당 ≈37), 27.75 ms 중 커널 25.55 ms(92%),
+  쉼 = 커널 사이 빈틈 1.59 ms(중앙 2.2 µs — 우리와 같음) + n-gram 표 조회 0.49 ms. 토큰마다 동기화 한 번, argmax 는 GPU, hc 는 `k_hc6_fused3` 하나.
+- 차이: 토큰 안 호스트 왕복(halogen 1번, 우리 AR 96번 ≈7.9 ms 쉼)과 커널 수. 큐를 644개 앞서 쌓는 halogen 은 빈틈이 커지지 않음 → ZC=3 의 커널 느려짐은 큐 깊이만의 문제가 아님.
+
+### hc 블록 묶기 (`k_hc_up_pre`, dsv4-hc.cu, 기본 켬, `GGML_CUDA_NO_HC_UP_PRE=1` 끔)
+- SCALE → SILU → MUL_MAT(hc up, Q8_0, K=320) → DSV4_HC_PRE(gated, 1 토큰)를 커널 하나로: 워프 32개 블록이 hc_pre 출력 32개를 맡아, silu 입력 q8_1 을 공유 메모리에
+  k_scale_silu_q8_1 과 같은 식으로 만들고, 워프 하나가 자기 출력의 hc 4행을 RDNA mmvq(워프 1개 = 1행, nwarps 1)와 같은 루프·워프 합으로 계산한 뒤 hc_pre 값,
+  블록의 32개 출력으로 다음 행렬곱용 q8_1 블록 하나. 원소식은 공용 함수(`ggml_cuda_scale_silu_single`, `dsv4_hc_pre_value`)로 두 커널이 같은 식을 씀.
+- 토큰당 커널 −192(sublayer 96 × 2). A/B: 끔 33.02·33.08 vs 켬 33.93·33.15(따로 한 회 34.26) → **+1.5–2%**, 해시 그대로.
+
+### 그 밖에
+- q8 캐시 그래프 사이 유지 `GGML_CUDA_Q8_CACHE_PERSIST=1`: 그래프 밖 장치 쓰기(입력·복사·memset·버퍼 할당/해제 10곳)마다 세대 번호를 올리고 그대로일 때만 유지,
+  AR 더하기는 범위만 지움. 재사용 79.6%(양자화 토큰당 155 → ≈109), `GGML_CUDA_Q8_VERIFY` 로 적중이 새 양자화와 같음 확인. 속도는 잡음 안(33.11·32.66 vs 32.96·32.86) → 기본 끔.
+- AR 더하기 미루기 `GGML_CUDA_COMM_DEFER=1`(+`GGML_CUDA_COMM_DEFER_WINDOW`, 기본 4): 서버의 wait-add 를 보류했다가 다음 그래프에서 그 목적지를 건드리는 노드
+  (4 노드 앞까지 보아 융합 묶음을 깨지 않음, 더 긴 묶음이 건드리면 중단 오류) 직전에 넣는다. MoE AR 뒤 복제된 shared expert 가 기다림을 채워 MoE AR 기다림 25 → **0.3 µs**.
+  그러나 ZC=1 에서는 호스트가 깨어나 보내는 동안 GPU 가 비어 속도 같음(hc 켬 위에서 33.79·33.39), ZC=3 위에서는 32.78·32.62.
+- ZC=3 재시험(기록 켬, 위치별 계산): 모든 대기를 잠들게(`GGML_RPC_SPIN_US=0`)해도 GDN 259·attention 459 µs 로 같이 늘어남 → CPU 스핀은 원인 아님.
+  `HIP_FORCE_DEV_KERNARG=0`, `DEBUG_CLR_MAX_BATCH_SIZE`/`ROC_SIGNAL_POOL_SIZE` 도 아님. 미루기와 함께면 GDN 229·attention 419 µs 이지만 전체는 여전히 ZC=1 아래.
+- 클라이언트 느림 진단(`GGML_RPC_DEDUP_TIME=2`): llama-server 안에서 27 KB 해시 벽시계 163 = 스레드 CPU 시간 162 µs(밀려난 것 아님), 레지스터만 쓰는 루프도 162 µs,
+  무엇을 재도 ≈162 µs → 시계 호출 비용부터 확인해야 함(미완). 클라이언트를 조용한 코어에 고정(taskset)해도 같음.
