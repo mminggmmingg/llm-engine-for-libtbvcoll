@@ -98,7 +98,7 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
     검증용 `GGML_CUDA_SHEXP_TAIL_VERIFY=1`(묶은 결과와 따로 돌린 결과를 비트로 비교). 커널 토큰당 비교 `tools/bench/kdiff.py`.
     GDN beta/alpha 행렬곱 + gates 한 커널(기본 켬, +2%) `GGML_CUDA_NO_GDN_MM_GATES=1` 끔, 검증 `GGML_CUDA_GDN_GATES_VERIFY=1`
   - 2026-11-04 밤: GDN conv + q/k norm 한 커널(기본 켬, +0.5–1%) `GGML_CUDA_NO_CONV_NORM_PAIR=1` 끔, 검증 `GGML_CUDA_CONV_NORM_VERIFY=1`
-    AR 기다림-더하기를 처음 읽는 커널 안에서(+1.4%) `GGML_CUDA_COMM_FUSE=1`(미루기 포함, 아직 켜야 씀)
+    AR 기다림-더하기를 처음 읽는 커널 안에서(+1.4%, 기본 켬, 미루기 포함) `GGML_CUDA_COMM_FUSE=0` 끔
 
 ## 준비
 ```

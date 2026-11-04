@@ -284,7 +284,7 @@ index 22e5fd9..024c311 100644
      if (!sched->is_alloc) {
          // if the graph is not already allocated, always use copy 0 after a synchronization
 diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
-index 6b36ca9..ce9a864 100644
+index 6b36ca9..700268b 100644
 --- a/ggml/src/ggml-cuda/common.cuh
 +++ b/ggml/src/ggml-cuda/common.cuh
 @@ -452,6 +452,33 @@ struct ggml_cuda_unroll<1> {
@@ -372,7 +372,7 @@ index 6b36ca9..ce9a864 100644
  };
  
 +// engine2n: an allreduce wait-and-add (k_comm_wait_add in ggml-cuda.cu) done at the start of the kernel that first reads its
-+// destination (GGML_CUDA_COMM_FUSE=1). The first block to arrive waits for the peer's flag and adds the peer's partial into dst
++// destination (default on, GGML_CUDA_COMM_FUSE=0 off). The first block to arrive waits for the peer's flag and adds the peer's partial into dst
 +// exactly as k_comm_wait_add does (dst[i] = dst[i] + src[i]), then releases the other blocks, which wait for it before reading.
 +// Does not depend on the order the blocks start in. ticket: per-use number from the context (sync[0]: claimed, sync[1]: done).
 +struct ggml_cuda_comm_fused {
@@ -1051,7 +1051,7 @@ index f9bf437..8ce163a 100644
  
  void ggml_cuda_op_gated_delta_net(ggml_backend_cuda_context & ctx, ggml_tensor * dst);
 diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
-index 72e961d..24f0572 100644
+index 72e961d..07f063a 100644
 --- a/ggml/src/ggml-cuda/ggml-cuda.cu
 +++ b/ggml/src/ggml-cuda/ggml-cuda.cu
 @@ -62,6 +62,7 @@
@@ -1106,11 +1106,11 @@ index 72e961d..24f0572 100644
 +// engine2n: queue a held-back allreduce wait-and-add (GGML_CUDA_COMM_DEFER, see ggml_backend_cuda_context::comm_deferred)
 +static void ggml_cuda_comm_flush_deferred(ggml_backend_cuda_context & ctx);
 +
-+// engine2n: GGML_CUDA_COMM_FUSE=1 (implies GGML_CUDA_COMM_DEFER): the held-back wait-and-add goes into the kernel that first
-+// reads its destination (ggml_cuda_comm_fused_wait_add) instead of a kernel of its own: the shared expert tail for the MoE
-+// allreduce, the hc_post -> norm kernel for the attention and delta net ones
++// engine2n: on by default (implies GGML_CUDA_COMM_DEFER), GGML_CUDA_COMM_FUSE=0 turns it off: the held-back wait-and-add goes
++// into the kernel that first reads its destination (ggml_cuda_comm_fused_wait_add) instead of a kernel of its own: the shared
++// expert tail for the MoE allreduce, the hc_post -> norm kernel for the attention and delta net ones
 +static bool ggml_cuda_comm_fuse_on() {
-+    static const bool on = getenv("GGML_CUDA_COMM_FUSE") != nullptr && atoi(getenv("GGML_CUDA_COMM_FUSE")) != 0;
++    static const bool on = getenv("GGML_CUDA_COMM_FUSE") == nullptr || atoi(getenv("GGML_CUDA_COMM_FUSE")) != 0;
 +    return on;
 +}
 +
