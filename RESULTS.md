@@ -1524,3 +1524,11 @@ B 는 A 가 먼저 올라오면 설정 파일 값(-1)으로 저절로 올라오�
 - 되돌리는 중 실수: `git apply --check` 만 한 확인용 폴더(깨끗한 e09a78a)를 "본 패치 적용본"으로 착각해 세 파일(common.cuh, mmvq.cu, ggml-cuda.cu)을
   덮어썼다 → 빌드 실패로 바로 알아챔. 방금 푸시한 패치(0b544df)를 깨끗한 e09a78a 에 적용한 트리에서 세 파일을 되살렸고, 고친 파일 전부가 그 트리와 같음을
   확인, 다시 빌드한 바이너리로 해시 6개 같음·36.16 tok/s. 잃은 것 없음.
+
+## 2026-11-05 04:20–05:10 — 최종 비교: 어제 오후 이후 묶기 10개 끔 vs 켬(none +5.4%, MTP +1.9%)
+자료: `fixcost/final-1105/`(번갈아 실행 로그, 끄는 환경 `final-off-env.txt`, 되살린 빌드 확인 `chk.log`). 모든 실행 해시 6개 같음.
+- 같은 빌드에서 `GGML_CUDA_NO_GLU_Q8 NO_SHEXP_DOWN_TAIL NO_GDN_MM_GATES NO_CONV_NORM_PAIR COMM_FUSE=0 NO_CONV_CONCAT NO_GDN_NORM NO_ATTN_GATE_Q8
+  NO_NORM_ROPE NO_IDX_K_POOL` 을 모두 켠 것(끔) vs 기본(켬), 워밍업 1회 뒤 번갈아.
+- none: 켬 **36.10·36.42·36.26**, 끔 34.30·34.35·34.59 → **+5.4%**(AR 주기 281.5–283.6 vs 296.5–299.0 µs).
+- MTP: 켬 **43.71·43.79**, 끔 42.95·42.90 → **+1.9%**(MTP 는 회마다 흔들림이 커서 이 밤 다른 회에 45.2–45.7 도 나옴; 대부분 묶기가 1토큰 전용이라 효과가 작음).
+- A 노드 토큰당 커널 1886 → 1313. 아침 보고서: 상위 작업 폴더 `claude_code/reports/morning_20261105_engine2n.md`.
