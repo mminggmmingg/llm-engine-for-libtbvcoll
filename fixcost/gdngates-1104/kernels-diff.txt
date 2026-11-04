@@ -1,0 +1,9 @@
+runs/prof2node-shtail-1104-162427: tokens 33.0 kernels/token 1742 kernel us/token 24414
+runs/prof2node-gdngates-1104-171511: tokens 33.0 kernels/token 1706 kernel us/token 21681
+  96.0 ->   96.0 /tok    4457.5 ->   1802.0 us/tok  k_comm_wait_add g1024x1 w1024
+  36.0 ->    0.0 /tok     224.1 ->      0.0 us/tok  mul_mat_vec_q< g1536x1 w32
+  36.0 ->    0.0 /tok     104.2 ->      0.0 us/tok  k_gdn_gates g64x1 w64
+  36.0 ->   36.0 /tok     495.4 ->    515.7 us/tok  gated_delta_net_cuda<128, false, false, 4> g768x4 w32
+  48.0 ->   48.0 /tok     653.1 ->    673.7 us/tok  mul_mat_vec_q_shexp_tail< g81920x1 w1024
+  48.0 ->   48.0 /tok    1627.9 ->   1652.9 us/tok  mul_mat_vec_q< g81920x10 w32
+   0.0 ->   36.0 /tok       0.0 ->    214.1 us/tok  mul_mat_vec_q_gdn_gates< g1536x1 w32

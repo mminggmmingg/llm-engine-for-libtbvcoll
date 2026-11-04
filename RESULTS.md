@@ -1395,8 +1395,8 @@ B 는 A 가 먼저 올라오면 설정 파일 값(-1)으로 저절로 올라오�
 - 클라이언트 느림 진단(`GGML_RPC_DEDUP_TIME=2`): llama-server 안에서 27 KB 해시 벽시계 163 = 스레드 CPU 시간 162 µs(밀려난 것 아님), 레지스터만 쓰는 루프도 162 µs,
   무엇을 재도 ≈162 µs → 시계 호출 비용부터 확인해야 함(미완). 클라이언트를 조용한 코어에 고정(taskset)해도 같음.
 
-## 2026-11-04 14:40–16:50 — 다음 묶기: GLU → q8_1(채택), MoE down + 가중합(느려서 뺌), shared expert down + 게이트 꼬리(채택)
-자료: `fixcost/glu-1104/`, `fixcost/moered-1104/`, `fixcost/shtail-1104/`(각각 검증 실행 로그, 끔/켬 번갈아 4회 A/B, A 서버 rocprofv3 커널 비교
+## 2026-11-04 14:40–17:45 — 다음 묶기: GLU → q8_1(채택), MoE down + 가중합(느려서 뺌), shared expert down + 게이트 꼬리(채택), GDN gates(+2%, 채택)
+자료: `fixcost/glu-1104/`, `fixcost/moered-1104/`, `fixcost/shtail-1104/`, `fixcost/gdngates-1104/`(각각 검증 실행 로그, 끔/켬 번갈아 4회 A/B, A 서버 rocprofv3 커널 비교
 `kernels-diff.txt` — `tools/bench/kdiff.py`). 모든 실행: 2노드 H5, ZC=1, `GGML_RPC_COMM_DEV=usb4_rdma0`, 기록 링 끔, **해시 6개 같음**.
 커널 수·시간은 A 서버, llama-bench tg32, 토큰 수 = GDN 커널 수 / 36.
 
@@ -1425,8 +1425,18 @@ B 는 A 가 먼저 올라오면 설정 파일 값(-1)으로 저절로 올라오�
 - 커널: 1790 → **1742**. 시간: 옛 down ≈9.3 + 꼬리 3.8 µs → 13.0(중앙)·13.6(평균) µs, 토큰당 630 → 653 µs(블록 80개가 내적을 각자 계산).
 - A/B(끔 → 켬 → 켬 → 끔): 끔 33.84·33.90, 켬 33.95·34.13(AR 주기 302.2·302.4 vs 302.0·300.6) → **+0.5%**.
 
+### GDN beta/alpha 행렬곱 + gates (`mul_mat_vec_q_gdn_gates`, 기본 켬, `GGML_CUDA_NO_GDN_MM_GATES=1` 끔) — 17:00–17:45
+- 1토큰 MUL_MAT(ssm_beta_alpha, Q8_0, 노드당 48행) → VIEW(alpha) → ADD(dt bias) → SOFTPLUS → MUL(A) … VIEW(beta) → SIGMOID 를 한 커널로: mmvq 와 같은 격자
+  (블록당 워프 1개 = 1행)에서 레인 0 이 자기 행을 k_gdn_gates 와 같은 식(contract off)으로 gate 또는 beta 로. 행렬곱 결과는 쓰지 않음(읽는 것이 둘뿐).
+- 처음엔 한 번도 안 맞았다: 뷰 노드는 쓰임 수가 0 이고 뷰를 읽는 노드는 원본의 쓰임으로 센다 → 원본 쓰임 2(ADD, SIGMOID)만 확인하도록 고침.
+- `GGML_CUDA_GDN_GATES_VERIFY=1`: 두 노드 모두 "same"(노드당 머리 24, alpha 는 24행부터, beta 는 0행부터), 해시 같음.
+- 커널: 1742 → **1706**. 시간: 옛 행렬곱 224 + gates 104 → 214 µs/토큰.
+- A/B(켬 → 끔 → 끔 → 켬): 켬 **34.51·34.45**, 끔 34.01·33.50(AR 주기 297.3·297.9 vs 301.7·306.1) → **+2%**. 지금까지 가장 빠른 값.
+
 ### 정리
-- 오늘 묶기 뒤 A 노드 토큰당 커널 1886 → 1742. 띄우기 하나 줄 때마다 ≈2–4 µs 지만, 묶은 커널이 조금이라도 느려지면(MoE 처럼 메모리 접근 순서가 바뀌면) 바로 상쇄된다
+- 오늘 묶기 뒤 A 노드 토큰당 커널 1886 → 1706. 띄우기 하나 줄 때마다 ≈2–4 µs 지만, 묶은 커널이 조금이라도 느려지면(MoE 처럼 메모리 접근 순서가 바뀌면) 바로 상쇄된다
   → 묶기 전후 커널 시간을 rocprofv3 로 먼저 보고 A/B 를 돌린다.
-- 남은 큰 묶음 후보(토큰당 개수): AR 복사 copyBuffer 108, `k_comm_wait_add` 96, hc_post→norm 89(+ down_inject 행렬곱 96), GDN 층 작은 커널(36씩: conv·norm 쌍·gates·beta_alpha).
+- 남은 큰 묶음 후보(토큰당 개수): AR 복사 copyBuffer 108, `k_comm_wait_add` 96, hc_post→norm 89(+ down_inject 행렬곱 96), shexp 앞 quantize 48,
+  GDN 층 작은 커널(36씩: concat·conv·q/k norm 쌍·gated norm).
+- 미완: conv + q/k norm 한 커널(−36 예상)은 코드만 쓰고 빌드·검증 전에 정리 → `fixcost/convnorm-wip-1104/`(패치·절차).
 
