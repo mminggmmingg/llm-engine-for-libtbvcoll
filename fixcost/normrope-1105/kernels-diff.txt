@@ -1,0 +1,18 @@
+# python3 tools/bench/kdiff.py runs/prof2node-attngate-1105-005900 runs/prof2node-normrope-1105-012918
+runs/prof2node-attngate-1105-005900: tokens 33.0 kernels/token 1481 kernel us/token 20484
+runs/prof2node-normrope-1105-012918: tokens 33.0 kernels/token 1445 kernel us/token 20511
+  89.0 ->   89.0 /tok     975.9 ->    817.5 us/tok  rms_norm_f32<1024, 1, true, true, false, false, true, false, g4096x1 w1024
+  12.0 ->    0.0 /tok      73.7 ->      0.0 us/tok  rope_multi<true, false, float, __half> g1x256 w1
+  36.0 ->   36.0 /tok     604.8 ->    561.2 us/tok  gated_delta_net_cuda<128, false, false, 4, true> g768x4 w32
+  12.0 ->    0.0 /tok      40.6 ->      0.0 us/tok  rope_multi<true, false, float, float> g12x256 w1
+  12.0 ->    0.0 /tok      40.6 ->      0.0 us/tok  rms_norm_f32<128, 1, true, true, false, false, false, false, g1536x1 w128
+  12.0 ->    0.0 /tok      37.3 ->      0.0 us/tok  rope_multi<true, false, float, float> g4x256 w1
+  12.0 ->    0.0 /tok      31.3 ->      0.0 us/tok  rms_norm_f32<128, 1, true, true, false, false, false, false, g128x1 w128
+  12.0 ->    0.0 /tok      22.1 ->      0.0 us/tok  rms_norm_f32<32, 1, true, true, false, false, false, false,  g128x1 w32
+  36.0 ->   36.0 /tok    2519.0 ->   2540.3 us/tok  mul_mat_vec_q< g262144x1 w32
+  96.0 ->   96.0 /tok    2026.3 ->   2052.1 us/tok  k_hc_up_pre<true> g81920x1 w1024
+  48.0 ->   48.0 /tok     951.1 ->    999.1 us/tok  mul_mat_vec_q_shexp_tail< g81920x1 w1024
+  48.0 ->   48.0 /tok    1604.1 ->   1668.9 us/tok  mul_mat_vec_q< g81920x10 w32
+   0.0 ->   12.0 /tok       0.0 ->     76.6 us/tok  rms_norm_mul_rope_multi_f32<128, false, __half> g128x1 w128
+   0.0 ->   12.0 /tok       0.0 ->     84.2 us/tok  rms_norm_mul_rope_multi_f32<128, false, float> g1536x1 w128
+   0.0 ->   12.0 /tok       0.0 ->     85.7 us/tok  rms_norm_mul_rope_multi_f32<32, false, float> g128x1 w32

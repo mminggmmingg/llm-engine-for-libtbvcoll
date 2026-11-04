@@ -1,0 +1,92 @@
+attn node    0 MUL_MAT        ffn_gate-2                         [  640     1   1   1] blk.2.ffn_gate_shexp.weight | hc_mixed-2 | q5_0 
+attn node    1 MUL_MAT        ffn_up-2                           [  640     1   1   1] blk.2.ffn_up_shexp.weight | hc_mixed-2 | q5_0 
+attn node    2 SWIGLU         ffn_swiglu-2                       [  640     1   1   1] ffn_gate-2 | ffn_up-2 | f32 
+attn node    3 MUL_MAT        ffn_shexp-2                        [ 2560     1   1   1] blk.2.ffn_down_shexp.weight | ffn_swiglu-2 | q5_0 
+attn node    4 MUL_MAT        shared_expert_gate-2               [    1     1   1   1] blk.2.ffn_gate_inp_shexp.weight | hc_mixed-2 | f32 
+attn node    5 SIGMOID        shared_expert_gate_sigmoid-2       [    1     1   1   1] shared_expert_gate-2 | - | f32 
+attn node    6 MUL            ffn_shexp_gated-2                  [ 2560     1   1   1] ffn_shexp-2 | shared_expert_gate_sigmoid-2 | f32 
+attn node    7 ADD            ffn_out-2                          [ 2560     1   1   1] ffn_moe_out-2 | ffn_shexp_gated-2 | f32 
+attn node    8 VIEW            (view)                            [    4     1   1   1] node_425 | - | f32 (noop)
+attn node    9 SCALE          hc_inject-2                        [    4     1   1   1]  (view) | - | f32 
+attn node   10 SIGMOID        node_478                           [    4     1   1   1] hc_inject-2 | - | f32 
+attn node   11 SCALE          node_479                           [    4     1   1   1] node_478 | - | f32 
+attn node   12 DSV4_HC_POST   l_last-2                           [ 2560     4   1   1] ffn_out-2 | hc_combine-2 | f32 
+attn node   13 RMS_NORM       node_481                           [ 2560     4   1   1] l_last-2 | - | f32 
+attn node   14 MUL            node_482                           [ 2560     4   1   1] node_481 | blk.3.hc_attn_norm.weight | f32 
+attn node   15 RESHAPE        hc_norm-3                          [10240     1   1   1] node_482 | - | f32 (noop)
+attn node   16 RESHAPE        hc_norm-3 (reshaped)               [ 2560     4   1   1] hc_norm-3 | - | f32 (noop)
+attn node   17 MUL_MAT        node_485                           [  324     1   1   1] blk.3.hc_attn_down_inject.weight | hc_norm-3 | q6_K 
+attn node   18 VIEW            (view)                            [  320     1   1   1] node_485 | - | f32 (noop)
+attn node   19 SCALE          node_487                           [  320     1   1   1]  (view) | - | f32 
+attn node   20 SILU           node_488                           [  320     1   1   1] node_487 | - | f32 
+attn node   21 MUL_MAT        hc_gate-3                          [10240     1   1   1] blk.3.hc_attn_up.weight | node_488 | q8_0 
+attn node   22 RESHAPE        hc_gate-3 (reshaped)               [ 2560     4   1   1] hc_gate-3 | - | f32 (noop)
+attn node   23 DSV4_HC_PRE    hc_mixed-3                         [ 2560     1   1   1] hc_norm-3 (reshaped) | hc_gate-3 (reshaped) | f32 
+attn node   24 MUL_MAT        indexer_k_raw-3                    [  128     1   1   1] blk.3.indexer.k_proj.weight | hc_mixed-3 | bf16 
+attn node   25 FILL           node_493                           [  128     1   1   1] leaf_97 | - | f32 
+attn node   26 CONCAT         node_494                           [  256     1   1   1] indexer_k_raw-3 | node_493 | f32 
+attn node   27 RESHAPE         (reshaped)                        [  256     1   1   1] node_494 | - | f32 (noop)
+attn node   28 VIEW            (reshaped) (view)                 [  256     1   1   1]  (reshaped) | - | f32 (noop)
+attn node   29 SET_ROWS       cache_idx_k_l3 (view)              [  256  8192   1   1]  (reshaped) (view) | Meta(RPC0,RPC1)#attn_inp_k_idxs#0 | f32 
+attn node   30 VIEW           cache_idx_k_l3 (view)              [  128  8192   1   1] cache_idx_k_l3 | - | f16 (noop)
+attn node   31 RESHAPE         (reshaped)                        [    4     1   1   1] leaf_13 | - | i32 (noop)
+attn node   32 GET_ROWS       node_500                           [  128     4   1   1] cache_idx_k_l3 (view) | Meta(RPC0,RPC1)# (reshaped)#0 | f16 
+attn node   33 RESHAPE         (reshaped)                        [  128     4   1   1] node_500 | - | f32 (noop)
+attn node   34 VIEW            (reshaped) (view)                 [  128     1   1   1]  (reshaped) | - | f32 (noop)
+attn node   35 CONT            (reshaped) (view) (cont)          [  128     1   1   1]  (reshaped) (view) | - | f32 
+attn node   36 VIEW            (reshaped) (view)                 [  128     1   1   1]  (reshaped) | - | f32 (noop)
+attn node   37 ADD            node_505                           [  128     1   1   1]  (reshaped) (view) (cont) |  (reshaped) (view) | f32 
+attn node   38 VIEW            (reshaped) (view)                 [  128     1   1   1]  (reshaped) | - | f32 (noop)
+attn node   39 ADD            node_507                           [  128     1   1   1] node_505 |  (reshaped) (view) | f32 
+attn node   40 VIEW            (reshaped) (view)                 [  128     1   1   1]  (reshaped) | - | f32 (noop)
+attn node   41 ADD            node_509                           [  128     1   1   1] node_507 |  (reshaped) (view) | f32 
+attn node   42 SCALE          node_510                           [  128     1   1   1] node_509 | - | f32 
+attn node   43 RMS_NORM       norm-3                             [  128     1   1   1] node_510 | - | f32 
+attn node   44 MUL            node_512                           [  128     1   1   1] norm-3 | blk.3.indexer.k_norm.weight | f32 
+attn node   45 RESHAPE         (reshaped)                        [  128     1   1   1] node_512 | - | f32 (noop)
+attn node   46 ROPE           node_514                           [  128     1   1   1]  (reshaped) | Meta(RPC0,RPC1)#leaf_15#0 | f32 
+attn node   47 RESHAPE        indexer_pool_k_new-3               [  128     1   1   1] node_514 | - | f32 (noop)
+attn node   48 VIEW           cache_idx_k_l3 (view)              [  128  8192   1   1] cache_idx_k_l3 | - | f16 (noop)
+attn node   49 SET_ROWS       cache_idx_k_l3 (view) (view)       [  128  8192   1   1] indexer_pool_k_new-3 | Meta(RPC0,RPC1)#leaf_14#0 | f32 
+attn node   50 MUL_MAT        Qcur_full-3                        [ 6144     1   1   1] blk.3.attn_q.weight | hc_mixed-3 | q5_0 
+attn node   51 VIEW           Qcur_reshaped-3                    [  256    12   1   1] Qcur_full-3 | - | f32 (noop)
+attn node   52 RMS_NORM       norm-3                             [  256    12   1   1] Qcur_reshaped-3 | - | f32 
+attn node   53 MUL            Qcur_normed-3                      [  256    12   1   1] norm-3 | blk.3.attn_q_norm.weight | f32 
+attn node   54 ROPE           Qcur-3                             [  256    12   1   1] Qcur_normed-3 | Meta(RPC0,RPC1)#inp_pos#0 | f32 
+attn node   55 MUL_MAT        Vcur-3                             [  256     1   1   1] blk.3.attn_v.weight | hc_mixed-3 | q5_0 
+attn node   56 RESHAPE        Vcur-3                             [  256     1   1   1] Vcur-3 | - | f32 (noop)
+attn node   57 MUL_MAT        Kcur-3                             [  256     1   1   1] blk.3.attn_k.weight | hc_mixed-3 | q5_0 
+attn node   58 RESHAPE        Kcur-3 (reshaped)                  [  256     1   1   1] Kcur-3 | - | f32 (noop)
+attn node   59 RMS_NORM       norm-3                             [  256     1   1   1] Kcur-3 (reshaped) | - | f32 
+attn node   60 MUL            Kcur_normed-3                      [  256     1   1   1] norm-3 | blk.3.attn_k_norm.weight | f32 
+attn node   61 ROPE           Kcur-3                             [  256     1   1   1] Kcur_normed-3 | Meta(RPC0,RPC1)#inp_pos#0 | f32 
+attn node   62 VIEW           Kcur-3 (view)                      [  256     1   1   1] Kcur-3 | - | f32 (noop)
+attn node   63 SET_ROWS       cache_k_l3 (view)                  [  256  8192   1   1] Kcur-3 (view) | Meta(RPC0,RPC1)#attn_inp_k_idxs#0 | f32 
+attn node   64 VIEW           Vcur-3 (view)                      [  256     1   1   1] Vcur-3 | - | f32 (noop)
+attn node   65 SET_ROWS       cache_v_l3 (view)                  [  256  8192   1   1] Vcur-3 (view) | Meta(RPC0,RPC1)#attn_inp_v_idxs#0 | f32 
+attn node   66 VIEW           Qcur-3 (view)                      [  256    12   1   1] Qcur-3 | - | f32 (noop)
+attn node   67 PERMUTE        Qcur-3 (view) (permuted)           [  256     1  12   1] Qcur-3 (view) | - | f32 (noop)
+attn node   68 VIEW           cache_k_l3 (view)                  [  256     1 256   1] cache_k_l3 | - | f16 (noop)
+attn node   69 PERMUTE        cache_k_l3 (view) (permuted)       [  256   256   1   1] cache_k_l3 (view) | - | f16 (noop)
+attn node   70 VIEW           cache_v_l3 (view)                  [  256     1 256   1] cache_v_l3 | - | f16 (noop)
+attn node   71 PERMUTE        cache_v_l3 (view) (permuted)       [  256   256   1   1] cache_v_l3 (view) | - | f16 (noop)
+attn node   72 FILL           node_540                           [  256     1   1   1] leaf_110 | - | f16 
+attn node   73 MUL_MAT        node_541                           [  512     1   1   1] blk.3.indexer.q_proj.weight | hc_mixed-3 | bf16 
+attn node   74 RESHAPE         (reshaped)                        [  128     4   1   1] node_541 | - | f32 (noop)
+attn node   75 RMS_NORM       norm-3                             [  128     4   1   1]  (reshaped) | - | f32 
+attn node   76 MUL            node_544                           [  128     4   1   1] norm-3 | blk.3.indexer.q_norm.weight | f32 
+attn node   77 ROPE           indexer_q-3                        [  128     4   1   1] node_544 | Meta(RPC0,RPC1)#inp_pos#0 | f32 
+attn node   78 GET_ROWS       node_546                           [  128    64   1   1] cache_idx_k_l3 (view) | Meta(RPC0,RPC1)#leaf_8#0 | f16 
+attn node   79 RESHAPE        indexer_k-3                        [  128     1  64   1] node_546 | - | f32 (noop)
+attn node   80 FILL           node_548                           [    4     1   1   1] leaf_113 | - | f32 
+attn node   81 LIGHTNING_INDEXER indexer_score-3                    [   64     1   1   1] indexer_q-3 | indexer_k-3 | f32 
+attn node   82 TOP_K          indexer_top_k-3                    [   64     1   1   1] indexer_score-3 | - | f32 
+attn node   83 TOP_K_MASK     indexer_sel-3                      [  256     1   1   1] node_540 | indexer_top_k-3 | f16 
+attn node   84 RESHAPE        kq_mask_qsa-3                      [  256     1   1   1] indexer_sel-3 | - | f16 (noop)
+attn node   85 FLASH_ATTN_EXT node_553                           [  256    12   1   1] Qcur-3 (view) (permuted) | cache_k_l3 (view) (permuted) | f32 
+attn node   86 RESHAPE        attn_pregate-3                     [ 3072     1   1   1] node_553 | - | f32 (noop)
+attn node   87 VIEW           Qcur_full-3 (view)                 [  256    12   1   1] Qcur_full-3 | - | f32 (noop)
+attn node   88 CONT           gate_reshaped-3                    [ 3072     1   1   1] Qcur_full-3 (view) | - | f32 
+attn node   89 SIGMOID        gate_sigmoid-3                     [ 3072     1   1   1] gate_reshaped-3 | - | f32 
+attn node   90 MUL            attn_gated-3                       [ 3072     1   1   1] attn_pregate-3 | gate_sigmoid-3 | f32 
+attn node   91 MUL_MAT        attn_output-3                      [ 2560     1   1   1] blk.3.attn_output.weight | attn_gated-3 | q8_0 
