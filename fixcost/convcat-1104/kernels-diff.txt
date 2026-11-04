@@ -1,0 +1,11 @@
+# python3 tools/bench/kdiff.py runs/prof2node-commfuse-1104-215755 runs/prof2node-convcat-1104-233701
+runs/prof2node-commfuse-1104-215755: tokens 33.0 kernels/token 1575 kernel us/token 21590
+runs/prof2node-convcat-1104-233701: tokens 33.0 kernels/token 1541 kernel us/token 21900
+  36.0 ->    2.2 /tok     140.6 ->      8.2 us/tok  concat_dim0_tail_direct_f32 g5120x1 w256
+  36.0 ->    0.0 /tok     111.5 ->      0.0 us/tok  ssm_conv_silu_norm_pair_f32<4ul> g128x40 w128
+  48.0 ->   48.0 /tok    1654.5 ->   1601.6 us/tok  mul_mat_vec_q< g81920x10 w32
+   0.0 ->    2.2 /tok       0.0 ->     10.2 us/tok  ssm_conv_silu_norm_pair_f32<4ul, false> g128x40 w128
+   8.0 ->    8.0 /tok      74.1 ->     89.3 us/tok  rms_norm_hcpost_one_block<4, true> g1024x1 w1024
+   0.0 ->   33.8 /tok       0.0 ->    140.7 us/tok  ssm_conv_silu_norm_pair_f32<4ul, true> g128x40 w128
+  89.0 ->   89.0 /tok    1218.9 ->   1413.0 us/tok  rms_norm_f32<1024, 1, true, true, false, false, true, false, g4096x1 w1024
+  48.0 ->   48.0 /tok    1535.9 ->   1785.7 us/tok  mul_mat_vec_q_shexp_tail< g81920x1 w1024
