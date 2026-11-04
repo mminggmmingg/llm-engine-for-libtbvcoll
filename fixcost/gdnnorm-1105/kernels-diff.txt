@@ -1,0 +1,9 @@
+# python3 tools/bench/kdiff.py runs/prof2node-convcat-1104-233701 runs/prof2node-gdnnorm-1105-001642
+runs/prof2node-convcat-1104-233701: tokens 33.0 kernels/token 1541 kernel us/token 21900
+runs/prof2node-gdnnorm-1105-001642: tokens 33.0 kernels/token 1505 kernel us/token 20951
+  48.0 ->   48.0 /tok    1785.7 ->   1249.7 us/tok  mul_mat_vec_q_shexp_tail< g81920x1 w1024
+  36.0 ->    0.0 /tok     493.3 ->      0.0 us/tok  gated_delta_net_cuda<128, false, false, 4> g768x4 w32
+  89.0 ->   89.0 /tok    1413.0 ->    980.6 us/tok  rms_norm_f32<1024, 1, true, true, false, false, true, false, g4096x1 w1024
+  36.0 ->    0.0 /tok     131.1 ->      0.0 us/tok  rms_norm_f32<32, 1, true, true, false, false, true, true, fa g768x1 w32
+  48.0 ->   48.0 /tok    1601.6 ->   1581.2 us/tok  mul_mat_vec_q< g81920x10 w32
+   0.0 ->   36.0 /tok       0.0 ->    601.3 us/tok  gated_delta_net_cuda<128, false, false, 4, true> g768x4 w32

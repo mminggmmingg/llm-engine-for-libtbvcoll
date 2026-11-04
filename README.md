@@ -100,6 +100,7 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
   - 2026-11-04 밤: GDN conv + q/k norm 한 커널(기본 켬, +0.5–1%) `GGML_CUDA_NO_CONV_NORM_PAIR=1` 끔, 검증 `GGML_CUDA_CONV_NORM_VERIFY=1`
     AR 기다림-더하기를 처음 읽는 커널 안에서(+1.4%, 기본 켬, 미루기 포함) `GGML_CUDA_COMM_FUSE=0` 끔
     conv 상태 concat 도 conv+norm 커널에서(+0.9%, 기본 켬) `GGML_CUDA_NO_CONV_CONCAT=1` 끔
+    GDN 커널 안에서 gated norm(기본 켬, 잡음 안) `GGML_CUDA_NO_GDN_NORM=1` 끔, 검증 `GGML_CUDA_GDN_NORM_VERIFY=1`
 
 ## 준비
 ```
