@@ -1500,7 +1500,7 @@ B 는 A 가 먼저 올라오면 설정 파일 값(-1)으로 저절로 올라오�
   값이 같고 느려지지 않아 기본 켬으로 둔다. 이 시각 디코드 ≈35.9 tok/s(어제 오후 33.5).
 
 ## 2026-11-05 02:20–04:00 — 시간 영수증 다시, indexer key 사슬 12 커널 → 1(+1.1%, 채택)
-자료: `fixcost/idxk-1105/`(검증, A/B, 커널 비교, 어텐션 그래프 노드 상세 `attn-graph-detail.txt`), 영수증 `runs/watch/20261105-021747/receipt.md`(저장소 밖).
+자료: `fixcost/idxk-1105/`(검증, A/B, 커널 비교, 어텐션 그래프 노드 상세 `attn-graph-detail.txt`), 영수증 `runs/watch/20261105-021747/receipt.md`(사본과 그 실행 기록 `fixcost/receipt-1105/`), 어텐션 그래프 덤프 실행 `fixcost/attn-1105/`.
 - 영수증(기록 링 켬 1회, 35.4 tok/s): 단계당 29.72 ms 중 **GPU 계산 27.0 ms(91%)**, AR 경계 GPU 쉼 ≈0.3 ms(COMM_FUSE 뒤 기다림은 커널 안),
   토큰 경계 ≈1.5 ms(5%): 출력층(lm head, 노드당 어휘 124160행) 1.15 ms + 로짓 보내기(B 가 A 보다 0.38 ms 늦게 도착) + 샘플링 0.13 ms
   + llama_decode → 첫 부분그래프 발행 0.5–0.6 ms. 큰 행렬곱은 대역폭 한계 근처(qkvz ≈218, MoE GLU ≈183, lm head ≈227 GB/s).
