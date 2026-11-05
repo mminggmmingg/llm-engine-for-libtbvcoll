@@ -1676,3 +1676,12 @@ B 는 A 가 먼저 올라오면 설정 파일 값(-1)으로 저절로 올라오�
 - 양쪽 GPU 부하(A·B 모두 `gpuload 0.3` s / 0.7 s 쉼, 박자 어긋나게, `fixcost/nondet-1105/hogmon-gpubursts-both.sh`): none 4회(19.3–22.3 tok/s)·MTP 2회(26.2·27.2)
   모두 기준 해시(`fixcost/nondet-1106/repro-both.log`). 주의: 부하 루프를 끄는 `pkill -f 'gpub[u]rst'` 가 루프 명령줄의 표식(`gpub[u]rst` 그대로 적힘)과 안 맞아
   루프가 벤치 뒤에도 90 회(≈90 s)를 다 돌았다 — 다음 회 시작 전에는 끝나 결론에는 영향 없음. 표식을 `gpuburst` 로 고침.
+
+## 2026-11-06 02:30–03:30 — 서버 argmax 를 GPU 커널로(차이 없음, 기본 켬)
+자료: `fixcost/gpuargmax-1106/`(`gpuargmax-ab.log`, 부하 확인 `repro-gpuargmax.log`).
+- CUDA 백엔드가 `ggml_backend_tensor_argmax_rows` 를 제공: 행마다 블록 하나, 최댓값과 그 **첫 번호**(NaN 은 이기지 않음, 모두 NaN 이면 마지막 번호 — 공용 샘플러
+  루프와 같은 규칙. upstream ARGMAX 커널은 동점에서 아무 번호나 고를 수 있어 쓰지 않음). 행마다 8 바이트만 호스트로. rpc 서버가 텐서 장치의 백엔드를 넘김.
+  `GGML_CUDA_NO_ARGMAX_ROWS=1` 이면 예전처럼 로짓을 호스트로 읽어 CPU argmax.
+- 번갈아 A/B(워밍업 뒤): none GPU 35.96·36.32·35.97 vs 호스트 36.39·35.95·35.95 — 같음. 서버 ARGMAX_ROWS 시간은 대부분 자기 GPU 의 출력층을 기다리는 몫이라
+  짧아지지 않음. MTP GPU 46.45·45.60 vs 호스트 45.72·45.45(잡음 안), AR 당 ARGMAX_ROWS 3.3 vs 6.0 µs(4 행). 해시 모두 같음. 값이 같고 느려지지 않아 기본 켬.
+- 두 노드 GPU 부하 아래 none 2·MTP 1 모두 기준 해시(`repro-gpuargmax.log`).

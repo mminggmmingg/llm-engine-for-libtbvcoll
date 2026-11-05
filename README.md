@@ -168,6 +168,7 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
   - 2026-11-06 새벽(고침): 묶은 커널의 출력이 다른 블록이 아직 읽는 입력과 메모리를 같이 쓰면 묶지 않는다(`ggml_cuda_overlaps_srcs`). GDN 안 gated norm 이 이 검사
     없이 다른 head 의 q 입력을 덮어, 상대 노드 GPU 를 다른 프로세스가 같이 쓸 때 출력이 바뀌었다(RESULTS.md 11-05 23:25 절). 디버그 `GGML_CUDA_FUSE_OVERLAP_LOG=1`(거부 출력).
     argmax 를 노드마다 동시에 묻기(기본), `GGML_META_ARGMAX_SERIAL=1` 이면 차례로
+    서버 argmax 를 GPU 커널로(최댓값의 첫 번호, 기본 켬, 값 같음, 속도 차이 없음) `GGML_CUDA_NO_ARGMAX_ROWS=1` 이면 로짓을 호스트로 읽어 CPU argmax
 
 ## 준비
 ```
