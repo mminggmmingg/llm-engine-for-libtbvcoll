@@ -1,0 +1,41 @@
+그래프당: 커널 1956개, 커널 시간 합 29.38 ms, 기록 전체/그래프 48.08 ms
+mul_mat_vec_q_moe<t23> <                                                            47.0    6056.7 us  20.6%
+mul_mat_vec_q<t6> <                                                                249.0    5556.8 us  18.9%
+mul_mat_vec_q_moe<t20> <                                                            47.0    4168.8 us  14.2%
+mul_mat_vec_q<t8> <                                                                146.0    3198.1 us  10.9%
+mul_mat_vec_q<t14> <                                                                98.0    2846.9 us   9.7%
+rms_norm_f32<1024, 1, true, true, false, false, true, false, true>                  93.0    1379.3 us   4.7%
+mul_mat_vec_f<__hip_bfloat16, float, 4, 256, false, false>                          47.0    1135.3 us   3.9%
+k_comm_wait_add                                                                     48.0     721.3 us   2.5%
+scale_f32<float>                                                                    90.0     539.9 us   1.8%
+gated_delta_net_cuda<128, false, false, 4, false>                                   36.0     316.6 us   1.1%
+quantize_q8_1                                                                      145.0     288.1 us   1.0%
+mul_mat_f<__hip_bfloat162, 32, 4, 7, false>                                         24.0     285.7 us   1.0%
+dsv4_hc_pre_f32<true, true>                                                         95.0     260.6 us   0.9%
+topk_moe_softmax_cuda<512>                                                          48.0     234.3 us   0.8%
+moe_weighted_reduction_f32                                                          48.0     189.1 us   0.6%
+k_shexp_gate_dot_tail                                                               47.0     186.6 us   0.6%
+k_scale_silu_q8_1                                                                   95.0     143.7 us   0.5%
+concat_dim0_tail_direct_f32                                                         36.0     136.7 us   0.5%
+rms_norm_f32<32, 1, true, true, false, false, true, true, false>                    36.0     120.5 us   0.4%
+flash_attn_tile<256, 256, 4, 4, false>                                              12.0     116.4 us   0.4%
+ssm_conv_f32<true, 128ul, 4ul>                                                      36.0     107.8 us   0.4%
+k_bin_bcast<&                                                                       53.0      95.2 us   0.3%
+unary_gated_op_kernel<&                                                             48.0      90.4 us   0.3%
+k_argsort_f32_i32<                                                                  12.0      86.3 us   0.3%
+rms_norm_mul_rope_multi_f32<128, false, float>                                      12.0      80.7 us   0.3%
+k_gdn_gates                                                                         36.0      77.9 us   0.3%
+rope_multi<true, false, float, float>                                               12.0      72.0 us   0.2%
+rms_norm_mul_rope_multi_f32<32, false, float>                                       12.0      71.2 us   0.2%
+rms_norm_mul_rope_multi_f32<128, false, __half>                                     12.0      69.1 us   0.2%
+rms_norm_scale_pair_f32                                                             36.0      65.7 us   0.2%
+k_set_rows<float, long, __half>                                                     36.0      64.7 us   0.2%
+rms_norm_hcpost_one_block<16, true>                                                  1.0      60.6 us   0.2%
+mul_mat_vec_q_glu_q8<t23> <                                                          1.0      50.4 us   0.2%
+lightning_indexer_kernel_vec<t0> <8, 64, 128l, 4l,                                  12.0      48.7 us   0.2%
+k_get_rows_float<__half, float>                                                     24.0      45.8 us   0.2%
+top_k_mask_kernel<__half>                                                           12.0      44.0 us   0.1%
+flash_attn_combine_results<256>                                                     12.0      33.7 us   0.1%
+fill_kernel<float>                                                                  24.0      33.7 us   0.1%
+mul_mat_vec_q<t20> <                                                                 1.0      33.3 us   0.1%
+rms_norm_f32<32, 1, true, true, false, false, false, false, false>                  12.0      29.5 us   0.1%

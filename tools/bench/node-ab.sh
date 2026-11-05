@@ -19,6 +19,8 @@ for run in ${RUNS:?}; do
   tr=$(eval echo \${TR_$cfg}); export TRACE=${tr:-${TRACE:-1}}   # 기록 링(tools/watch) 켬/끔: TR_<cfg>=0|1
   export CLI_ENV=$(eval echo \${CL_$cfg})                          # 클라이언트(llama-server) 환경: CL_<cfg>
   export CLI_WRAP=$(eval echo \${CW_$cfg})                         # 클라이언트 앞 명령(taskset 등): CW_<cfg>
+  # MTP 초안 모델 인자: SE_<cfg>(빈 값이면 -devd 없이 본 모델처럼 2노드 TP), 없으면 -devd ROCm0(A GPU 혼자)
+  if eval "[ -n \"\${SE_$cfg+x}\" ]"; then export SPEC_EXTRA=$(eval echo \${SE_$cfg}); else export SPEC_EXTRA="-devd ROCm0"; fi
   for i in $(seq 60); do b=$(timeout 10 ssh -o BatchMode=yes parks-zbook@10.99.0.2 "cut -d' ' -f1 /proc/loadavg"); a=$(cut -d' ' -f1 /proc/loadavg); awk "BEGIN{exit !($a<0.6 && $b<0.6)}" && break; sleep 5; done
   # RDMA 가 안 올라와 TCP 로 떨어진 회는 다시(최대 3번)
   for try in 1 2 3; do

@@ -3,6 +3,7 @@
 #   B 서버는 평소대로. 클라이언트는 llama-bench(-p 0 -n N). 서버는 SIGINT 로 멈춰 rocprofv3 가 기록을 쓰게 한다(60 초 안에 안 끝나면 KILL).
 #   결과: runs/prof2node-<tag>-<시각>/ (a_kernel_trace.csv, a_memory_copy_trace.csv, bench.txt, rpc-a.log). 아무것도 지우지 않는다.
 #   분석: tools/bench/kgroup.py <그 폴더>
+#   BARGS="<llama-bench 인자>" 로 -p 0 -n N -r 1 대신(예: MTP 검증과 같은 4토큰 묶음 BARGS="-p 4 -n 0 -r 30")
 set -u
 R=/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll
 BIN=${BIN:-/data/parksThink/macos_reversing/codex/zbook-rdma/experiments/engine2n/llama.cpp/build-rocm3/bin}
@@ -18,7 +19,7 @@ cd $O || exit 1
 env $(echo $ENV) /opt/rocm/bin/rocprofv3 --kernel-trace --memory-copy-trace --output-format csv -d $O/prof -o a -- "$BIN/ggml-rpc-server" -H 127.0.0.1 -p 50052 > rpc-a.log 2>&1 & APID=$!   # APID = 서버(셸 아님)
 sleep 5
 env LD_LIBRARY_PATH=/opt/rocm/lib LLAMA_TP_FFN_GRAN=32 GGML_RDMA_CHUNK=65536 GGML_RDMA_RX_DEPTH=48 GGML_RDMA_TX_SLOTS=4 ${CLIX:-} \
-    "$BIN/llama-bench" -m "$M" -fa 1 -p 0 -n $NTOK -r 1 --rpc 10.99.0.2:50052,127.0.0.1:50052 -sm tensor -dev RPC0/RPC1 -o md > $O/bench.txt 2>&1
+    "$BIN/llama-bench" -m "$M" -fa 1 ${BARGS:--p 0 -n $NTOK -r 1} --rpc 10.99.0.2:50052,127.0.0.1:50052 -sm tensor -dev RPC0/RPC1 -o md > $O/bench.txt 2>&1
 grep -E "^\|" $O/bench.txt | tail -1
 kill -INT $APID 2>/dev/null; ssh -o BatchMode=yes $B "pkill -INT -x ggml-rpc-server"
 # rocprofv3 는 SIGINT 뒤 기록을 쓰고 나서도 서버가 안 끝날 때가 있다: 기록 파일 크기가 멈추면(최대 120 초) KILL
