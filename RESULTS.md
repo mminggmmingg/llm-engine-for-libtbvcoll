@@ -1646,3 +1646,30 @@ B 는 A 가 먼저 올라오면 설정 파일 값(-1)으로 저절로 올라오�
   해시가 같은 회에도 비슷하게 있어 재전송 자체가 원인이라는 근거는 없음.
 - 가설(미확인): AR 경로(받는 쪽 zero-copy 플래그 기다림 ZC=1, 첫 소비 커널 안 기다림-더하기 COMM_FUSE, 발행 겹치기 OVERLAP=2) 중 어딘가의 순서 보장.
   다음: B 에 부하를 걸어 재현 → 재현되면 COMM_FUSE=0 / ZC=0 / OVERLAP 을 하나씩 꺼서 좁힌다.
+
+## 2026-11-05 23:25 – 11-06 — 출력이 타이밍에 따라 바뀌던 원인: GDN 안 gated norm 묶기가 다른 head 의 입력 위에 출력을 씀(고침)
+자료: `fixcost/nondet-1105/`(재현 로그 `repro-*.log`, 부하 스크립트 `hogmon-gpubursts.sh`·`repro.sh`, 겹침 거부 로그 `overlap-refusals*.txt`, `README.txt`), `fixcost/nondet-1106/`(고친 뒤 속도 `fixed-perf.log`).
+- 재현: 벤치가 도는 동안만 B 에 부하. CPU·메모리(파이썬 256 MB 복사 ×2, B DRAM 쓰기 12.7 GB/s)는 3회 모두 같음. **B GPU 를 띄엄띄엄 다른 프로세스가 씀**
+  (`gpuload 0.3` s, 0.7 s 쉼 반복, 27.5 tok/s)은 3회 중 2회 출력이 다름(986a86 / 971653·5b1e9f) — 22:41·22:49 의 두 회와 같은 현상.
+- 좁히기(모두 B GPU 부하, none):
+
+  | 설정 | 출력이 바뀐 회 |
+  |---|---|
+  | 기본 | 3 중 2 |
+  | `GGML_CUDA_DISABLE_FUSION=1` + `GGML_CUDA_COMM_FUSE=0` | 3 중 0 (해시 a2df8e… — upstream 묶기까지 꺼서 기준이 다름) |
+  | `GGML_CUDA_COMM_FUSE=0` | 3 중 1 |
+  | `GGML_CUDA_NO_GDN_NORM=1` | **4 중 0** |
+  | GDN norm 겹침 검사 추가 | **4 중 0** |
+
+- 원인: GDN 커널 안 gated norm(11-05 `af7935f`)은 head 마다 마지막으로 끝난 블록이 그 head 의 norm 출력을 쓴다. 묶지 않은 순서에서는 GDN 이 다 끝난 뒤
+  norm 이 돌아서, 할당기가 norm 출력을 GDN 입력(q·k·v·게이트) 자리에 놓을 수 있다. 묶으면 먼저 끝난 head 가 출력을 쓰는 순간 아직 입력을 읽지 않은 다른 head
+  블록의 입력이 덮인다. GPU 가 한가하면 모든 블록이 거의 동시에 입력부터 읽어 드러나지 않고, 다른 프로세스와 GPU 를 나누면 일부 블록이 늦게 떠서 드러난다.
+  겹침 로그(`GGML_CUDA_FUSE_OVERLAP_LOG=1`): `gdn norm: output node_281 overlaps input 0 (q_conv_predelta-1)` 등 실제로 겹친 층이 있었다.
+- 고침: `ggml_cuda_overlaps_srcs` — 묶은 커널의 출력이 다른 블록이 읽는 입력과 메모리를 같이 쓰면 묶지 않음. GDN norm 은 입력 0–4 와 상태를 읽는 캐시 행(건너뛴
+  gather 의 입력)을 본다(입력 5 상태 텐서는 실제로 읽지 않음). 같은 위험이 있던 shared expert 꼬리(모든 블록이 게이트 입력 `hc_mixed` 를 읽음)와 hc 블록(모든 블록이
+  silu 입력을 읽음)에도 검사를 넣음. conv+norm 쌍·conv concat·어텐션 게이트·norm+rope 는 이미 같은 검사가 있었고, GDN gates·GLU q8 은 입력을 q8 캐시·가중치에서 읽고,
+  indexer key 는 블록 하나라 해당 없음.
+- 교훈: 블록 사이 장벽이 없는 묶은 커널은 "어떤 블록의 출력 쓰기" 와 "다른 블록의 입력 읽기" 가 겹칠 수 있다 → 출력 대 모든 입력 겹침 검사가 필수.
+  값 검증(`*_VERIFY`)은 한가한 GPU 에서 돌아 이 경쟁을 못 잡는다. 재현 방법: 벤치 동안 상대 노드 GPU 에 띄엄띄엄 부하.
+- 확인: 모든 검사를 넣은 빌드로 B GPU 부하 아래 none 4회·MTP 2회 모두 기준 해시(c400cb…d67a87). 실제로 거부되는 것은 GDN 첫 층(입력 q 와 겹침) 하나
+  (고치기 전 로그의 12–20 층 "입력 5 상태" 겹침은 읽지 않는 텐서라 이제 거부하지 않음). 부하 없이 none 36.27·36.21·36.27, MTP 45.16·45.36 — 고치기 전과 같음.

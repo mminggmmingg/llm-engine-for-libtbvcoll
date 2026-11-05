@@ -26,6 +26,7 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
   11-01 부터 라우터를 BF16 으로 읽어 2.96 → 2.83(1노드 전체 4.82 → 4.69). MTP 는 한 단계에 여러 토큰을 검증해 이 값이 생성 토큰당 양은 아니다.
 - 환산 GB/s = 노드당 GB × tok/s(MTP 없음). 큰 행렬곱 하나가 내는 ≈220 GB/s 의 절반에 못 미친다: 가중치만 읽는 시간은 토큰당 ≈12.6 ms(225 GB/s 기준)이고
   27.6 ms 중 나머지 ≈15 ms 가 작은 커널·커널 사이 빈틈·AR·토큰 경계.
+- 출력 해시는 같은 입력에 늘 같아야 한다. 상대 노드 GPU 를 다른 프로세스가 띄엄띄엄 쓰게 하면(fixcost/nondet-1105/hogmon-gpubursts.sh) 블록 사이 경쟁이 드러난다 — 새 묶기는 이 조건에서도 확인.
 - tok/s 는 날마다 노드 상태가 달라 ±2% 흔들린다(11-05 오후 기준선 35.4 는 새벽 36.3 보다 낮음). 같은 날 끔/켬 비교는 RESULTS.md 각 절.
 - 고정비 분해(2026-10-30, RESULTS.md): 직렬 토큰 ≈52 ms = 가중치 읽기 ≈21 + 행렬곱이 대역폭보다 느린 몫 ≈16(hc ≈7) + 작은 연산 ≈14 + 호스트 0.3.
   토큰당 커널 ≈3200개 × ≈3 µs 발행 바닥.
@@ -164,6 +165,9 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
   - 2026-11-05 저녁(MTP 검증 4토큰용): shared expert 꼬리 묶기가 1–4 토큰을 받음(기본 켬, 값 같음, MTP 잡음 안) — `GGML_CUDA_FUSE_1TOK=1` 이면 1토큰만(예전),
     검증 `GGML_CUDA_SHEXP_TAIL_VERIFY=1`(이제 COMM_FUSE 켠 채로 됨). hc 블록 묶기의 여러 토큰판은 값 같지만 느려(MTP −2.7%) 기본 1토큰,
     `GGML_CUDA_HC_UP_PRE_NTOK=<2..4>` 로 켬, 검증 `GGML_CUDA_HC_UP_PRE_VERIFY=1`. 디버그 `GGML_CUDA_DUMP_NTOK=<n>`(n 토큰 서브그래프 노드 출력)
+  - 2026-11-06 새벽(고침): 묶은 커널의 출력이 다른 블록이 아직 읽는 입력과 메모리를 같이 쓰면 묶지 않는다(`ggml_cuda_overlaps_srcs`). GDN 안 gated norm 이 이 검사
+    없이 다른 head 의 q 입력을 덮어, 상대 노드 GPU 를 다른 프로세스가 같이 쓸 때 출력이 바뀌었다(RESULTS.md 11-05 23:25 절). 디버그 `GGML_CUDA_FUSE_OVERLAP_LOG=1`(거부 출력).
+    argmax 를 노드마다 동시에 묻기(기본), `GGML_META_ARGMAX_SERIAL=1` 이면 차례로
 
 ## 준비
 ```
