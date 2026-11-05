@@ -1,0 +1,15 @@
+kernels/graph old 1956 new 1672; kernel ms/graph old 29.39 new 31.08; gaps<1ms old 14.24 new 14.04
+k_hc_up_pre<true, 4>                                               old    0.0x      0.0us  new   95.0x   3200.7us  diff  +3200.7
+mul_mat_vec_q<t8>                                                  old  146.0x   3201.5us  new   51.0x    980.8us  diff  -2220.7
+mul_mat_vec_q_shexp_tail<                                          old    1.0x     18.0us  new   48.0x   1582.2us  diff  +1564.2
+k_comm_wait_add                                                    old   48.0x    681.4us  new    1.0x      9.6us  diff   -671.9
+mul_mat_vec_q_moe<t20>                                             old   47.0x   4177.8us  new   47.0x   4667.8us  diff   +490.0
+mul_mat_vec_q<t6>                                                  old  249.0x   5566.1us  new  202.0x   5108.0us  diff   -458.2
+dsv4_hc_pre_f32 <true, true>                                       old   95.0x    254.4us  new    0.0x      0.0us  diff   -254.4
+k_shexp_gate_dot_tail                                              old   47.0x    185.7us  new    0.0x      0.0us  diff   -185.7
+k_scale_silu_q8_1                                                  old   95.0x    163.1us  new    0.0x      0.0us  diff   -163.1
+rms_norm_f32 <1024, 1, true, true, false, false, true              old   96.0x   1320.0us  new   96.0x   1174.0us  diff   -145.9
+moe_weighted_reduction_f32                                         old   48.0x    169.9us  new   48.0x    254.1us  diff    +84.2
+rms_norm_hcpost_one_block <16, true>                               old    1.0x    130.9us  new    1.0x     63.7us  diff    -67.2
+quantize_q8_1                                                      old  145.0x    283.7us  new  145.0x    339.2us  diff    +55.5
+gated_delta_net_cuda <128, false, false, 4, false>                 old   36.0x    318.8us  new   36.0x    373.7us  diff    +55.0
