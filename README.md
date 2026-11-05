@@ -45,6 +45,26 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
 - 서버 쪽 argmax(2026-11-05 오후, RESULTS.md): 클라이언트가 토큰마다 두 노드의 로짓 절반(노드당 ≈0.5 MB)을 차례로 받던 것을, 각 노드가 자기 조각에서
   (최댓값, 번호)만 돌려주고 클라이언트가 고르게 바꿈(새 RPC 명령, 값 같음). 로짓은 누가 실제로 물을 때만 받는다. 같은 날 끔 → 켬 none 35.4 → **36.5**,
   MTP 44.2 → **45.5**(둘 다 +3.1%). 다음 후보: MTP 검증 그래프 묶기, llama_decode → 첫 부분그래프 발행(≈0.5 ms).
+- MTP(2026-11-05 저녁, RESULTS.md): 한 주기 ≈57 ms 에 ≈2.6 토큰 = 4토큰 검증(2노드) ≈45 ms + 초안 3번(A GPU) ≈11.5 ms. 초안을 2노드로, AR 을 두 번째
+  케이블로, 초안 길이 2·3 은 모두 차이 없음. `--spec-draft-p-min` 은 검증 묶음 크기가 바뀔 때마다 그래프를 새로 보내 크게 느려짐(0.3 −23%, 0.5 −41%).
+
+## 시각 자료 — 추론 감시 보고서(inferwatch)
+
+`tools/watch/inferwatch.sh start` 를 켜 두면 실행마다 두 서버·클라이언트의 기록 링을 모아 `runs/watch/<시각>/report.html`(타임라인 + 영수증 표)과
+`receipt.md` 를 만든다(Rust, `tools/watch/`). 대표 세 개를 `docs/watch/` 에 둔다 — HTML 은 받아서 브라우저로 연다(각 ≈11 MB, 그래프 데이터 포함).
+
+| 보고서 | 상황 | 디코드 tok/s (서버 측정) |
+|---|---|---:|
+| [none, 묶기 10개 뒤](docs/watch/20261105-0217-none-fusions.html) · [영수증](docs/watch/20261105-0217-none-fusions-receipt.md) · [그림](docs/watch/20261105-0217-none-fusions.png) | 11-05 02:17, 1토큰 디코드 | 35.4 |
+| [none, 서버 쪽 argmax 뒤](docs/watch/20261105-2003-none-argmax.html) · [영수증](docs/watch/20261105-2003-none-argmax-receipt.md) · [그림](docs/watch/20261105-2003-none-argmax.png) | 11-05 20:03, 지금 기본 | 36.45 |
+| [MTP](docs/watch/20261105-1702-mtp.html) · [영수증](docs/watch/20261105-1702-mtp-receipt.md) · [그림](docs/watch/20261105-1702-mtp.png) | 11-05 17:02, 초안 3 | 45.85 |
+
+![2노드 추론 기록: 서버 쪽 argmax 뒤 1토큰 디코드](docs/watch/20261105-2003-none-argmax.png)
+
+- 위 타임라인: 클라이언트 decode 단계, 클라이언트 → A·B 명령, 두 서버 스레드, 두 GPU, 노드 사이 부분합 전송(선, 빨강 = 1 ms 넘게 걸림), GPU 클럭·소켓 전력.
+  휠 = 확대/축소, 끌기 = 이동, 단계 버튼 = 한 단계씩. 아래: 단계당 시간 영수증(GPU 계산·쉼, 클라이언트 몫), 단계 사이, AR 전송 지연, GPU 가 쉰 곳.
+- 주의: MTP 는 초안 단계(A GPU 만)와 검증 단계가 섞여 평균이 나온다(나누기는 `tools/bench/mtpcycle.py`). 서버 쪽 argmax 뒤로는 llama_decode 가 로짓을
+  기다리지 않고 돌아와 "단계 사이" 표의 llama_decode → 첫 부분그래프 줄이 어긋난다(도구 고칠 거리). 그림은 헤드리스 Chrome 으로 찍은 첫 화면.
 
 ## 양자화 구성 비교 (2026-10-30 엔진)
 
