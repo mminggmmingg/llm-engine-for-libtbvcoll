@@ -18,11 +18,11 @@ pub const UBATCH: u32 = 10; // a = tokens, b = reused; t: start, graph ready, in
 pub const SYNC: u32 = 11; //                           t: synchronize start, end
 pub const PROXY: u32 = 12; //  a = seq, b = bytes;     t: our partial's flag seen, posted, the peer's partial landed (ZC=3 proxy)
 
-pub const CMD_NAMES: [&str; 24] = [
+pub const CMD_NAMES: [&str; 25] = [
     "ALLOC_BUFFER", "GET_ALIGNMENT", "GET_MAX_SIZE", "BUFFER_GET_BASE", "FREE_BUFFER", "BUFFER_CLEAR", "SET_TENSOR",
     "SET_TENSOR_HASH", "GET_TENSOR", "COPY_TENSOR", "GRAPH_COMPUTE", "GET_DEVICE_MEMORY", "INIT_TENSOR", "GET_ALLOC_SIZE",
     "HELLO", "DEVICE_COUNT", "GRAPH_RECOMPUTE", "MEMSET_TENSOR", "SET_TENSOR_2D", "GET_TENSOR_2D", "COMM_INIT",
-    "COMM_ALLREDUCE", "COMM_FREE", "NONE",
+    "COMM_ALLREDUCE", "COMM_FREE", "NONE", "ARGMAX_ROWS",
 ];
 pub const CMD_SET_TENSOR: u32 = 6;
 pub const CMD_GET_TENSOR: u32 = 8;

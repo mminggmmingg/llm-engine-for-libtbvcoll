@@ -18,14 +18,15 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
 | 11-03 | 작은 연산 묶기·DPP(토큰당 커널 2720 → 1806) | 2.83 | 32.2 | 42.4 | 91 |
 | 11-03 – 11-04 | 묶기 셋, 단계 시작 GPU 쉼 줄이기, greedy argmax, AR 링크를 두 번째 케이블로 | 2.83 | 33.6 | — | 95 |
 | 11-04 | hc 블록 묶기(11-05 최종 비교의 '끔') | 2.83 | 34.4 | 42.9 | 97 |
-| **11-05** | **값 그대로 커널 묶기 10개 더(A 노드 토큰당 커널 1886 → 1313)** | **2.83** | **36.3** | **43.8** | **103** |
+| 11-05 새벽 | 값 그대로 커널 묶기 10개 더(A 노드 토큰당 커널 1886 → 1313) | 2.83 | 36.3 | 43.8 | 103 |
+| **11-05 오후** | **서버 쪽 argmax — 로짓 대신 (최댓값, 번호)만 받음(같은 날 끔 35.4 / 44.2)** | **2.83** | **36.5** | **45.5** | **103** |
 
 - 토큰당 읽는 가중치: 디코드 1단계에 노드 하나가 읽는 가중치(`tools/bytes_per_token.py 512 10 loaded tp=2`). 나뉘는 텐서(attention·GDN 투영, 전문가 활성분, 출력층)는 절반,
   두 노드에 복제되는 텐서(hyper-connection 0.61, shared expert + 라우터 0.29, indexer 등)는 전부. KV 캐시·GDN 상태·임베딩 조회는 뺐다.
   11-01 부터 라우터를 BF16 으로 읽어 2.96 → 2.83(1노드 전체 4.82 → 4.69). MTP 는 한 단계에 여러 토큰을 검증해 이 값이 생성 토큰당 양은 아니다.
 - 환산 GB/s = 노드당 GB × tok/s(MTP 없음). 큰 행렬곱 하나가 내는 ≈220 GB/s 의 절반에 못 미친다: 가중치만 읽는 시간은 토큰당 ≈12.6 ms(225 GB/s 기준)이고
   27.6 ms 중 나머지 ≈15 ms 가 작은 커널·커널 사이 빈틈·AR·토큰 경계.
-- tok/s 는 날마다 노드 상태가 달라 ±2% 흔들린다. 같은 날 끔/켬 비교는 RESULTS.md 각 절.
+- tok/s 는 날마다 노드 상태가 달라 ±2% 흔들린다(11-05 오후 기준선 35.4 는 새벽 36.3 보다 낮음). 같은 날 끔/켬 비교는 RESULTS.md 각 절.
 - 고정비 분해(2026-10-30, RESULTS.md): 직렬 토큰 ≈52 ms = 가중치 읽기 ≈21 + 행렬곱이 대역폭보다 느린 몫 ≈16(hc ≈7) + 작은 연산 ≈14 + 호스트 0.3.
   토큰당 커널 ≈3200개 × ≈3 µs 발행 바닥.
 - 가중치 합치기(2026-10-30, RESULTS.md): 입력이 같은 가중치 168쌍(hc down+inject, GDN qkv+gate, beta+alpha)을 불러올 때 한 텐서로 합쳐
@@ -41,7 +42,9 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
   AR 기다림-더하기를 처음 읽는 커널 안에서(+1.4%), conv 상태 concat, GDN gated norm, 어텐션 게이트 + q8, q/k norm + rope, indexer key 사슬 12 → 1(+1.1%).
   같은 빌드 끔 → 켬: none 34.4 → **36.3**(+5.4%), MTP 42.9 → **43.8**(+1.9%, 묶기 대부분이 1토큰 그래프 전용). MoE down + 가중합은 두 번 모두 비트 같지만 느려 뺌.
 - 토큰 시간 영수증(2026-11-05, 35.4 tok/s 회): 단계 29.7 ms 중 GPU 계산 27.0 ms(91%), 토큰 경계 ≈1.5 ms(출력층 1.15 ms — 노드당 0.26 GB 를 ≈227 GB/s).
-  다음 후보: 서버 쪽 argmax(로짓 대신 최댓값·번호만 보냄), MTP 검증 그래프 묶기.
+- 서버 쪽 argmax(2026-11-05 오후, RESULTS.md): 클라이언트가 토큰마다 두 노드의 로짓 절반(노드당 ≈0.5 MB)을 차례로 받던 것을, 각 노드가 자기 조각에서
+  (최댓값, 번호)만 돌려주고 클라이언트가 고르게 바꿈(새 RPC 명령, 값 같음). 로짓은 누가 실제로 물을 때만 받는다. 같은 날 끔 → 켬 none 35.4 → **36.5**,
+  MTP 44.2 → **45.5**(둘 다 +3.1%). 다음 후보: MTP 검증 그래프 묶기, llama_decode → 첫 부분그래프 발행(≈0.5 ms).
 
 ## 양자화 구성 비교 (2026-10-30 엔진)
 
@@ -135,6 +138,9 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
   - 2026-11-05 새벽: 어텐션 출력 게이트+q8 한 커널 `GGML_CUDA_NO_ATTN_GATE_Q8=1` 끔, q/k norm+rope(multi) 한 커널 `GGML_CUDA_NO_NORM_ROPE=1` 끔
     (검증 `GGML_CUDA_NORM_ROPE_VERIFY=1`), 둘 다 기본 켬·값 같음·속도 차이 잡음 안
     indexer key 사슬 12 커널 → 1(+1.1%, 기본 켬) `GGML_CUDA_NO_IDX_K_POOL=1` 끔, 검증 `GGML_CUDA_IDX_K_POOL_VERIFY=1`
+  - 2026-11-05 오후: 서버 쪽 argmax(기본 켬, 값 같음, +3.1%) `LLAMA_TP_ARGMAX=0` 끔 — `ggml_backend_tensor_argmax_rows`(meta 는 장치 조각별로 받아 합침,
+    rpc 는 새 명령 `RPC_CMD_ARGMAX_ROWS`), llama-context 가 마지막 ubatch 로짓을 장치에 남기고 `llama_get_argmax_ith` 에 답함(로짓은 물을 때 받음),
+    common sampler greedy 빠른 경로가 이를 먼저 씀. 끝날 때 `LLAMA_TP_ARGMAX: N rows argmax on the devices, M logits fetches` 로그
 
 ## 준비
 ```
@@ -159,6 +165,7 @@ python3 -I tools/gguf_merge_mtp.py <MTP/mtp-...-shared-Q8_0.gguf> <UD-IQ4_XS/...
 ```
 주의: B 를 rank 0 으로 둔다 — A 서버를 TB 주소로 등록하면 클라이언트↔A 서버가 tbv 루프백으로 협상되는데 tbv 는 같은 노드 안 QP 를 못 잇는다.
 tbv 는 `9a35117`(여러 프레임 SEND 의 RNR 대기) 이상이어야 한다.
+측정 전에 두 노드 `cat /sys/firmware/acpi/platform_profile` 이 performance 인지 본다 — 재부팅 뒤 절전(low-power)으로 켜지면 디코드가 ≈10% 느리다(2026-11-05).
 
 ## 양자화 실험 (`quant/`)
 ```

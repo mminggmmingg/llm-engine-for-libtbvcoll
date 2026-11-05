@@ -1532,3 +1532,33 @@ B 는 A 가 먼저 올라오면 설정 파일 값(-1)으로 저절로 올라오�
 - none: 켬 **36.10·36.42·36.26**, 끔 34.30·34.35·34.59 → **+5.4%**(AR 주기 281.5–283.6 vs 296.5–299.0 µs).
 - MTP: 켬 **43.71·43.79**, 끔 42.95·42.90 → **+1.9%**(MTP 는 회마다 흔들림이 커서 이 밤 다른 회에 45.2–45.7 도 나옴; 대부분 묶기가 1토큰 전용이라 효과가 작음).
 - A 노드 토큰당 커널 1886 → 1313. 아침 보고서: 상위 작업 폴더 `claude_code/reports/morning_20261105_engine2n.md`.
+
+## 2026-11-05 15:20–15:45 — 재부팅 뒤: 두 노드가 절전 프로필로 켜짐
+자료: `fixcost/reboot-1105/`(`reboot-1105.log` 절전, `reboot-perf-1105.log` performance).
+- 재부팅 뒤 두 노드 `platform_profile=low-power`(power-saver): none 32.66·33.35 tok/s, 소켓 ≈45 W, GPU 상한 ≈2.3 GHz.
+  사용자가 두 노드를 performance 로 바꾼 뒤 35.57·35.46·35.52(소켓 70 W, AR 주기 288–289 µs), 해시 6개 같음. 전날 밤(36.1–36.4, 282 µs)보다 ≈2% 낮음 — 날마다의 흔들림 안.
+- 측정 전에 두 노드 `cat /sys/firmware/acpi/platform_profile` 이 performance 인지 볼 것(전원 설정은 사용자가 바꾼다).
+
+## 2026-11-05 15:45–16:50 — 서버 쪽 argmax: 로짓 대신 (최댓값, 번호)만 받기(+3.1%, none·MTP 모두, 기본 켬)
+자료: `fixcost/argmax-1105/`(`argmax-chk.log` 첫 확인, `argmax-ab.log` 번갈아 A/B). 모든 실행 해시 6개 같음, MTP 초안 채택 수 같음.
+- 전: 토큰마다 클라이언트가 두 노드의 로짓 절반(노드당 124160 × 4 B ≈ 0.5 MB)을 `GET_TENSOR_2D` 로 차례로 받고(meta 는 B 다음 A, RPC 라 동기),
+  CPU 에서 248320 개 argmax. 업스트림 `--backend-sampling` 은 어휘로 나뉜 로짓에서 ARGMAX 를 못 함(meta `handle_per_row` 가 축 0 분할을 assert).
+- 구조:
+  - `ggml_backend_tensor_argmax_rows(backend, t, n_rows, vals, idx)`(ggml-backend.h): meta 면 장치별 조각에서 받아 합침 — 장치 순서로 이어진 조각이라
+    뒤 조각은 값이 더 클 때만 이김 → 전체 한 번의 argmax 와 같은 "최댓값의 첫 번호". rpc 면 새 명령 `RPC_CMD_ARGMAX_ROWS`(서버가 동기화 뒤 행을 호스트로 읽어
+    공용 샘플러와 같은 8레인 루프로 argmax, 행마다 8 바이트 응답), 그 밖에는 호스트 사본.
+  - llama-context: 마지막 ubatch 의 로짓을 장치에 남겨 두고(`logits_lazy`) `llama_get_argmax_ith` 가 물으면 argmax 만, `llama_get_logits_ith`·`get_logits`·
+    순서 바꾸기·다음 ubatch 계산 전에는 그때 로짓을 받는다(값이 필요한 쪽은 그대로 동작). 그래서 `llama_decode` 가 로짓 동기 읽기를 기다리지 않고 바로 돌아옴.
+  - common sampler 의 greedy 빠른 경로가 먼저 `llama_get_argmax_ith` 를 쓴다. `LLAMA_TP_ARGMAX=0` 이면 예전처럼 로짓을 받음.
+- 서버 기록: 디코드 중 AR 창마다 `ARGMAX_ROWS 0.01x`(토큰당 1번), `GET_TENSOR_2D` 는 사라짐.
+- A/B(워밍업 1회 뒤 번갈아, `LLAMA_TP_ARGMAX=1` 켬 vs 끔 — 이때는 기본 끔이었음):
+
+  | | 끔 | 켬 | 차이 |
+  |---|---|---|---|
+  | none tok/s (AR 주기 µs) | 35.45 · 35.53 · 35.31 (288–290) | **36.51 · 36.51 · 36.58** (280) | **+3.1%** |
+  | MTP tok/s | 44.85 · 43.44 | **45.45 · 45.62** | **+3.1%** |
+
+  토큰당 ≈0.85 ms 줄어 예상(0.4–0.5 ms)보다 큼: B 0.5 MB RDMA + A 0.5 MB TCP 루프백을 차례로 받던 몫과 248k CPU argmax, 그리고 llama_decode 가 로짓 읽기에서
+  블록되던 몫이 함께 빠진 것으로 본다(나눠 재지는 않음).
+- 기본 켬으로 바꾼 빌드(`argmax-default.log`): 기본 **36.63**(AR 주기 279 µs, 토큰마다 ARGMAX_ROWS) vs `LLAMA_TP_ARGMAX=0` 35.33(290 µs, ARGMAX_ROWS 없음), 둘 다 해시 6개 같음.
+  패치는 깨끗한 e09a78a 에 적용해 고친 파일 전부가 작업 트리와 같음을 확인.
