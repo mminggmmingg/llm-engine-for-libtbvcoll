@@ -526,7 +526,7 @@ fn host_row(n: &Node) -> Row {
             }
             CMD_GRAPH_RECOMPUTE | CMD_GRAPH_COMPUTE => push(&mut row, c.start, c.end, C_H_LAUNCH),
             CMD_SET_TENSOR => push(&mut row, c.start, c.end, C_H_SET),
-            CMD_GET_TENSOR => push(&mut row, c.start, c.end, C_H_GET),
+            CMD_GET_TENSOR | CMD_ARGMAX_ROWS => push(&mut row, c.start, c.end, C_H_GET),
             _ => push(&mut row, c.start, c.end, C_H_OTHER),
         }
     }
@@ -583,7 +583,7 @@ fn client_rows(c: &Client) -> Vec<Row> {
         push(row, q, s, C_Q_WAIT);
         let cat = match cmd {
             CMD_SET_TENSOR => C_Q_SET,
-            CMD_GET_TENSOR => C_Q_GET,
+            CMD_GET_TENSOR | CMD_ARGMAX_ROWS => C_Q_GET,
             CMD_GRAPH_COMPUTE | CMD_GRAPH_RECOMPUTE => C_Q_GRAPH,
             CMD_COMM_ALLREDUCE => C_Q_AR,
             _ => C_Q_OTHER,
@@ -710,7 +710,7 @@ pub fn analyze(a_recs: &[Rec], b_recs: &[Rec], c_recs: &[Rec], a_host: &str, b_h
     links.sort_by(|x, y| x.t0.partial_cmp(&y.t0).unwrap());
     let sync_xchg: Vec<(u32, f64)> = a.ars.iter().filter(|x| x.sync).map(|x| (x.bytes, x.sent - x.ready)).collect();
 
-    // steps: llama_decode calls (client), else the outputs read (GET_TENSOR) on A
+    // steps: llama_decode calls (client), else the outputs read (GET_TENSOR / ARGMAX_ROWS) on A
     let mut steps = Vec::new();
     if client.decodes.len() >= 2 {
         for (i, d) in client.decodes.iter().enumerate() {
@@ -722,13 +722,13 @@ pub fn analyze(a_recs: &[Rec], b_recs: &[Rec], c_recs: &[Rec], a_host: &str, b_h
             steps.push(Step { start: d.0, end, tokens, prefill: tokens > 16 });
         }
     } else {
-        let gets: Vec<f64> = a.cmds.iter().filter(|c| c.cmd == CMD_GET_TENSOR).map(|c| c.end).collect();
+        let gets: Vec<f64> = a.cmds.iter().filter(|c| is_output_read(c.cmd)).map(|c| c.end).collect();
         for w in gets.windows(2) {
             if w[1] - w[0] < 5.0e6 {
                 steps.push(Step { start: w[0], end: w[1], tokens: 1, prefill: false });
             }
         }
-        notes.push("클라이언트 기록이 없어 decode 단계는 A 의 GET_TENSOR(출력 읽기) 사이로 나눔".into());
+        notes.push("클라이언트 기록이 없어 decode 단계는 A 의 출력 읽기(GET_TENSOR·ARGMAX_ROWS) 사이로 나눔".into());
     }
 
     let boundary = boundary_chain(&a, &b, &client, &steps);
@@ -757,14 +757,14 @@ pub fn analyze(a_recs: &[Rec], b_recs: &[Rec], c_recs: &[Rec], a_host: &str, b_h
 /// logits), when each node's logits reach the client, the client's own time (sampling, app) until the next llama_decode, and
 /// from llama_decode until each server starts launching the first subgraph (inputs in between).
 fn boundary_chain(a: &Node, b: &Node, c: &Client, steps: &[Step]) -> Vec<(String, Vec<f64>)> {
-    let gets = |n: &Node| -> Vec<CmdRec> { n.cmds.iter().filter(|x| x.cmd == CMD_GET_TENSOR).cloned().collect() };
+    let gets = |n: &Node| -> Vec<CmdRec> { n.cmds.iter().filter(|x| is_output_read(x.cmd)).cloned().collect() };
     let launches = |n: &Node| -> Vec<f64> {
         n.cmds.iter().filter(|x| x.cmd == CMD_GRAPH_RECOMPUTE || x.cmd == CMD_GRAPH_COMPUTE).map(|x| x.start).collect()
     };
     let (ga, gb, la, lb) = (gets(a), gets(b), launches(a), launches(b));
     let is_a = |ep: u32| c.endpoints.get(&ep).map_or(false, |e| e.starts_with("127.") || e.starts_with("localhost"));
-    let mut cga: Vec<f64> = c.ccmds.iter().filter(|x| x.0 == CMD_GET_TENSOR && is_a(x.1)).map(|x| x.4).collect();
-    let mut cgb: Vec<f64> = c.ccmds.iter().filter(|x| x.0 == CMD_GET_TENSOR && !is_a(x.1)).map(|x| x.4).collect();
+    let mut cga: Vec<f64> = c.ccmds.iter().filter(|x| is_output_read(x.0) && is_a(x.1)).map(|x| x.4).collect();
+    let mut cgb: Vec<f64> = c.ccmds.iter().filter(|x| is_output_read(x.0) && !is_a(x.1)).map(|x| x.4).collect();
     cga.sort_by(|x, y| x.partial_cmp(y).unwrap());
     cgb.sort_by(|x, y| x.partial_cmp(y).unwrap());
     let before = |v: &[f64], t: f64| -> Option<f64> {
@@ -777,10 +777,10 @@ fn boundary_chain(a: &Node, b: &Node, c: &Client, steps: &[Step]) -> Vec<(String
         if i > 0 { Some(g[i - 1]) } else { None }
     };
     let names = [
-        "출력층 + 로짓 보내기 (A 서버 GET_TENSOR)",
-        "출력층 + 로짓 보내기 (B 서버 GET_TENSOR)",
-        "B 로짓이 A 로짓보다 늦게 도착 (클라이언트)",
-        "마지막 로짓 도착 → 다음 llama_decode (샘플링·앱)",
+        "출력층 + 출력 읽기 (A 서버 GET_TENSOR·ARGMAX_ROWS)",
+        "출력층 + 출력 읽기 (B 서버 GET_TENSOR·ARGMAX_ROWS)",
+        "B 출력이 A 출력보다 늦게 도착 (클라이언트)",
+        "마지막 출력 도착 → 다음 llama_decode (샘플링·앱)",
         "llama_decode → A 서버 첫 부분그래프 발행",
         "llama_decode → B 서버 첫 부분그래프 발행",
     ];

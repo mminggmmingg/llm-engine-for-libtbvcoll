@@ -64,7 +64,7 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
 - 위 타임라인: 클라이언트 decode 단계, 클라이언트 → A·B 명령, 두 서버 스레드, 두 GPU, 노드 사이 부분합 전송(선, 빨강 = 1 ms 넘게 걸림), GPU 클럭·소켓 전력.
   휠 = 확대/축소, 끌기 = 이동, 단계 버튼 = 한 단계씩. 아래: 단계당 시간 영수증(GPU 계산·쉼, 클라이언트 몫), 단계 사이, AR 전송 지연, GPU 가 쉰 곳.
 - 주의: MTP 는 초안 단계(A GPU 만)와 검증 단계가 섞여 평균이 나온다(나누기는 `tools/bench/mtpcycle.py`). 서버 쪽 argmax 뒤로는 llama_decode 가 로짓을
-  기다리지 않고 돌아와 "단계 사이" 표의 llama_decode → 첫 부분그래프 줄이 어긋난다(도구 고칠 거리). 그림은 헤드리스 Chrome 으로 찍은 첫 화면.
+  기다리지 않고 돌아오고, 출력 읽기가 GET_TENSOR 대신 ARGMAX_ROWS 다(inferwatch 는 둘 다 출력 읽기로 본다). 그림은 헤드리스 Chrome 으로 찍은 첫 화면.
 
 ## 양자화 구성 비교 (2026-10-30 엔진)
 

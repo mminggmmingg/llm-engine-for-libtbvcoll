@@ -26,6 +26,12 @@ pub const CMD_NAMES: [&str; 25] = [
 ];
 pub const CMD_SET_TENSOR: u32 = 6;
 pub const CMD_GET_TENSOR: u32 = 8;
+pub const CMD_ARGMAX_ROWS: u32 = 24; // the output read since the server-side argmax (2026-11-05), in place of the logits GET_TENSOR
+
+/// A command that reads a step's output: the logits (GET_TENSOR) or their argmax per row (ARGMAX_ROWS).
+pub fn is_output_read(cmd: u32) -> bool {
+    cmd == CMD_GET_TENSOR || cmd == CMD_ARGMAX_ROWS
+}
 pub const CMD_GRAPH_COMPUTE: u32 = 10;
 pub const CMD_GRAPH_RECOMPUTE: u32 = 16;
 pub const CMD_COMM_ALLREDUCE: u32 = 21;
