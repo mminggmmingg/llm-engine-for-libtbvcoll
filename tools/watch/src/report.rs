@@ -274,6 +274,55 @@ pub fn receipt(an: &Analysis, meta: &Meta) -> Receipt {
         let _ = write!(html, "<h3>링크 (tbv)</h3>{}", t.html());
     }
 
+    // ZC=3: where the waits over 1 ms came from
+    if !an.stalls.is_empty() {
+        let names = [
+            "상대 서버가 그 부분그래프를 늦게 발행 (상대 GPU 가 놀았음)",
+            "상대 GPU 가 늦게 끝냄 (앞 AR 이 늦게 풀렸거나 계산이 길었음)",
+            "링크 (상대는 제때 보냈는데 늦게 도착)",
+            "상대 대리 스레드가 부분합을 보고도 늦게 보냄",
+        ];
+        let mut cnt = [0usize; 4];
+        let mut sum = [0f64; 4];
+        let mut comp: [Vec<f64>; 6] = Default::default();
+        for st in an.stalls.iter() {
+            // the largest of: the peer's partial ready late, its proxy posting late, the link
+            let k = if st.peer_post_delay >= st.peer_late.max(st.link) {
+                3
+            } else if st.link >= st.peer_late {
+                2
+            } else if st.peer_launch_late > 0.5 * st.peer_late {
+                0
+            } else {
+                1
+            };
+            cnt[k] += 1;
+            sum[k] += st.wait;
+            comp[0].push(st.wait);
+            comp[1].push(st.peer_late);
+            comp[2].push(st.link);
+            comp[3].push(st.peer_launch_late);
+            comp[4].push(st.peer_compute - st.our_compute);
+            comp[5].push(st.peer_post_delay);
+        }
+        let tot: f64 = sum.iter().sum();
+        let mut t = Table { head: vec!["1 ms 넘는 기다림의 원인 (ZC=3, decode 단계)".into(), "번".into(), "기다림 ms/단계".into(), "%".into()], rows: vec![] };
+        for k in 0..4 {
+            t.rows.push(vec![names[k].into(), cnt[k].to_string(), f2(sum[k] / n_dec / 1000.0), f1(sum[k] / tot.max(1.0) * 100.0)]);
+        }
+        let _ = writeln!(md, "## 1 ms 넘는 기다림의 원인\n\n{}", t.md());
+        let _ = writeln!(
+            md,
+            "중앙값(us): 기다림 {} · 상대 부분합이 우리보다 늦게 준비된 몫 {} · 상대 대리 스레드 보내기 지연 {} · 링크 {} · 상대 GPU 가 발행을 기다린 몫 {} · 그 구간 계산 (상대 − 우리) {}. \
+            A 가 기다린 것 {}번, B 가 기다린 것 {}번, 그 노드의 decode 단계 첫 AR 인 것 {}번.\n",
+            f1(pct(&comp[0], 50.0)), f1(pct(&comp[1], 50.0)), f1(pct(&comp[5], 50.0)), f1(pct(&comp[2], 50.0)), f1(pct(&comp[3], 50.0)),
+            f1(pct(&comp[4], 50.0)),
+            an.stalls.iter().filter(|x| x.waiter == 0).count(), an.stalls.iter().filter(|x| x.waiter == 1).count(),
+            an.stalls.iter().filter(|x| x.first_in_step).count()
+        );
+        let _ = write!(html, "<h3>1 ms 넘는 기다림의 원인</h3>{}", t.html());
+    }
+
     // ranked waste
     let mut waste: Vec<(String, f64)> = Vec::new();
     for c in [C_LAUNCH_WAIT, C_TURNAROUND, C_PEER_WAIT, C_STALL] {

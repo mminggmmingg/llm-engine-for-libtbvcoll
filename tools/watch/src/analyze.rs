@@ -346,6 +346,68 @@ pub struct Analysis {
     /// B - A clock offset samples (A time, offset) used to move B's times
     pub offs: Vec<(f64, f64)>,
     pub off0: f64,
+    /// ZC=3: the waits over 1 ms, split by where the time went (see stall_causes)
+    pub stalls: Vec<StallRec>,
+}
+
+/// One ZC=3 allreduce a node waited over 1 ms for (all us, on A's clock): its wait (our flag seen -> peer partial landed), how much
+/// later the peer's partial was ready than ours, the link (peer posted -> landed here), how long the peer GPU sat before the
+/// launch of the subgraph that makes the partial (peer server late), and both GPUs' compute for that subgraph.
+#[derive(Clone, Copy, Debug)]
+pub struct StallRec {
+    pub waiter: u8, // 0 = A waited for B, 1 = B waited for A
+    pub t: f64,
+    pub wait: f64,
+    pub peer_late: f64,
+    pub link: f64,
+    pub peer_post_delay: f64, // peer's proxy: its partial's flag seen -> posted
+    pub peer_launch_late: f64,
+    pub peer_compute: f64,
+    pub our_compute: f64,
+    pub first_in_step: bool, // the waiting node's first allreduce of a decode step
+}
+
+fn stall_causes(a: &Node, b: &Node, shift: i64) -> Vec<StallRec> {
+    let mut out = Vec::new();
+    for (w, n, peer, s) in [(0u8, a, b, shift), (1u8, b, a, -shift)] {
+        let launches: Vec<f64> = peer
+            .cmds
+            .iter()
+            .filter(|c| c.cmd == CMD_GRAPH_RECOMPUTE || c.cmd == CMD_GRAPH_COMPUTE)
+            .map(|c| c.start)
+            .collect();
+        for (&q, &(seen, _, landed)) in n.proxy.iter() {
+            if landed - seen <= 1000.0 {
+                continue;
+            }
+            let qp = (q as i64 + s) as u32;
+            let (Some(&(pseen, pposted, _)), Some(&(pprev_seen, _, pprev_landed)), Some(&(oprev_seen, _, oprev_landed))) =
+                (peer.proxy.get(&qp), peer.proxy.get(&qp.wrapping_sub(1)), n.proxy.get(&q.wrapping_sub(1)))
+            else {
+                continue;
+            };
+            let presume = pprev_seen.max(pprev_landed);
+            let oresume = oprev_seen.max(oprev_landed);
+            let entry = peer.ar_by_seq.get(&qp).map(|&i| peer.ars[i].entry).unwrap_or(f64::NAN);
+            let i = launches.partition_point(|&t| t <= entry);
+            let launch = if i > 0 { launches[i - 1] } else { presume };
+            let start = presume.max(launch);
+            out.push(StallRec {
+                waiter: w,
+                t: seen,
+                wait: landed - seen,
+                peer_late: pseen - seen,
+                link: landed - pposted,
+                peer_post_delay: pposted - pseen,
+                peer_launch_late: (launch - presume).max(0.0),
+                peer_compute: pseen - start,
+                our_compute: seen - oresume,
+                first_in_step: false,
+            });
+        }
+    }
+    out.sort_by(|x, y| x.t.partial_cmp(&y.t).unwrap());
+    out
 }
 
 impl Analysis {
@@ -765,12 +827,34 @@ pub fn analyze(a_recs: &[Rec], b_recs: &[Rec], c_recs: &[Rec], a_host: &str, b_h
     }
 
     let boundary = boundary_chain(&a, &b, &client, &steps);
+    let mut stalls = stall_causes(&a, &b, shift);
+    // only the decode steps' allreduces (prefill ones are large and wait on the other node's longer compute by nature)
+    stalls.retain(|st| {
+        let k = steps.partition_point(|s| s.start <= st.t);
+        k > 0 && !steps[k - 1].prefill && st.t < steps[k - 1].end
+    });
+    for st in stalls.iter_mut() {
+        let n = if st.waiter == 0 { &a } else { &b };
+        let k = steps.partition_point(|s| s.start <= st.t);
+        let s0 = steps[k - 1].start;
+        st.first_in_step = !n.proxy.values().any(|p| p.0 > s0 && p.0 < st.t);
+    }
+    if std::env::var("INFERWATCH_STALLS").is_ok() {
+        // debug: the stall records (us)
+        for st in stalls.iter() {
+            let k = steps.partition_point(|s| s.start <= st.t) - 1;
+            let since = (0..=k).rev().take_while(|&j| !steps[j].prefill).count();
+            eprintln!("stall w{} step {} since_prefill {} t {:.0} wait {:.0} peer_late {:.0} post {:.0} link {:.0} launch_late {:.0} peer_comp {:.0} our_comp {:.0}",
+                st.waiter, k, since, st.t, st.wait, st.peer_late, st.peer_post_delay, st.link, st.peer_launch_late, st.peer_compute, st.our_compute);
+        }
+    }
 
     Analysis {
         boundary,
         tbv: vec![],
         offs: offs.clone(),
         off0,
+        stalls,
         t0,
         t1,
         rows,
