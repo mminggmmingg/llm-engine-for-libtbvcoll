@@ -1782,3 +1782,11 @@ B 는 A 가 먼저 올라오면 설정 파일 값(-1)으로 저절로 올라오�
 - 토큰 경계(ZC=3, inferwatch 한 회 `fixcost/artime-1106/receipt-zc3-none.md`, 38.3 tok/s): 영수증의 GPU 표는 분석기가 ZC=3 경로를 몰라 깨진다(할 일).
   단계 사이 표는 유효 — 마지막 출력 도착 → 다음 llama_decode 50 µs, **llama_decode → 첫 부분그래프 발행 A 631 · B 506 µs**(그래프 준비 0.28 ms 포함, 그동안 두 GPU 쉼).
   ZC=3 타임라인의 경계 AR(토큰마다 1번): 주기 2.37 ms 중 다음 커널 발행 전 GPU 쉼 2.09 ms(출력층·argmax·클라이언트 왕복 포함).
+
+## 2026-11-06 21:00–21:40 — 구간별 큰 커널 설계, 가능성 숫자(`tools/probe/mkprobe.hip`)
+자료: `fixcost/megakernel-1106/mkprobe-{A,B}.txt`, 설계 [docs/DESIGN_megakernel.md](docs/DESIGN_megakernel.md).
+- gfx1151(A·B 같음): CU 20, LDS 64 KiB/블록·CU, L2 2 MiB, 협동 실행 지원. 상주 블록 사이 전역 동기화 0.27–0.41 µs(블록 20–40), 0.65 µs(80) —
+  커널 경계 하나(2.2–4 µs)보다 6–10배 쌈. 단계마다 동기화하며 읽기 256 KiB 100 · 1 MiB 150(다음 단계를 먼저 읽으면 175) · 4 MiB 219 · 16 MiB 237 GB/s,
+  동기화 없는 한 커널 241. 방금 읽은 버퍼 다시 읽기 8 MiB 526 · 16 MiB 687 · 32 MiB 813 GB/s(MALL), 48 MiB 부터 이득 없음.
+- 노드당 층 가중치: B형(MoE 구간) ≈22 MB, A형 GDN ≈29.5 MB, 어텐션 ≈33 MB, 출력층 0.26 GB → 토큰당 ≈2.78 GB(2.83 과 맞음).
+- 계산한 기대(실측 아님): 구간 커널 + 앞서 읽기로 토큰 ≈26 → ≈17.5 ms(≈57 tok/s, 68%), 토큰 경계까지 줄이면 ≈62 tok/s(73%). 1단계는 B형 1토큰.

@@ -1,0 +1,33 @@
+device gfx1151: 20 CUs, LDS/block 64 KiB, LDS/CU 64 KiB, L2 2048 KiB, max threads/CU 2048, cooperative launch 1
+
+-- grid barrier (persistent blocks, all co-resident)
+  1024 threads x  20 blocks (occupancy 2/CU): 0.28 us per barrier (median of 5)
+  1024 threads x  40 blocks (occupancy 2/CU): 0.41 us per barrier (median of 5)
+   512 threads x  20 blocks (occupancy 4/CU): 0.27 us per barrier (median of 5)
+   512 threads x  40 blocks (occupancy 4/CU): 0.40 us per barrier (median of 5)
+   512 threads x  80 blocks (occupancy 4/CU): 0.66 us per barrier (median of 5)
+   256 threads x  20 blocks (occupancy 8/CU): 0.27 us per barrier (median of 5)
+   256 threads x  40 blocks (occupancy 8/CU): 0.40 us per barrier (median of 5)
+   256 threads x  80 blocks (occupancy 8/CU): 0.65 us per barrier (median of 5)
+   128 threads x  20 blocks (occupancy 16/CU): 0.27 us per barrier (median of 5)
+   128 threads x  40 blocks (occupancy 16/CU): 0.40 us per barrier (median of 5)
+   128 threads x  80 blocks (occupancy 16/CU): 0.65 us per barrier (median of 5)
+
+-- streaming 1 GiB in stages with a barrier after each (256 threads x 4 blocks/CU)
+  stage    256 KiB x  4096, next loads after  the barrier:   99.2 GB/s
+  stage    256 KiB x  4096, next loads before the barrier:   99.6 GB/s
+  stage   1024 KiB x  1024, next loads after  the barrier:  149.8 GB/s
+  stage   1024 KiB x  1024, next loads before the barrier:  173.1 GB/s
+  stage   4096 KiB x   256, next loads after  the barrier:  218.1 GB/s
+  stage   4096 KiB x   256, next loads before the barrier:  216.6 GB/s
+  stage  16384 KiB x    64, next loads after  the barrier:  236.6 GB/s
+  stage  16384 KiB x    64, next loads before the barrier:  234.4 GB/s
+  one kernel, no barrier (4096 x 256):  240.1 GB/s
+
+-- re-reading a buffer right after reading it (MALL 32 MB): cold = after reading 1 GiB of other data
+    8 MiB: cold  179.3 GB/s, again  509.8 GB/s
+   16 MiB: cold  215.8 GB/s, again  620.0 GB/s
+   24 MiB: cold  218.0 GB/s, again  709.7 GB/s
+   32 MiB: cold  228.6 GB/s, again  777.5 GB/s
+   48 MiB: cold  234.2 GB/s, again  233.2 GB/s
+   96 MiB: cold  228.1 GB/s, again  234.7 GB/s
