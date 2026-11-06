@@ -1,0 +1,338 @@
+tensor                                      elems     rel L2    max abs  bits differ
+hc_norm-0                                   10240   0.00e+00   0.00e+00        0.0%
+hc_gate-0                                   10240   0.00e+00   0.00e+00        0.0%
+hc_mixed-0                                   2560   0.00e+00   0.00e+00        0.0%
+conv_state_at-0                             30720   0.00e+00   0.00e+00        0.0%
+linear_attn_qkvz-0                          16384   0.00e+00   0.00e+00        0.0%
+linear_attn_qkv_mixed-0                     10240   0.00e+00   0.00e+00        0.0%
+conv_output_raw-0                           10240   0.00e+00   0.00e+00        0.0%
+conv_output_silu-0                          10240   0.00e+00   0.00e+00        0.0%
+q_conv-0                                     2048   0.00e+00   0.00e+00        0.0%
+q_conv_predelta-0                            2048   0.00e+00   0.00e+00        0.0%
+k_conv-0                                     2048   0.00e+00   0.00e+00        0.0%
+k_conv_predelta-0                            2048   0.00e+00   0.00e+00        0.0%
+v_conv_predelta-0                            6144   0.00e+00   0.00e+00        0.0%
+beta_alpha-0                                   96   4.97e-08   4.77e-07       45.8%
+alpha-0                                        48   5.11e-08   4.77e-07       50.0%
+a_softplus-0                                   48   3.77e-08   4.77e-07       22.9%
+gate-0                                         48   4.93e-08   7.63e-06       22.9%
+beta-0                                         48   4.88e-08   4.77e-07       41.7%
+beta_sigmoid-0                                 48   3.92e-08   1.19e-07       10.4%
+state_predelta-0                           786432   3.60e-08   1.79e-07       22.8%
+new_state-0                                786432   5.20e-08   2.38e-07       25.7%
+attn_output-0                                6144   8.26e-08   2.98e-08       20.8%
+norm-0                                       6144   4.64e-08   1.43e-06       24.6%
+z-0                                          6144   0.00e+00   0.00e+00        0.0%
+final_output-0                               6144   4.40e-08   1.19e-07       23.2%
+linear_attn_out-0                            2560   6.37e-08   7.45e-08       22.7%
+hc_inject-0                                     4   7.20e-08   4.77e-07       50.0%
+hc_combine-0                                10240   2.69e-07   4.47e-08       56.1%
+hc_norm-0 #2                                10240   1.49e-07   1.67e-06       67.7%
+hc_gate-0 #2                                10240   0.00e+00   0.00e+00        0.0%
+hc_mixed-0 #2                                2560   1.32e-07   3.58e-07       75.0%
+ffn_moe_logits-0                              512   7.47e-08   1.91e-06       53.9%
+ffn_moe_probs-0                               512   2.53e-07   1.49e-08       99.8%
+ffn_moe_argsort-0                             512                       experts same
+ffn_moe_topk-0                                 10                       experts same
+ffn_moe_weights-0                              10   2.32e-07   1.49e-08       90.0%
+ffn_moe_weights_sum-0                           1   1.79e-07   4.47e-08      100.0%
+ffn_moe_weights_sum_clamped-0                   1   1.79e-07   4.47e-08      100.0%
+ffn_moe_weights_norm-0                         10   2.02e-07   5.96e-08       90.0%
+ffn_moe_gate-0                               6400   3.09e-04   4.50e-04      100.0%
+ffn_moe_up-0                                 6400   3.52e-04   4.28e-04      100.0%
+ffn_moe_swiglu-0                             6400   2.35e-04   3.39e-04      100.0%
+ffn_moe_down-0                              25600   1.44e-03   3.95e-04      100.0%
+ffn_moe_weighted-0                          25600   1.07e-03   3.59e-05      100.0%
+ffn_moe_out-0                                2560   7.32e-04   5.71e-05      100.0%
+conv_state_at-1                             92160   1.62e-07   4.53e-06       16.5%
+ffn_gate-0                                    640   6.27e-04   3.77e-03       97.3%
+ffn_up-0                                      640   3.29e-04   1.90e-03       98.6%
+ffn_swiglu-0                                  640   5.06e-04   2.06e-03       99.8%
+ffn_shexp-0                                  2560   6.16e-03   5.87e-03      100.0%
+shared_expert_gate-0                            1   0.00e+00   0.00e+00        0.0%
+shared_expert_gate_sigmoid-0                    1   0.00e+00   0.00e+00        0.0%
+ffn_shexp_gated-0                            2560   6.16e-03   1.90e-03      100.0%
+ffn_out-0                                    2560   4.62e-03   1.91e-03      100.0%
+hc_inject-0 #2                                  4   0.00e+00   0.00e+00        0.0%
+l_last-0                                    10240   3.07e-03   1.50e-03       99.9%
+ple_gate-1                                      4   2.43e-04   1.75e-04      100.0%
+ple_gated_value-1                           10240   2.43e-04   1.43e-05      100.0%
+ple_conv_out-1                              10240   3.15e-05   1.88e-05       99.6%
+hc_norm-1                                   10240   2.62e-03   4.42e-02      100.0%
+hc_gate-1                                   10240   3.59e-03   1.13e-01      100.0%
+hc_mixed-1                                   2560   5.07e-03   3.68e-02      100.0%
+conv_state_at-1 #2                          30720   1.99e-03   1.62e-02       33.3%
+linear_attn_qkvz-1                          16384   6.37e-03   7.55e-02       99.9%
+linear_attn_qkv_mixed-1                     10240   9.61e-03   6.18e-02       99.9%
+conv_output_raw-1                           10240   1.50e-03   4.04e-03       99.9%
+conv_output_silu-1                          10240   4.64e-03   1.68e-03       99.9%
+q_conv-1                                     2048   8.19e-03   1.58e-03       99.7%
+q_conv_predelta-1                            2048   1.03e-02   5.76e-03       99.7%
+k_conv-1                                     2048   4.93e-03   1.34e-03       99.7%
+k_conv_predelta-1                            2048   6.04e-03   4.09e-03       99.7%
+v_conv_predelta-1                            6144   3.80e-03   1.68e-03      100.0%
+beta_alpha-1                                   96   3.83e-03   1.58e-02      100.0%
+alpha-1                                        48   4.02e-03   1.58e-02      100.0%
+a_softplus-1                                   48   2.59e-03   5.43e-03      100.0%
+gate-1                                         48   5.33e-03   5.95e-02      100.0%
+beta-1                                         48   3.67e-03   1.34e-02      100.0%
+beta_sigmoid-1                                 48   1.83e-03   3.00e-03      100.0%
+state_predelta-1                           786432   1.31e-03   6.72e-04       99.7%
+new_state-1                                786432   4.23e-03   1.42e-03       99.7%
+attn_output-1                                6144   3.08e-03   6.48e-05      100.0%
+norm-1                                       6144   4.35e-03   3.54e-02      100.0%
+z-1                                          6144   4.78e-03   7.55e-02      100.0%
+final_output-1                               6144   1.01e-02   1.86e-02      100.0%
+linear_attn_out-1                            2560   1.81e-02   2.89e-02      100.0%
+hc_inject-1                                     4   2.11e-04   2.03e-03      100.0%
+hc_combine-1                                10240   3.48e-03   1.77e-03      100.0%
+hc_norm-1 #2                                10240   1.14e-02   2.00e-01      100.0%
+hc_gate-1 #2                                10240   4.90e-03   1.35e-01      100.0%
+hc_mixed-1 #2                                2560   1.44e-02   3.33e-02      100.0%
+ffn_moe_logits-1                              512   1.67e-03   3.05e-02      100.0%
+ffn_moe_probs-1                               512   4.97e-03   1.88e-04      100.0%
+ffn_moe_argsort-1                             512                       experts same
+ffn_moe_topk-1                                 10                       experts same
+ffn_moe_weights-1                              10   3.74e-03   1.88e-04      100.0%
+ffn_moe_weights_sum-1                           1   1.35e-03   2.64e-04      100.0%
+ffn_moe_weights_sum_clamped-1                   1   1.35e-03   2.64e-04      100.0%
+ffn_moe_weights_norm-1                         10   4.20e-03   1.42e-03      100.0%
+ffn_moe_gate-1                               6400   5.58e-01   1.59e+00      100.0%
+ffn_moe_up-1                                 6400   6.28e-01   1.77e+00      100.0%
+ffn_moe_swiglu-1                             6400   5.63e-01   6.17e-01      100.0%
+ffn_moe_down-1                              25600   5.47e-01   9.54e-02      100.0%
+ffn_moe_weighted-1                          25600   2.57e-01   6.53e-03      100.0%
+ffn_moe_out-1                                2560   1.90e-02   6.34e-04      100.0%
+ffn_gate-1                                    640   1.89e-02   4.01e-02      100.0%
+ffn_up-1                                      640   2.46e-02   3.00e-02      100.0%
+ffn_swiglu-1                                  640   2.52e-02   3.45e-02      100.0%
+ffn_shexp-1                                  2560   2.87e-02   7.42e-03      100.0%
+shared_expert_gate-1                            1   5.42e-04   8.00e-04      100.0%
+shared_expert_gate_sigmoid-1                    1   6.51e-04   1.21e-04      100.0%
+ffn_shexp_gated-1                            2560   2.86e-02   1.38e-03      100.0%
+ffn_out-1                                    2560   2.31e-02   1.83e-03      100.0%
+hc_inject-1 #2                                  4   1.78e-03   1.16e-02      100.0%
+l_last-1                                    10240   4.48e-03   2.17e-03      100.0%
+hc_norm-2                                   10240   1.26e-02   2.56e-01      100.0%
+hc_gate-2                                   10240   8.22e-03   1.49e-01      100.0%
+hc_mixed-2                                   2560   1.64e-02   7.73e-02      100.0%
+conv_state_at-2                             30720   9.50e-03   9.70e-02       66.6%
+linear_attn_qkvz-2                          16384   1.00e-02   9.72e-02      100.0%
+linear_attn_qkv_mixed-2                     10240   1.44e-02   9.72e-02      100.0%
+conv_output_raw-2                           10240   5.91e-03   1.48e-02      100.0%
+conv_output_silu-2                          10240   1.16e-02   8.86e-03      100.0%
+q_conv-2                                     2048   1.37e-02   5.42e-03      100.0%
+q_conv_predelta-2                            2048   1.40e-02   8.67e-03      100.0%
+k_conv-2                                     2048   1.34e-02   4.97e-03      100.0%
+k_conv_predelta-2                            2048   1.46e-02   9.36e-03      100.0%
+v_conv_predelta-2                            6144   1.06e-02   8.86e-03      100.0%
+beta_alpha-2                                   96   6.13e-03   3.59e-02      100.0%
+alpha-2                                        48   6.53e-03   2.82e-02      100.0%
+a_softplus-2                                   48   8.54e-03   1.77e-02      100.0%
+gate-2                                         48   9.16e-03   7.43e-02      100.0%
+beta-2                                         48   5.69e-03   3.59e-02      100.0%
+beta_sigmoid-2                                 48   2.55e-03   4.61e-03      100.0%
+state_predelta-2                           786432   6.18e-03   1.77e-03      100.0%
+new_state-2                                786432   1.04e-02   3.12e-03      100.0%
+attn_output-2                                6144   9.63e-03   2.77e-04      100.0%
+norm-2                                       6144   9.32e-03   1.12e-01      100.0%
+z-2                                          6144   7.37e-03   6.15e-02      100.0%
+final_output-2                               6144   1.66e-02   2.35e-02      100.0%
+linear_attn_out-2                            2560   2.80e-02   2.62e-02      100.0%
+hc_inject-2                                     4   1.10e-03   1.12e-02      100.0%
+hc_combine-2                                10240   6.19e-03   2.63e-03      100.0%
+hc_norm-2 #2                                10240   1.21e-02   1.79e-01      100.0%
+hc_gate-2 #2                                10240   6.91e-03   1.43e-01      100.0%
+hc_mixed-2 #2                                2560   1.62e-02   7.36e-02      100.0%
+ffn_moe_logits-2                              512   2.57e-03   6.10e-02      100.0%
+ffn_moe_probs-2                               512   1.02e-02   3.80e-04      100.0%
+ffn_moe_argsort-2                             512                       experts same
+ffn_moe_topk-2                                 10                       experts same
+ffn_moe_weights-2                              10   1.04e-02   3.80e-04      100.0%
+ffn_moe_weights_sum-2                           1   2.00e-03   3.31e-04      100.0%
+ffn_moe_weights_sum_clamped-2                   1   2.00e-03   3.31e-04      100.0%
+ffn_moe_weights_norm-2                         10   1.03e-02   1.98e-03      100.0%
+ffn_moe_gate-2                               6400   1.40e-02   1.82e-02      100.0%
+ffn_moe_up-2                                 6400   1.80e-02   2.06e-02      100.0%
+ffn_moe_swiglu-2                             6400   2.26e-02   2.22e-02      100.0%
+ffn_moe_down-2                              25600   2.46e-02   3.79e-03      100.0%
+ffn_moe_weighted-2                          25600   2.74e-02   2.80e-04      100.0%
+ffn_moe_out-2                                2560   2.48e-02   5.65e-04      100.0%
+ffn_gate-2                                    640   2.16e-02   4.05e-02      100.0%
+ffn_up-2                                      640   2.64e-02   4.51e-02      100.0%
+ffn_swiglu-2                                  640   3.59e-02   2.69e-02      100.0%
+ffn_shexp-2                                  2560   4.35e-02   1.50e-02      100.0%
+shared_expert_gate-2                            1   6.75e-04   1.06e-03      100.0%
+shared_expert_gate_sigmoid-2                    1   8.76e-04   1.51e-04      100.0%
+ffn_shexp_gated-2                            2560   4.32e-02   2.54e-03      100.0%
+ffn_out-2                                    2560   3.02e-02   2.88e-03      100.0%
+hc_inject-2 #2                                  4   3.94e-03   1.69e-02      100.0%
+l_last-2                                    10240   8.26e-03   3.88e-03      100.0%
+hc_norm-3                                   10240   1.43e-02   1.47e-01      100.0%
+hc_gate-3                                   10240   8.82e-03   1.72e-01      100.0%
+hc_mixed-3                                   2560   1.79e-02   3.27e-02      100.0%
+indexer_k_raw-3                               128   9.82e-03   3.03e-02      100.0%
+norm-3                                        128   3.46e-04   1.25e-03      100.0%
+indexer_pool_k_new-3                          128   3.40e-04   1.14e-03      100.0%
+Qcur_full-3                                 12288   8.00e-03   5.33e-02      100.0%
+Qcur_reshaped-3                              6144   1.53e-02   5.33e-02      100.0%
+norm-3 #2                                    6144   1.66e-02   6.54e-02      100.0%
+Qcur_normed-3                                6144   1.82e-02   8.53e-02      100.0%
+Qcur-3                                       6144   1.82e-02   8.53e-02      100.0%
+Vcur-3                                        512   2.51e-02   5.63e-02      100.0%
+Vcur-3 #2                                     512   2.51e-02   5.63e-02      100.0%
+Kcur-3                                        512   2.39e-02   4.07e-02      100.0%
+norm-3 #3                                     512   2.38e-02   8.96e-02      100.0%
+Kcur_normed-3                                 512   2.41e-02   1.17e-01      100.0%
+Kcur-3 #2                                     512   2.41e-02   1.17e-01      100.0%
+norm-3 #4                                     512   9.01e-03   3.95e-02      100.0%
+indexer_q-3                                   512   8.98e-03   3.79e-02      100.0%
+indexer_k-3                                  8192   2.31e-03   7.81e-03        1.5%
+indexer_score-3                                64        nan        nan        1.6%
+indexer_top_k-3                                64   0.00e+00   0.00e+00        0.0%
+indexer_sel-3                                 256        nan        nan        0.0%
+kq_mask_qsa-3                                 256        nan        nan        0.0%
+attn_pregate-3                               6144   1.60e-02   4.61e-02      100.0%
+gate_reshaped-3                              6144   6.09e-03   4.63e-02      100.0%
+gate_sigmoid-3                               6144   7.56e-03   1.10e-02      100.0%
+attn_gated-3                                 6144   1.95e-02   1.49e-02      100.0%
+attn_output-3                                2560   2.82e-02   9.99e-03      100.0%
+hc_inject-3                                     4   1.40e-03   1.97e-02      100.0%
+hc_combine-3                                10240   8.39e-03   3.88e-03      100.0%
+hc_norm-3 #2                                10240   1.55e-02   1.79e-01      100.0%
+hc_gate-3 #2                                10240   9.24e-03   1.68e-01      100.0%
+hc_mixed-3 #2                                2560   2.01e-02   1.06e-01      100.0%
+ffn_moe_logits-3                              512   1.44e-03   3.22e-02      100.0%
+ffn_moe_probs-3                               512   7.57e-03   3.17e-04      100.0%
+ffn_moe_argsort-3                             512                       experts same
+ffn_moe_topk-3                                 10                       experts same
+ffn_moe_weights-3                              10   7.46e-03   3.17e-04      100.0%
+ffn_moe_weights_sum-3                           1   4.76e-03   8.44e-04      100.0%
+ffn_moe_weights_sum_clamped-3                   1   4.76e-03   8.44e-04      100.0%
+ffn_moe_weights_norm-3                         10   4.79e-03   1.07e-03      100.0%
+ffn_moe_gate-3                               6400   1.65e-02   2.95e-02      100.0%
+ffn_moe_up-3                                 6400   2.06e-02   2.71e-02      100.0%
+ffn_moe_swiglu-3                             6400   2.64e-02   2.28e-02      100.0%
+ffn_moe_down-3                              25600   2.77e-02   2.91e-03      100.0%
+ffn_moe_weighted-3                          25600   2.41e-02   6.50e-04      100.0%
+ffn_moe_out-3                                2560   2.23e-02   1.00e-03      100.0%
+ffn_gate-3                                    640   1.99e-02   4.64e-02      100.0%
+ffn_up-3                                      640   2.98e-02   6.11e-02      100.0%
+ffn_swiglu-3                                  640   3.54e-02   3.16e-02      100.0%
+ffn_shexp-3                                  2560   4.41e-02   9.25e-03      100.0%
+shared_expert_gate-3                            1   2.36e-03   4.44e-03      100.0%
+shared_expert_gate_sigmoid-3                    1   3.84e-03   5.10e-04      100.0%
+ffn_shexp_gated-3                            2560   4.38e-02   1.24e-03      100.0%
+ffn_out-3                                    2560   2.55e-02   1.27e-03      100.0%
+hc_inject-3 #2                                  4   3.92e-03   2.36e-02      100.0%
+l_last-3                                    10240   8.96e-03   3.86e-03      100.0%
+hc_norm-4                                   10240   1.71e-02   2.34e-01      100.0%
+hc_gate-4                                   10240   8.67e-03   3.22e-01      100.0%
+hc_mixed-4                                   2560   2.04e-02   9.53e-02      100.0%
+conv_state_at-4                             30720   1.37e-02   1.16e-01      100.0%
+linear_attn_qkvz-4                          16384   1.05e-02   1.53e-01      100.0%
+linear_attn_qkv_mixed-4                     10240   1.63e-02   1.53e-01      100.0%
+conv_output_raw-4                           10240   7.28e-03   2.16e-02      100.0%
+conv_output_silu-4                          10240   1.23e-02   1.09e-02      100.0%
+q_conv-4                                     2048   1.63e-02   1.09e-02      100.0%
+q_conv_predelta-4                            2048   1.85e-02   1.06e-02      100.0%
+k_conv-4                                     2048   1.31e-02   6.11e-03      100.0%
+k_conv_predelta-4                            2048   1.48e-02   9.24e-03      100.0%
+v_conv_predelta-4                            6144   1.00e-02   5.86e-03      100.0%
+beta_alpha-4                                   96   8.58e-03   5.09e-02      100.0%
+alpha-4                                        48   9.74e-03   5.09e-02      100.0%
+a_softplus-4                                   48   1.37e-02   2.93e-02      100.0%
+gate-4                                         48   8.57e-03   8.27e-02      100.0%
+beta-4                                         48   7.33e-03   2.79e-02      100.0%
+beta_sigmoid-4                                 48   3.24e-03   6.40e-03      100.0%
+state_predelta-4                           786432   1.42e-02   2.48e-03      100.0%
+new_state-4                                786432   1.42e-02   3.97e-03      100.0%
+attn_output-4                                6144   9.87e-03   1.51e-04      100.0%
+norm-4                                       6144   9.96e-03   7.96e-02      100.0%
+z-4                                          6144   7.52e-03   9.55e-02      100.0%
+final_output-4                               6144   1.95e-02   3.12e-02      100.0%
+linear_attn_out-4                            2560   3.75e-02   1.54e-02      100.0%
+hc_inject-4                                     4   3.89e-03   7.64e-02      100.0%
+hc_combine-4                                10240   1.03e-02   3.86e-03      100.0%
+hc_norm-4 #2                                10240   1.73e-02   1.98e-01      100.0%
+hc_gate-4 #2                                10240   1.12e-02   5.44e-01      100.0%
+hc_mixed-4 #2                                2560   2.29e-02   8.66e-02      100.0%
+ffn_moe_logits-4                              512   3.40e-03   1.08e-01      100.0%
+ffn_moe_probs-4                               512   1.25e-02   4.42e-04      100.0%
+ffn_moe_argsort-4                             512                       experts same
+ffn_moe_topk-4                                 10                       experts same
+ffn_moe_weights-4                              10   5.68e-03   1.92e-04      100.0%
+ffn_moe_weights_sum-4                           1   1.72e-03   2.75e-04      100.0%
+ffn_moe_weights_sum_clamped-4                   1   1.72e-03   2.75e-04      100.0%
+ffn_moe_weights_norm-4                         10   5.48e-03   1.07e-03      100.0%
+ffn_moe_gate-4                               6400   5.04e-01   2.07e+00      100.0%
+ffn_moe_up-4                                 6400   6.07e-01   1.89e+00      100.0%
+ffn_moe_swiglu-4                             6400   5.43e-01   1.14e+00      100.0%
+ffn_moe_down-4                              25600   5.38e-01   1.74e-01      100.0%
+ffn_moe_weighted-4                          25600   3.55e-01   1.32e-02      100.0%
+ffn_moe_out-4                                2560   2.81e-02   1.10e-03      100.0%
+ffn_gate-4                                    640   2.65e-02   5.62e-02      100.0%
+ffn_up-4                                      640   2.99e-02   7.65e-02      100.0%
+ffn_swiglu-4                                  640   5.34e-02   8.75e-02      100.0%
+ffn_shexp-4                                  2560   6.51e-02   1.95e-02      100.0%
+shared_expert_gate-4                            1   7.72e-04   1.38e-03      100.0%
+shared_expert_gate_sigmoid-4                    1   1.18e-03   1.69e-04      100.0%
+ffn_shexp_gated-4                            2560   6.51e-02   2.81e-03      100.0%
+ffn_out-4                                    2560   3.68e-02   2.97e-03      100.0%
+hc_inject-4 #2                                  4   1.91e-03   1.37e-02      100.0%
+l_last-4                                    10240   1.14e-02   3.95e-03      100.0%
+hc_norm-5                                   10240   1.91e-02   4.86e-01      100.0%
+hc_gate-5                                   10240   8.70e-03   4.70e-01      100.0%
+hc_mixed-5                                   2560   2.15e-02   7.66e-02      100.0%
+conv_state_at-5                             30720   1.38e-02   1.15e-01      100.0%
+linear_attn_qkvz-5                          16384   1.06e-02   1.19e-01      100.0%
+linear_attn_qkv_mixed-5                     10240   1.59e-02   9.55e-02      100.0%
+conv_output_raw-5                           10240   6.70e-03   2.06e-02      100.0%
+conv_output_silu-5                          10240   1.24e-02   8.93e-03      100.0%
+q_conv-5                                     2048   1.54e-02   7.39e-03      100.0%
+q_conv_predelta-5                            2048   2.08e-02   1.18e-02      100.0%
+k_conv-5                                     2048   1.42e-02   8.93e-03      100.0%
+k_conv_predelta-5                            2048   1.82e-02   8.93e-03      100.0%
+v_conv_predelta-5                            6144   9.84e-03   3.59e-03      100.0%
+beta_alpha-5                                   96   9.08e-03   4.97e-02      100.0%
+alpha-5                                        48   8.58e-03   3.33e-02      100.0%
+a_softplus-5                                   48   6.56e-03   1.62e-02      100.0%
+gate-5                                         48   1.01e-02   1.66e-01      100.0%
+beta-5                                         48   9.32e-03   4.97e-02      100.0%
+beta_sigmoid-5                                 48   4.49e-03   9.23e-03      100.0%
+state_predelta-5                           786432   1.13e-02   4.94e-03      100.0%
+new_state-5                                786432   1.18e-02   4.46e-03      100.0%
+attn_output-5                                6144   1.21e-02   3.38e-04      100.0%
+norm-5                                       6144   1.25e-02   1.03e-01      100.0%
+z-5                                          6144   7.72e-03   1.19e-01      100.0%
+final_output-5                               6144   2.27e-02   1.65e-02      100.0%
+linear_attn_out-5                            2560   3.70e-02   1.58e-02      100.0%
+hc_inject-5                                     4   1.69e-03   2.18e-02      100.0%
+hc_combine-5                                10240   1.28e-02   4.21e-03      100.0%
+hc_norm-5 #2                                10240   1.64e-02   1.79e-01      100.0%
+hc_gate-5 #2                                10240   6.56e-03   2.03e-01      100.0%
+hc_mixed-5 #2                                2560   1.51e-02   3.32e-02      100.0%
+ffn_moe_logits-5                              512   4.84e-03   5.62e-02      100.0%
+ffn_moe_probs-5                               512   5.07e-03   1.67e-04      100.0%
+ffn_moe_argsort-5                             512                       experts same
+ffn_moe_topk-5                                 10                       experts same
+ffn_moe_weights-5                              10   5.12e-03   1.67e-04      100.0%
+ffn_moe_weights_sum-5                           1   5.57e-05   6.39e-06      100.0%
+ffn_moe_weights_sum_clamped-5                   1   5.57e-05   6.39e-06      100.0%
+ffn_moe_weights_norm-5                         10   5.11e-03   1.46e-03      100.0%
+ffn_moe_gate-5                               6400   1.17e-02   3.87e-02      100.0%
+ffn_moe_up-5                                 6400   2.25e-02   2.15e-02      100.0%
+ffn_moe_swiglu-5                             6400   2.81e-02   7.27e-03      100.0%
+ffn_moe_down-5                              25600   3.03e-02   2.80e-03      100.0%
+ffn_moe_weighted-5                          25600   2.89e-02   7.74e-04      100.0%
+ffn_moe_out-5                                2560   2.77e-02   1.15e-03      100.0%
+ffn_gate-5                                    640   1.70e-02   3.33e-02      100.0%
+ffn_up-5                                      640   3.13e-02   3.64e-02      100.0%
+ffn_swiglu-5                                  640   3.13e-02   4.07e-02      100.0%
+ffn_shexp-5                                  2560   4.25e-02   1.14e-02      100.0%
+shared_expert_gate-5                            1   8.72e-03   1.46e-02      100.0%
+shared_expert_gate_sigmoid-5                    1   1.22e-02   1.93e-03      100.0%
+ffn_shexp_gated-5                            2560   4.83e-02   3.05e-03      100.0%
+ffn_out-5                                    2560   3.55e-02   3.87e-03      100.0%
+hc_inject-5 #2                                  4   5.06e-03   1.49e-02      100.0%
+l_last-5                                    10240   1.31e-02   3.96e-03      100.0%

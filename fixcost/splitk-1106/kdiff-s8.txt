@@ -1,0 +1,10 @@
+runs/prof2node-sk-off-1106-224632: tokens 33.0 kernels/token 1342 kernel us/token 22125
+runs/prof2node-sk-s8-1106-225020: tokens 33.0 kernels/token 1342 kernel us/token 22295
+  96.0 ->    0.0 /tok    1639.5 ->      0.0 us/tok  mul_mat_vec_q< g10368x1 w32
+  48.0 ->   48.0 /tok    1743.7 ->   1572.7 us/tok  mul_mat_vec_q_shexp_tail< g81920x1 w1024
+   1.0 ->    0.0 /tok      17.4 ->      0.0 us/tok  mul_mat_vec_q< g10240x1 w32
+   0.0 ->    1.0 /tok       0.0 ->     15.0 us/tok  mul_mat_vec_q_splitk< g10240x8 w32
+  48.0 ->   48.0 /tok    1595.1 ->   1610.9 us/tok  mul_mat_vec_q< g81920x10 w32
+  96.0 ->   96.0 /tok    2096.0 ->   2119.0 us/tok  k_hc_up_pre<true, 1> g81920x1 w1024
+  89.0 ->   89.0 /tok    1629.8 ->   2014.7 us/tok  rms_norm_f32<1024, 1, true, true, false, false, true, false, g4096x1 w1024
+   0.0 ->   96.0 /tok       0.0 ->   1527.0 us/tok  mul_mat_vec_q_splitk< g10368x8 w32

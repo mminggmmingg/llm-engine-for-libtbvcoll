@@ -82,6 +82,10 @@ HP ZBook Ultra G1a(AMD Strix Halo, Radeon 8060S gfx1151, 메모리 128 GB) 두 �
 - 묶은 커널은 할당기가 출력을 아직 읽히는 입력 자리에 놓으면 묶지 않는다(`ggml_cuda_overlaps_srcs`). 이 검사 없이 한 번, 상대 노드 GPU 를 다른 프로세스가 같이 쓸 때만
   출력이 바뀌는 경쟁이 있었다(RESULTS.md 2026-11-05 23:25). 새 묶기는 상대 노드에 GPU 부하를 띄엄띄엄 거는 조건(`fixcost/nondet-1105/repro.sh`)에서도 확인한다.
 - 묶기마다 `*_VERIFY` 스위치(따로 돌린 결과와 비트 비교)가 있다 — 목록은 [docs/SWITCHES.md](docs/SWITCHES.md).
+- 비트를 바꾸는 변경(예: 한 행을 여러 워프가 나눠 더하는 split-K)은 이렇게 판정한다: 같은 글 2048토큰의 로짓을 끔과 비교한 KLD 를 이미 받아들인
+  반올림 차이(TP vs 1노드 0.0136, 한 번에 넣는 토큰 수 0.0124)와 견주고, Q8_0 원본 로짓과의 KLD·1위 일치, 정답이 정해진 문항 채점을 본다.
+  이 모델은 반올림이 조금만 바뀌어도 활성값 8비트 양자화의 계단에서 차이가 커져 greedy 출력이 거의 동점인 자리에서 갈라진다 — 그 자체는 품질 손상이 아니다
+  (RESULTS.md 2026-11-06 22:40, `tools/divergence.py`·`tools/layerdiff.py`).
 
 ## 시각 자료 — 추론 감시 보고서(inferwatch)
 

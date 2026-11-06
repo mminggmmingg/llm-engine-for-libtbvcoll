@@ -1,0 +1,346 @@
+0.24.377.738 I cmn          init: llama threadpool init, n_threads = 16
+0.24.541.642 I 
+0.24.541.696 I system_info: n_threads = 16 (n_threads_batch = 16) / 32 | ROCm : NO_VMM = 1 | FA_QUANTS = q4_0-q4_0,q8_0-q8_0,f16-f16,bf16-bf16 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX_VNNI = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | AVX512 = 1 | AVX512_VBMI = 1 | AVX512_VNNI = 1 | AVX512_BF16 = 1 | LLAMAFILE = 1 | OPENMP = 1 | REPACK = 1 | 
+0.24.558.084 I kl_divergence: computing over 4 chunks, n_ctx=512, batch_size=512, n_seq=1
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls     1010 elems     327240 differ  67.28% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.43e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls      989 elems     320436 differ  60.62% max abs 2.29e-05 max rel 3.79e-05 rms rel 7.87e-08
+mmvq splitk verify: output_hc_down.weight                    calls        1 elems        320 differ  66.56% max abs 1.53e-05 max rel 5.03e-06 rms rel 8.36e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls     2020 elems     654480 differ  67.25% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls     1979 elems     641196 differ  60.51% max abs 3.05e-05 max rel 3.79e-05 rms rel 7.89e-08
+mmvq splitk verify: output_hc_down.weight                    calls        1 elems        320 differ  66.56% max abs 1.53e-05 max rel 5.03e-06 rms rel 8.36e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls     3031 elems     982044 differ  67.22% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls     2968 elems     961632 differ  60.45% max abs 3.05e-05 max rel 3.79e-05 rms rel 7.91e-08
+mmvq splitk verify: output_hc_down.weight                    calls        1 elems        320 differ  66.56% max abs 1.53e-05 max rel 5.03e-06 rms rel 8.36e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls     4041 elems    1309284 differ  67.25% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls     3958 elems    1282392 differ  60.47% max abs 3.05e-05 max rel 3.99e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls        1 elems        320 differ  66.56% max abs 1.53e-05 max rel 5.03e-06 rms rel 8.36e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls     5052 elems    1636848 differ  67.24% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls     4947 elems    1602828 differ  60.49% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.91e-08
+mmvq splitk verify: output_hc_down.weight                    calls        1 elems        320 differ  66.56% max abs 1.53e-05 max rel 5.03e-06 rms rel 8.36e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls     6062 elems    1964088 differ  67.25% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls     5937 elems    1923588 differ  60.52% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls        1 elems        320 differ  66.56% max abs 1.53e-05 max rel 5.03e-06 rms rel 8.36e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls     7073 elems    2291652 differ  67.25% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls     6926 elems    2244024 differ  60.54% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.91e-08
+mmvq splitk verify: output_hc_down.weight                    calls        1 elems        320 differ  66.56% max abs 1.53e-05 max rel 5.03e-06 rms rel 8.36e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls     8083 elems    2618892 differ  67.20% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls     7916 elems    2564784 differ  60.50% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.91e-08
+mmvq splitk verify: output_hc_down.weight                    calls        1 elems        320 differ  66.56% max abs 1.53e-05 max rel 5.03e-06 rms rel 8.36e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls     9094 elems    2946456 differ  67.15% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls     8905 elems    2885220 differ  60.48% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.91e-08
+mmvq splitk verify: output_hc_down.weight                    calls        1 elems        320 differ  66.56% max abs 1.53e-05 max rel 5.03e-06 rms rel 8.36e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    10104 elems    3273696 differ  67.10% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.38e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls     9895 elems    3205980 differ  60.41% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.9e-08
+mmvq splitk verify: output_hc_down.weight                    calls        1 elems        320 differ  66.56% max abs 1.53e-05 max rel 5.03e-06 rms rel 8.36e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    11115 elems    3601260 differ  67.09% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    10884 elems    3526416 differ  60.39% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.9e-08
+mmvq splitk verify: output_hc_down.weight                    calls        1 elems        320 differ  66.56% max abs 1.53e-05 max rel 5.03e-06 rms rel 8.36e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    12125 elems    3928500 differ  67.11% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    11874 elems    3847176 differ  60.41% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.9e-08
+mmvq splitk verify: output_hc_down.weight                    calls        1 elems        320 differ  66.56% max abs 1.53e-05 max rel 5.03e-06 rms rel 8.36e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    13121 elems    4251204 differ  67.11% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    12863 elems    4167612 differ  60.42% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.91e-08
+mmvq splitk verify: output_hc_down.weight                    calls       16 elems       5120 differ  64.59% max abs 3.05e-05 max rel 7.19e-06 rms rel 8.56e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    14111 elems    4571964 differ  67.10% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    13853 elems    4488372 differ  60.42% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.91e-08
+mmvq splitk verify: output_hc_down.weight                    calls       36 elems      11520 differ  65.08% max abs 3.05e-05 max rel 6.22e-05 rms rel 8.55e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    15100 elems    4892400 differ  67.11% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    14843 elems    4809132 differ  60.43% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.91e-08
+mmvq splitk verify: output_hc_down.weight                    calls       57 elems      18240 differ  65.16% max abs 3.05e-05 max rel 6.22e-05 rms rel 8.54e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    16090 elems    5213160 differ  67.11% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    15832 elems    5129568 differ  60.44% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.91e-08
+mmvq splitk verify: output_hc_down.weight                    calls       78 elems      24960 differ  64.90% max abs 3.05e-05 max rel 6.22e-05 rms rel 8.53e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    17080 elems    5533920 differ  67.11% max abs 6.1e-05 max rel 8.01e-05 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    16822 elems    5450328 differ  60.45% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.91e-08
+mmvq splitk verify: output_hc_down.weight                    calls       98 elems      31360 differ  64.65% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.47e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    18069 elems    5854356 differ  67.11% max abs 6.1e-05 max rel 8.22e-05 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    17812 elems    5771088 differ  60.46% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.91e-08
+mmvq splitk verify: output_hc_down.weight                    calls      119 elems      38080 differ  64.51% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.48e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    19059 elems    6175116 differ  67.13% max abs 6.1e-05 max rel 8.93e-05 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    18801 elems    6091524 differ  60.49% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.91e-08
+mmvq splitk verify: output_hc_down.weight                    calls      140 elems      44800 differ  64.42% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.45e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    20049 elems    6495876 differ  67.12% max abs 6.1e-05 max rel 8.93e-05 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    19791 elems    6412284 differ  60.50% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.91e-08
+mmvq splitk verify: output_hc_down.weight                    calls      160 elems      51200 differ  64.24% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.38e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    21038 elems    6816312 differ  67.12% max abs 6.1e-05 max rel 8.93e-05 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    20781 elems    6733044 differ  60.50% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.91e-08
+mmvq splitk verify: output_hc_down.weight                    calls      181 elems      57920 differ  64.19% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.32e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    22028 elems    7137072 differ  67.13% max abs 6.1e-05 max rel 8.93e-05 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    21771 elems    7053804 differ  60.51% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      201 elems      64320 differ  64.41% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.35e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    23018 elems    7457832 differ  67.12% max abs 6.1e-05 max rel 8.93e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    22760 elems    7374240 differ  60.52% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      222 elems      71040 differ  64.44% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.36e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    24007 elems    7778268 differ  67.12% max abs 6.1e-05 max rel 8.93e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    23750 elems    7695000 differ  60.51% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      243 elems      77760 differ  64.30% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.35e-08
+0.45.276.483 I kl_divergence: 20.72 seconds per pass - ETA 1.37 minutes
+
+chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS            Same top p
+   1       1.1433 ±    0.0458      -0.01502 ±    0.01161       0.00440 ±    0.00131     3.103 ±  0.629 %    99.608 ±  0.392 %
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    25003 elems    8100972 differ  67.13% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    24740 elems    8015760 differ  60.52% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      257 elems      82240 differ  64.39% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    26014 elems    8428536 differ  67.16% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    25729 elems    8336196 differ  60.52% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      257 elems      82240 differ  64.39% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    27025 elems    8756100 differ  67.16% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    26718 elems    8656632 differ  60.52% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      257 elems      82240 differ  64.39% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    28035 elems    9083340 differ  67.16% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    27708 elems    8977392 differ  60.52% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      257 elems      82240 differ  64.39% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    29046 elems    9410904 differ  67.18% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    28697 elems    9297828 differ  60.53% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      257 elems      82240 differ  64.39% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    30056 elems    9738144 differ  67.19% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    29687 elems    9618588 differ  60.53% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      257 elems      82240 differ  64.39% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    31067 elems   10065708 differ  67.19% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    30676 elems    9939024 differ  60.53% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      257 elems      82240 differ  64.39% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    32077 elems   10392948 differ  67.19% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    31666 elems   10259784 differ  60.54% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      257 elems      82240 differ  64.39% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    33088 elems   10720512 differ  67.19% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    32655 elems   10580220 differ  60.55% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      257 elems      82240 differ  64.39% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    34098 elems   11047752 differ  67.19% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    33645 elems   10900980 differ  60.55% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      257 elems      82240 differ  64.39% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    35109 elems   11375316 differ  67.19% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    34634 elems   11221416 differ  60.56% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      257 elems      82240 differ  64.39% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    36119 elems   11702556 differ  67.20% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    35624 elems   11542176 differ  60.57% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      257 elems      82240 differ  64.39% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    37127 elems   12029148 differ  67.20% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    36613 elems   11862612 differ  60.57% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      260 elems      83200 differ  64.37% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    38116 elems   12349584 differ  67.20% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    37603 elems   12183372 differ  60.57% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      281 elems      89920 differ  64.30% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.38e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    39106 elems   12670344 differ  67.21% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    38593 elems   12504132 differ  60.57% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      301 elems      96320 differ  64.11% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.35e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    40096 elems   12991104 differ  67.21% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    39582 elems   12824568 differ  60.58% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      322 elems     103040 differ  64.24% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.37e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    41086 elems   13311864 differ  67.21% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    40572 elems   13145328 differ  60.59% max abs 3.05e-05 max rel 5.23e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      342 elems     109440 differ  64.20% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.34e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    42075 elems   13632300 differ  67.22% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    41562 elems   13466088 differ  60.59% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      363 elems     116160 differ  64.24% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.34e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    43065 elems   13953060 differ  67.22% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    42551 elems   13786524 differ  60.59% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      384 elems     122880 differ  64.33% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.36e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    44055 elems   14273820 differ  67.22% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    43541 elems   14107284 differ  60.59% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      404 elems     129280 differ  64.42% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.37e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    45044 elems   14594256 differ  67.21% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    44531 elems   14428044 differ  60.59% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      425 elems     136000 differ  64.52% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    46034 elems   14915016 differ  67.21% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    45520 elems   14748480 differ  60.59% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      446 elems     142720 differ  64.65% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    47024 elems   15235776 differ  67.22% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    46510 elems   15069240 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      466 elems     149120 differ  64.76% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.43e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    48013 elems   15556212 differ  67.21% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    47500 elems   15390000 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      487 elems     155840 differ  64.84% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    49003 elems   15876972 differ  67.21% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    48490 elems   15710760 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      507 elems     162240 differ  64.84% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+   2       2.3215 ±    0.2121      -0.02130 ±    0.01550       0.01394 ±    0.00167     3.577 ±  0.366 %    96.667 ±  0.796 %
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    50008 elems   16202592 differ  67.22% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    49479 elems   16031196 differ  60.62% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      513 elems     164160 differ  64.85% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    51018 elems   16529832 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    50469 elems   16351956 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      513 elems     164160 differ  64.85% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    52029 elems   16857396 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    51458 elems   16672392 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      513 elems     164160 differ  64.85% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    53039 elems   17184636 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    52448 elems   16993152 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      513 elems     164160 differ  64.85% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    54050 elems   17512200 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    53437 elems   17313588 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      513 elems     164160 differ  64.85% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    55061 elems   17839764 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    54426 elems   17634024 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      513 elems     164160 differ  64.85% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    56071 elems   18167004 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    55416 elems   17954784 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      513 elems     164160 differ  64.85% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    57082 elems   18494568 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    56405 elems   18275220 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      513 elems     164160 differ  64.85% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    58092 elems   18821808 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    57395 elems   18595980 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      513 elems     164160 differ  64.85% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    59103 elems   19149372 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    58384 elems   18916416 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      513 elems     164160 differ  64.85% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    60113 elems   19476612 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    59374 elems   19237176 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      513 elems     164160 differ  64.85% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    61124 elems   19804176 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    60363 elems   19557612 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      513 elems     164160 differ  64.85% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    62122 elems   20127528 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    61353 elems   19878372 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      525 elems     168000 differ  64.89% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.43e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    63112 elems   20448288 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.4e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    62343 elems   20199132 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      545 elems     174400 differ  64.83% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.42e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    64102 elems   20769048 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    63332 elems   20519568 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      566 elems     181120 differ  64.73% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.42e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    65091 elems   21089484 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    64322 elems   20840328 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      587 elems     187840 differ  64.68% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.42e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    66081 elems   21410244 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    65312 elems   21161088 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      607 elems     194240 differ  64.58% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    67071 elems   21731004 differ  67.22% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    66301 elems   21481524 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      628 elems     200960 differ  64.55% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.42e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    68061 elems   22051764 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    67291 elems   21802284 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      648 elems     207360 differ  64.53% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    69050 elems   22372200 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    68281 elems   22123044 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      669 elems     214080 differ  64.57% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.42e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    70040 elems   22692960 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    69270 elems   22443480 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      690 elems     220800 differ  64.53% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.41e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    71030 elems   23013720 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    70260 elems   22764240 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      710 elems     227200 differ  64.56% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.42e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    72019 elems   23334156 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    71250 elems   23085000 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      731 elems     233920 differ  64.61% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.43e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    73009 elems   23654916 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    72239 elems   23405436 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      752 elems     240640 differ  64.64% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.44e-08
+   3       2.4568 ±    0.1943      -0.01992 ±    0.01132       0.01471 ±    0.00131     3.654 ±  0.305 %    96.471 ±  0.668 %
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    74002 elems   23976648 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    73229 elems   23726196 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      769 elems     246080 differ  64.68% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.44e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    75012 elems   24303888 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    74219 elems   24046956 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      769 elems     246080 differ  64.68% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.44e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    76023 elems   24631452 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    75208 elems   24367392 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      769 elems     246080 differ  64.68% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.44e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    77033 elems   24958692 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    76198 elems   24688152 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      769 elems     246080 differ  64.68% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.44e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    78044 elems   25286256 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    77187 elems   25008588 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      769 elems     246080 differ  64.68% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.44e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    79054 elems   25613496 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    78177 elems   25329348 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      769 elems     246080 differ  64.68% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.44e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    80065 elems   25941060 differ  67.23% max abs 6.1e-05 max rel 0.000113 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    79166 elems   25649784 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      769 elems     246080 differ  64.68% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.44e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    81076 elems   26268624 differ  67.23% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    80155 elems   25970220 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      769 elems     246080 differ  64.68% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.44e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    82086 elems   26595864 differ  67.24% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    81145 elems   26290980 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      769 elems     246080 differ  64.68% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.44e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    83097 elems   26923428 differ  67.24% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    82134 elems   26611416 differ  60.60% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      769 elems     246080 differ  64.68% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.44e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    84107 elems   27250668 differ  67.24% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    83124 elems   26932176 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      769 elems     246080 differ  64.68% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.44e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    85118 elems   27578232 differ  67.25% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    84113 elems   27252612 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      769 elems     246080 differ  64.68% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.44e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    86128 elems   27905472 differ  67.25% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    85103 elems   27573372 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      769 elems     246080 differ  64.68% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.44e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    87118 elems   28226232 differ  67.25% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    86093 elems   27894132 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      789 elems     252480 differ  64.74% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.44e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    88108 elems   28546992 differ  67.25% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    87082 elems   28214568 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      810 elems     259200 differ  64.72% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.45e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    89097 elems   28867428 differ  67.24% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    88072 elems   28535328 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      831 elems     265920 differ  64.75% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.45e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    90087 elems   29188188 differ  67.24% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    89062 elems   28856088 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      851 elems     272320 differ  64.76% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.46e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    91077 elems   29508948 differ  67.24% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    90051 elems   29176524 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      872 elems     279040 differ  64.81% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.46e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    92066 elems   29829384 differ  67.24% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    91041 elems   29497284 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      893 elems     285760 differ  64.92% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.48e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    93056 elems   30150144 differ  67.24% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    92031 elems   29818044 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      913 elems     292160 differ  64.92% max abs 6.1e-05 max rel 6.22e-05 rms rel 8.48e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    94046 elems   30470904 differ  67.24% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    93020 elems   30138480 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      934 elems     298880 differ  64.89% max abs 6.1e-05 max rel 7.98e-05 rms rel 8.47e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    95036 elems   30791664 differ  67.24% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    94010 elems   30459240 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      954 elems     305280 differ  64.86% max abs 6.1e-05 max rel 7.98e-05 rms rel 8.46e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    96025 elems   31112100 differ  67.24% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    95000 elems   30780000 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      975 elems     312000 differ  64.89% max abs 6.1e-05 max rel 7.98e-05 rms rel 8.47e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    97015 elems   31432860 differ  67.24% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    95989 elems   31100436 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls      996 elems     318720 differ  64.89% max abs 6.1e-05 max rel 7.98e-05 rms rel 8.47e-08
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    98005 elems   31753620 differ  67.24% max abs 6.1e-05 max rel 0.000124 rms rel 8.39e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    96979 elems   31421196 differ  60.61% max abs 3.05e-05 max rel 7.81e-05 rms rel 7.92e-08
+mmvq splitk verify: output_hc_down.weight                    calls     1016 elems     325120 differ  64.92% max abs 6.1e-05 max rel 7.98e-05 rms rel 8.48e-08
+   4       2.0044 ±    0.1225      -0.01391 ±    0.00876       0.01266 ±    0.00129     3.826 ±  0.432 %    97.157 ±  0.521 %
+
+====== Perplexity statistics ======
+Mean PPL(Q)                   :   2.004449 ±   0.122544
+Mean PPL(base)                :   2.032532 ±   0.123361
+Cor(ln(PPL(Q)), ln(PPL(base))):  98.97%
+Mean ln(PPL(Q)/PPL(base))     :  -0.013914 ±   0.008762
+Mean PPL(Q)/PPL(base)         :   0.986183 ±   0.008641
+Mean PPL(Q)-PPL(base)         :  -0.028084 ±   0.017683
+
+====== KL divergence statistics ======
+Mean    KLD:   0.012661 ±   0.001288
+Maximum KLD:   0.800399
+99.9%   KLD:   0.352167
+99.0%   KLD:   0.175587
+95.0%   KLD:   0.067112
+90.0%   KLD:   0.038225
+Median  KLD:   0.000071
+10.0%   KLD:   0.000000
+ 5.0%   KLD:  -0.000000
+ 1.0%   KLD:  -0.000003
+ 0.1%   KLD:  -0.000009
+Minimum KLD:  -0.000043
+
+====== Token probability statistics ======
+Mean    Δp:  0.136 ± 0.120 %
+Maximum Δp: 52.580%
+99.9%   Δp: 28.161%
+99.0%   Δp: 12.336%
+95.0%   Δp:  4.162%
+90.0%   Δp:  1.004%
+75.0%   Δp:  0.019%
+Median  Δp:  0.000%
+25.0%   Δp: -0.014%
+10.0%   Δp: -0.928%
+ 5.0%   Δp: -2.988%
+ 1.0%   Δp: -12.703%
+ 0.1%   Δp: -18.671%
+Minimum Δp: -28.197%
+RMS Δp    :  3.826 ± 0.432 %
+Same top p: 97.157 ± 0.521 %
+

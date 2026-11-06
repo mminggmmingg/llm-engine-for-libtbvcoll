@@ -93,3 +93,8 @@
   (`GGML_RPC_COMM_RAIL2_ZC_MIN`, 기본 4096 B). 엔진에서는 이득이 없어 기본 꺼짐(RESULTS.md 11-06 18:10).
 - 2026-11-06 밤(구간 커널 1a, 기본 꺼짐): `GGML_CUDA_SEG_MOE=1` — hc down → hc up/pre → BF16 행렬곱(라우터·indexer k)을 상주 커널 하나로(`k_seg_moe_head`),
   `GGML_CUDA_SEG_VERIFY=1` 비트 비교, `GGML_CUDA_SEG_PREFETCH=1` 다음 단계 가중치 앞서 읽기, `GGML_CUDA_SEG_COOP=1` 협동 실행. 디버그 `GGML_CUDA_DUMP_MOE=<n>`(MUL_MAT_ID 있는 1토큰 그래프 노드).
+- 2026-11-06 밤(split-K, 기본 꺼짐): `GGML_CUDA_MMVQ_SPLITK=<2|4|8>` — 한 열·행 `GGML_CUDA_MMVQ_SPLITK_ROWS`(기본 2048) 개 이하 양자화 행렬곱
+  (Q5_0·Q8_0·Q6_K·IQ4_XS·IQ4_NL, 묶기 없는 것)에서 한 행을 워프 S 개가 나눔(`mul_mat_vec_q_splitk`). 더하는 순서가 달라 출력이 비트 그대로가 아님
+  (같은 설정끼리는 결정적). `GGML_CUDA_MMVQ_SPLITK_VERIFY=1` 은 같은 입력으로 기존 커널을 한 번 더 돌려 가중치별 차이를 2000번마다 출력.
+  디버그 `LLAMA_DEBUG_DUMP=<파일>`(llama-eval-callback 이 `LLAMA_DEBUG_DUMP_RE`, 기본 `l_last|result_output` 에 맞는 텐서를 f32 로 덤프, 비교는
+  `tools/layerdiff.py`), `tools/divergence.py`(greedy 생성 기록과 처음 갈린 자리).

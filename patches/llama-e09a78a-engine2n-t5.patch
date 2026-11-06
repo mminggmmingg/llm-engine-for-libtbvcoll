@@ -14,6 +14,62 @@ index ab08d15..733cfd7 100644
      // print the parameters into a string
      std::string print() const;
  };
+diff --git a/common/debug.cpp b/common/debug.cpp
+index 102c692..a399a38 100644
+--- a/common/debug.cpp
++++ b/common/debug.cpp
+@@ -4,6 +4,9 @@
+ #include "log.h"
+ 
+ #include <cmath>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
+ #include <regex>
+ #include <string>
+ #include <vector>
+@@ -147,6 +150,41 @@ bool common_debug_cb_eval(struct ggml_tensor * t, bool ask, void * user_data) {
+     const struct ggml_tensor * src0 = t->src[0];
+     const struct ggml_tensor * src1 = t->src[1];
+ 
++    // engine2n: LLAMA_DEBUG_DUMP=<file> — append every tensor whose name matches LLAMA_DEBUG_DUMP_RE (default l_last|result_output)
++    // to <file> as f32 (u32 name length, name, i64 ne[4], values), to compare two runs. Only those tensors are asked for, so the
++    // graph is split only there and fusion elsewhere stays as in a normal run.
++    static const char * dump_path = getenv("LLAMA_DEBUG_DUMP");
++    if (dump_path) {
++        static const std::regex re(getenv("LLAMA_DEBUG_DUMP_RE") ? getenv("LLAMA_DEBUG_DUMP_RE") : "l_last|result_output");
++        static FILE * fdump = fopen(dump_path, "wb");
++        const bool match = std::regex_search(t->name, re) && !ggml_is_quantized(t->type);
++        if (ask || !match) {
++            return ask ? match : true;
++        }
++        const bool host = ggml_backend_buffer_is_host(t->buffer);
++        if (!host) {
++            pimpl->data.resize(ggml_nbytes(t));
++            ggml_backend_tensor_get(t, pimpl->data.data(), 0, ggml_nbytes(t));
++        }
++        const uint8_t * data = host ? (const uint8_t *) t->data : pimpl->data.data();
++        const uint32_t  len  = strlen(t->name);
++        fwrite(&len, sizeof(len), 1, fdump);
++        fwrite(t->name, 1, len, fdump);
++        fwrite(t->ne, sizeof(int64_t), 4, fdump);
++        for (int64_t i3 = 0; i3 < t->ne[3]; i3++) {
++            for (int64_t i2 = 0; i2 < t->ne[2]; i2++) {
++                for (int64_t i1 = 0; i1 < t->ne[1]; i1++) {
++                    for (int64_t i0 = 0; i0 < t->ne[0]; i0++) {
++                        const float v = common_ggml_get_float_value(data, t->type, t->nb, i0, i1, i2, i3);
++                        fwrite(&v, sizeof(v), 1, fdump);
++                    }
++                }
++            }
++        }
++        fflush(fdump);
++        return true;
++    }
++
+     if (ask) {
+         return true;  // Always retrieve data
+     }
 diff --git a/common/sampling.cpp b/common/sampling.cpp
 index 564fa9c..e4355d6 100644
 --- a/common/sampling.cpp
@@ -4771,13 +4827,135 @@ index 72e961d..e8abb22 100644
          return (void *)ggml_backend_cuda_comm_allreduce_tensor;
      }
 diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
-index 930f1ad..3f81c12 100644
+index 930f1ad..c0f8178 100644
 --- a/ggml/src/ggml-cuda/mmvq.cu
 +++ b/ggml/src/ggml-cuda/mmvq.cu
-@@ -1452,6 +1452,291 @@ static void mul_mat_vec_q_switch_type(
+@@ -1,4 +1,6 @@
+ #include "mmvq.cuh"
++#include <map>
++#include <string>
+ #include "quantize.cuh"
+ #include "unary.cuh"
+ #include "vecdotq.cuh"
+@@ -1452,6 +1454,406 @@ static void mul_mat_vec_q_switch_type(
      }
  }
  
++// engine2n: GGML_CUDA_MMVQ_SPLITK=<S> — a one-column matmul with few rows (hc down: 324 rows of 10240) leaves most of the GPU
++// idle with one warp per row. Here S warps share a row: warp w takes the K iterations w, w+S, ... of the usual loop, sums them
++// per lane and over the warp, and warp 0 adds the S partial sums in order 0..S-1. Deterministic (no atomics), but the order of
++// the additions differs from mul_mat_vec_q, so the last bits of the result differ (GGML_CUDA_MMVQ_SPLITK_VERIFY measures by how much).
++template <ggml_type type, int S>
++static __global__ void __launch_bounds__(32*S, 1) mul_mat_vec_q_splitk(
++        const void * __restrict__ vx, const void * __restrict__ vy, float * __restrict__ dst, const uint32_t ncols_x,
++        const uint32_t stride_row_x) {
++    constexpr int qk  = ggml_cuda_type_traits<type>::qk;
++    constexpr int qi  = ggml_cuda_type_traits<type>::qi;
++    constexpr int vdr = get_vdr_mmvq(type);
++    constexpr int blocks_per_iter = vdr*32/qi;
++    constexpr vec_dot_q_cuda_t vec_dot_q_cuda = get_vec_dot_q_cuda(type);
++    __shared__ float part[S];
++
++    const int lane = threadIdx.x;
++    const int w    = threadIdx.y;
++    const int row  = blockIdx.x;
++    const int blocks_per_row_x = ncols_x / qk;
++    const block_q8_1 * y = (const block_q8_1 *) vy;
++    const int kbx_offset = row*stride_row_x;
++
++    float tmp = 0.0f;
++    for (int kbx = lane / (qi/vdr) + w*blocks_per_iter; kbx < blocks_per_row_x; kbx += S*blocks_per_iter) {
++        const int kby = kbx * (qk/QK8_1);
++        const int kqs = vdr * (lane % (qi/vdr));
++        tmp += vec_dot_q_cuda(vx, &y[kby], kbx_offset + kbx, kqs);
++    }
++    tmp = warp_reduce_sum<32>(tmp);
++    if (lane == 0) {
++        part[w] = tmp;
++    }
++    __syncthreads();
++    if (w == 0 && lane == 0) {
++        float sum = part[0];
++#pragma unroll
++        for (int k = 1; k < S; k++) {
++            sum += part[k];
++        }
++        dst[row] = sum;
++    }
++}
++
++template <ggml_type type>
++static bool mul_mat_vec_q_splitk_launch(const void * vx, const void * vy, float * dst, const int ncols_x, const int nrows_x,
++        const int stride_row_x, const int S, cudaStream_t stream) {
++    constexpr int qk  = ggml_cuda_type_traits<type>::qk;
++    constexpr int qi  = ggml_cuda_type_traits<type>::qi;
++    constexpr int vdr = get_vdr_mmvq(type);
++    if (ncols_x / qk < S * (vdr*32/qi)) {
++        return false;  // a warp would get no iteration
++    }
++    switch (S) {
++        case 2: mul_mat_vec_q_splitk<type, 2><<<nrows_x, dim3(32, 2), 0, stream>>>(vx, vy, dst, ncols_x, stride_row_x); break;
++        case 4: mul_mat_vec_q_splitk<type, 4><<<nrows_x, dim3(32, 4), 0, stream>>>(vx, vy, dst, ncols_x, stride_row_x); break;
++        case 8: mul_mat_vec_q_splitk<type, 8><<<nrows_x, dim3(32, 8), 0, stream>>>(vx, vy, dst, ncols_x, stride_row_x); break;
++        default: return false;
++    }
++    return true;
++}
++
++static bool mul_mat_vec_q_splitk_switch_type(const void * vx, const ggml_type type_x, const void * vy, float * dst, const int ncols_x,
++        const int nrows_x, const int stride_row_x, const int S, cudaStream_t stream) {
++    switch (type_x) {
++        case GGML_TYPE_Q5_0:   return mul_mat_vec_q_splitk_launch<GGML_TYPE_Q5_0>  (vx, vy, dst, ncols_x, nrows_x, stride_row_x, S, stream);
++        case GGML_TYPE_Q8_0:   return mul_mat_vec_q_splitk_launch<GGML_TYPE_Q8_0>  (vx, vy, dst, ncols_x, nrows_x, stride_row_x, S, stream);
++        case GGML_TYPE_Q6_K:   return mul_mat_vec_q_splitk_launch<GGML_TYPE_Q6_K>  (vx, vy, dst, ncols_x, nrows_x, stride_row_x, S, stream);
++        case GGML_TYPE_IQ4_XS: return mul_mat_vec_q_splitk_launch<GGML_TYPE_IQ4_XS>(vx, vy, dst, ncols_x, nrows_x, stride_row_x, S, stream);
++        case GGML_TYPE_IQ4_NL: return mul_mat_vec_q_splitk_launch<GGML_TYPE_IQ4_NL>(vx, vy, dst, ncols_x, nrows_x, stride_row_x, S, stream);
++        default:               return false;
++    }
++}
++
++// GGML_CUDA_MMVQ_SPLITK_VERIFY=1: per weight (layer number dropped) how far the split result is from mul_mat_vec_q's
++struct mmvq_splitk_stats {
++    uint64_t calls = 0, elems = 0, ndiff = 0;
++    double   max_abs = 0, max_rel = 0, sum_d2 = 0, sum_r2 = 0;
++};
++static void mmvq_splitk_note(const char * wname, const float * got, const float * ref, const int64_t n) {
++    static std::map<std::string, mmvq_splitk_stats> stats;
++    static uint64_t ncalls = 0;
++    std::string key(wname);
++    for (size_t p = key.find("blk."); p != std::string::npos && p + 4 < key.size(); p = std::string::npos) {
++        size_t q = p + 4;
++        while (q < key.size() && isdigit((unsigned char) key[q])) {
++            q++;
++        }
++        key = key.substr(0, p + 4) + "*" + key.substr(q);
++    }
++    mmvq_splitk_stats & st = stats[key];
++    double amax = 0;
++    for (int64_t e = 0; e < n; e++) {
++        amax = std::max(amax, (double) fabsf(ref[e]));
++    }
++    for (int64_t e = 0; e < n; e++) {
++        const double d = fabs((double) got[e] - (double) ref[e]);
++        st.ndiff  += memcmp(&got[e], &ref[e], sizeof(float)) != 0;
++        st.max_abs = std::max(st.max_abs, d);
++        if (fabsf(ref[e]) > 1e-3*amax) {
++            st.max_rel = std::max(st.max_rel, d / fabs((double) ref[e]));
++        }
++        st.sum_d2 += d*d;
++        st.sum_r2 += (double) ref[e]*ref[e];
++    }
++    st.calls++;
++    st.elems += n;
++    if (++ncalls % 2000 == 0) {
++        for (const auto & [k, v] : stats) {
++            fprintf(stderr, "mmvq splitk verify: %-40s calls %8llu elems %10llu differ %6.2f%% max abs %.3g max rel %.3g rms rel %.3g\n",
++                k.c_str(), (unsigned long long) v.calls, (unsigned long long) v.elems, 100.0*v.ndiff/std::max<uint64_t>(v.elems, 1),
++                v.max_abs, v.max_rel, sqrt(v.sum_d2/std::max(v.sum_r2, 1e-30)));
++        }
++    }
++}
++
 +// engine2n: one-token GLU matmul (gate and up, SWIGLU) whose result is also needed as q8_1 by the next quantized matmul (the
 +// down projection). A block of 32 warps owns 32 consecutive rows of one channel: each warp computes its row with the loop, warp
 +// sum and GLU epilogue mul_mat_vec_q uses on RDNA (one warp per row, nwarps 1, rows_per_block 1), and warp 0 writes the q8_1
@@ -5066,7 +5244,7 @@ index 930f1ad..3f81c12 100644
  void ggml_cuda_mul_mat_vec_q(
          ggml_backend_cuda_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1, const ggml_tensor * ids, ggml_tensor * dst,
          const ggml_cuda_mm_fusion_args_host * fusion) {
-@@ -1483,7 +1768,7 @@ void ggml_cuda_mul_mat_vec_q(
+@@ -1483,7 +1885,7 @@ void ggml_cuda_mul_mat_vec_q(
      if (fusion) {
          const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
          GGML_ASSERT( !ids || dst->ne[2] <= get_mmvq_mmid_max_batch(src0->type, cc));
@@ -5075,7 +5253,7 @@ index 930f1ad..3f81c12 100644
          // Scale fusion is only allowed for NVFP4 currently as the cost of checking this at run-time in the prologue is
          // non-negligible for some models such as gpt-oss-20b
          GGML_ASSERT((fusion->x_scale == nullptr && fusion->gate_scale == nullptr) || src0->type == GGML_TYPE_NVFP4);
-@@ -1549,12 +1834,76 @@ void ggml_cuda_mul_mat_vec_q(
+@@ -1549,12 +1951,76 @@ void ggml_cuda_mul_mat_vec_q(
      }
  
      const int64_t ne10_padded = GGML_PAD(ne10, MATRIX_ROW_PADDING);
@@ -5155,7 +5333,7 @@ index 930f1ad..3f81c12 100644
      }
  
      const int64_t s01 = src0->nb[1] / ts_src0;
-@@ -1579,8 +1928,35 @@ void ggml_cuda_mul_mat_vec_q(
+@@ -1579,8 +2045,60 @@ void ggml_cuda_mul_mat_vec_q(
  
      const int64_t ids_stride = ids ? ids->nb[1] / ggml_type_size(ids->type) : 0;
  
@@ -5186,6 +5364,31 @@ index 930f1ad..3f81c12 100644
 +        return;
 +    }
 +
++    // engine2n: few rows, one column: several warps per row (GGML_CUDA_MMVQ_SPLITK=<2|4|8>, rows up to GGML_CUDA_MMVQ_SPLITK_ROWS, default 2048)
++    {
++        static const int splitk      = getenv("GGML_CUDA_MMVQ_SPLITK") ? atoi(getenv("GGML_CUDA_MMVQ_SPLITK")) : 0;
++        static const int splitk_rows = getenv("GGML_CUDA_MMVQ_SPLITK_ROWS") ? atoi(getenv("GGML_CUDA_MMVQ_SPLITK_ROWS")) : 2048;
++        static const bool verify     = getenv("GGML_CUDA_MMVQ_SPLITK_VERIFY") != nullptr;
++        const bool plain = !fusion_local.gate && !fusion_local.x_bias && !fusion_local.gate_bias && !fusion_local.x_scale &&
++                           !fusion_local.gate_scale && !fusion_local.shared_up;
++        if (splitk > 0 && plain && !ids && ncols_dst == 1 && ne02 == 1 && ne03 == 1 && nchannels_dst == 1 && ne3 == 1 && ne01 <= splitk_rows &&
++                mul_mat_vec_q_splitk_switch_type(src0->data, src0->type, src1_q, dst_d, (int) ne00, (int) ne01, (int) s01, splitk, stream)) {
++            if (verify) {
++                ggml_cuda_pool_alloc<float> ref(ctx.pool(), ne01);
++                mul_mat_vec_q_switch_type(
++                    src0->data, src0->type, src1_q, ids_d, fusion_local, ref.get(), ne00,
++                    ne01,              ncols_dst,     s01, stride_col_y,     stride_col_dst,
++                    ne02, nchannels_y, nchannels_dst, s02, stride_channel_y, stride_channel_dst,
++                    ne03,              ne3,           s03, s13,              s3,               ids_stride, stream);
++                std::vector<float> a(ne01), b(ne01);
++                CUDA_CHECK(cudaMemcpyAsync(a.data(), dst_d, ne01*sizeof(float), cudaMemcpyDeviceToHost, stream));
++                CUDA_CHECK(cudaMemcpyAsync(b.data(), ref.get(), ne01*sizeof(float), cudaMemcpyDeviceToHost, stream));
++                CUDA_CHECK(cudaStreamSynchronize(stream));
++                mmvq_splitk_note(src0->name, a.data(), b.data(), ne01);
++            }
++            return;
++        }
++    }
      mul_mat_vec_q_switch_type(
 -        src0->data, src0->type, src1_q8_1.get(), ids_d, fusion_local, dst_d, ne00,
 +        src0->data, src0->type, src1_q, ids_d, fusion_local, dst_d, ne00,

@@ -1,0 +1,5 @@
+mmvq splitk verify: blk.*.attn_k.weight                      calls    17453 elems    4467968 differ  76.95% max abs 9.54e-07 max rel 0.000183 rms rel 1.42e-07
+mmvq splitk verify: blk.*.attn_v.weight                      calls    17453 elems    4467968 differ  74.99% max abs 2.15e-06 max rel 0.000222 rms rel 1.46e-07
+mmvq splitk verify: blk.*.hc_attn_down_inject.weight         calls    69812 elems   22619088 differ  61.03% max abs 0.000122 max rel 6.53e-05 rms rel 7.24e-08
+mmvq splitk verify: blk.*.hc_ffn_down_inject.weight          calls    69820 elems   22621680 differ  51.73% max abs 3.05e-05 max rel 5.2e-05 rms rel 6.59e-08
+mmvq splitk verify: output_hc_down.weight                    calls     1462 elems     467840 differ  59.04% max abs 6.1e-05 max rel 3.74e-05 rms rel 7.08e-08
