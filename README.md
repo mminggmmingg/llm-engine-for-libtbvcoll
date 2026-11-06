@@ -1,14 +1,44 @@
-# llm-engine-for-libtbvcoll — 자체 LLM 엔진 (2× HP ZBook Ultra G1a, USB4 RDMA)
+# llm-engine-for-libtbvcoll
 
-Strix Halo(gfx1151) 노트북 두 대를 Thunderbolt/USB4 RDMA(tbv, libtbvcoll)로 묶어 큰 MoE 모델을 돌리는 자체 엔진 작업 저장소.
-첫 대상은 Qwen3.8-Flash-Next(qwen4exp). 지금 바탕은 llama.cpp 본선 `e09a78a` + 우리 패치다.
+노트북 두 대로 큰 MoE 언어 모델을 **텐서 병렬(TP)** 로 돌리는 llama.cpp 기반 엔진이다.
+HP ZBook Ultra G1a(AMD Strix Halo, Radeon 8060S gfx1151, 메모리 128 GB) 두 대를 Thunderbolt/USB4 케이블로 잇고,
+층마다 두 GPU 의 부분합을 USB4 RDMA([tbv](https://github.com/mminggmmingg/thunderbolt-ibverbs-zbook))로 주고받는다.
+대상 모델은 Qwen3.8-Flash-Next(qwen4exp — 512 전문가 MoE, 48층, hyper-connection)이고, 가중치는 우리 비트 배분 H5(92 GiB)다.
 
-원칙: **다중 노드는 텐서 병렬(TP)만** 쓴다(층 분할·PP 는 중간 단계로도 쓰지 않음). 하드웨어·전원·펌웨어 설정은 바꾸지 않는다(소프트웨어만).
-tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) 저장소에 있다. 이 저장소의 앞 7개 커밋은 그 저장소 `engine2n/` 의 이력을 그대로 옮긴 것.
+## 결과 (2026-11-06)
 
-## 지금 (2026-11-06, Flash-Next H5, 자세한 값은 RESULTS.md)
+| 구성 | 디코드 tok/s | 비고 |
+|---|---:|---|
+| 2노드 TP | **36.3** | 토큰마다 노드 하나가 가중치 2.83 GB 를 읽음 |
+| 2노드 TP + MTP 추측 디코딩 | **50.3** | 초안 3토큰(모델의 MTP 층), 채택률 0.65 |
+| (참고) 1노드, 같은 모델 | 18.5 / MTP 31.2 | 2026-10-30 엔진, A 의 느린 상태. 그 뒤 개선은 2노드로만 쟀다 |
 
-2노드 TP 디코드가 올라온 과정. 가중치는 모두 H5, tok/s 는 llama-server 6 프롬프트. 11-03 부터의 변경은 모두 값 그대로(출력이 같음).
+- 측정: llama-server, greedy(temperature 0), 프롬프트 6개(영어 글·코드·한국어·수학·JSON·요약) × 256 토큰, 서버가 잰 디코드 속도의 토큰 가중 평균.
+- **출력은 비트 그대로다.** 최적화마다 같은 프롬프트의 출력 해시가 바뀌지 않는지 확인했고, MTP 를 켜도 MTP 없는 greedy 와 출력이 같다.
+- 날마다 노드 상태에 따라 ±2% 흔들린다. 같은 날 번갈아 잰 끔/켬 비교는 [RESULTS.md](RESULTS.md) 의 각 절에 있다.
+
+## 구성
+
+```
+노드 A: llama-server (클라이언트; MTP 초안은 A GPU 에서)
+          ├─ RPC → rpc-server A  (A GPU, 모든 층의 절반, rank 1)
+          └─ RPC → rpc-server B  (B GPU, 모든 층의 절반, rank 0)
+                   rpc-server A ⇄ rpc-server B : 층마다 all-reduce 2번 (tbv RDMA, 1토큰 ≈10 KB)
+```
+
+| | 두 노드 같음 |
+|---|---|
+| 기기 | HP ZBook Ultra G1a 14 — Ryzen AI MAX+ PRO 395, Radeon 8060S (gfx1151), 128 GB |
+| 메모리 설정 | BIOS VRAM 4 GiB, GTT 112 GiB (`ttm.pages_limit=29360128`) |
+| 소프트웨어 | Ubuntu 26.04.1, 커널 7.0.0-1015-oem, ROCm 7.2.1, llama.cpp `e09a78a` + [우리 패치](patches/llama-e09a78a-engine2n-t5.patch) |
+| 링크 | Thunderbolt 케이블 2개 → RDMA 장치 `usb4_rdma0`·`usb4_rdma5`, 제어용 IP `thunderbolt0` 10.99.0.1 / 10.99.0.2 |
+| 전송 | tbv `9a35117` 이상 — USB4 NHI 위의 ibverbs 드라이버. 묶음은 [zbook-thunderbolt-RDMA](https://github.com/mminggmmingg/zbook-thunderbolt-RDMA) |
+
+원칙: 다중 노드는 TP 만 쓴다(층 분할·파이프라인 병렬은 쓰지 않음). 하드웨어·전원·펌웨어 설정은 바꾸지 않는다(소프트웨어만).
+
+## 어떻게 빨라졌나
+
+2노드 TP 디코드가 올라온 과정. 가중치는 모두 H5. 11-03 부터의 변경은 모두 출력이 그대로다.
 
 | 날짜 | 바뀐 것 | 토큰당 읽는 가중치 GB (노드당) | 2노드 TP | 2노드 TP + MTP | 가중치 읽기로 환산 GB/s (노드당) |
 |---|---|---:|---:|---:|---:|
@@ -20,39 +50,30 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
 | 11-04 | hc 블록 묶기(11-05 최종 비교의 '끔') | 2.83 | 34.4 | 42.9 | 97 |
 | 11-05 새벽 | 값 그대로 커널 묶기 10개 더(A 노드 토큰당 커널 1886 → 1313) | 2.83 | 36.3 | 43.8 | 103 |
 | 11-05 오후 | 서버 쪽 argmax — 로짓 대신 (최댓값, 번호)만 받음(같은 날 끔 35.4 / 44.2) | 2.83 | 36.5 | 45.5 | 103 |
-| **11-06** | **MTP 초안 출력층을 어휘 104459개로 줄임 — 초안만 바뀌고 출력은 그대로(같은 날 기준 MTP 46.7)** | **2.83** | **36.5**(초안 없음, 그대로) | **50.3** | **103** |
+| **11-06** | **MTP 초안 출력층을 어휘 104459개로 줄임 — 초안만 바뀌고 출력은 그대로(같은 날 기준 MTP 46.7)** | **2.83** | **36.3**(초안 없음, 그대로) | **50.3** | **103** |
 
-- 토큰당 읽는 가중치: 디코드 1단계에 노드 하나가 읽는 가중치(`tools/bytes_per_token.py 512 10 loaded tp=2`). 나뉘는 텐서(attention·GDN 투영, 전문가 활성분, 출력층)는 절반,
-  두 노드에 복제되는 텐서(hyper-connection 0.61, shared expert + 라우터 0.29, indexer 등)는 전부. KV 캐시·GDN 상태·임베딩 조회는 뺐다.
-  11-01 부터 라우터를 BF16 으로 읽어 2.96 → 2.83(1노드 전체 4.82 → 4.69). MTP 는 한 단계에 여러 토큰을 검증해 이 값이 생성 토큰당 양은 아니다.
-- 환산 GB/s = 노드당 GB × tok/s(MTP 없음). 큰 행렬곱 하나가 내는 ≈220 GB/s 의 절반에 못 미친다: 가중치만 읽는 시간은 토큰당 ≈12.6 ms(225 GB/s 기준)이고
-  27.6 ms 중 나머지 ≈15 ms 가 작은 커널·커널 사이 빈틈·AR·토큰 경계.
-- 출력 해시는 같은 입력에 늘 같아야 한다. 상대 노드 GPU 를 다른 프로세스가 띄엄띄엄 쓰게 하면(fixcost/nondet-1105/hogmon-gpubursts.sh) 블록 사이 경쟁이 드러난다 — 새 묶기는 이 조건에서도 확인.
-- tok/s 는 날마다 노드 상태가 달라 ±2% 흔들린다(11-05 오후 기준선 35.4 는 새벽 36.3 보다 낮음). 같은 날 끔/켬 비교는 RESULTS.md 각 절.
-- 고정비 분해(2026-10-30, RESULTS.md): 직렬 토큰 ≈52 ms = 가중치 읽기 ≈21 + 행렬곱이 대역폭보다 느린 몫 ≈16(hc ≈7) + 작은 연산 ≈14 + 호스트 0.3.
-  토큰당 커널 ≈3200개 × ≈3 µs 발행 바닥.
-- 가중치 합치기(2026-10-30, RESULTS.md): 입력이 같은 가중치 168쌍(hc down+inject, GDN qkv+gate, beta+alpha)을 불러올 때 한 텐서로 합쳐
-  토큰당 커널 3201 → 2865, 1노드 직렬 −7%. TP 분할 규칙까지 넣어 2노드 TP 끔 대비 +9.5%(MTP 없음)·+9.2%(MTP, 36.6 tok/s).
-  다음: 남은 같은 입력 묶음, 활성값 양자화 공유. 2노드에서는 B 가 펌웨어 CPU 우선 상태(GPU 1.7–2.2 GHz)로 남는 것이 병목.
-- 작은 연산 묶기·DPP(2026-11-03, RESULTS.md): 토큰당 커널 2720 → 1806, 값 그대로. 2노드 H5(hot 폴링 끔) 디코드 27.3 → **32.2**, MTP 38.7 → **42.4**(41.5–43.3) tok/s.
-  2노드에서도 커널 하나가 ≈3–4 µs 라 커널 수가 곧 시간(빈 커널 측정).
-- 관측기로 다시 비교(2026-11-04 밤, RESULTS.md): async(지금 구조) 끝까지 + sync(스트림 안 AR + CPU 프록시) 적용. 채택은 greedy argmax 샘플링과
-  AR 링크를 두 번째 케이블로(`GGML_RPC_COMM_DEV=usb4_rdma0`) — 2노드 디코드 32.70 → **33.60** tok/s, 값 그대로.
-  스트림 안 AR(ZC=3)은 gfx1151 에서 깊은 큐의 커널이 하나하나 느려져 −1–2%. 그래프를 다시 짓는 디코드 단계(≈120 ms, 디코드의 3.5%)가 남은 큰 몫.
-- 값 그대로 커널 묶기(2026-11-04 오후 – 11-05 새벽, RESULTS.md): 32워프 블록이 한 행렬의 연속 32행을 맡고 워프 하나가 RDNA mmvq 와 같은 루프·워프 합으로
-  한 행을 계산해 비트가 같다. hc 블록(+1.5–2%) 뒤에 묶기 10개: GLU → q8_1, shared expert down + 게이트 꼬리, GDN beta/alpha + gates(+2%), GDN conv + q/k norm,
-  AR 기다림-더하기를 처음 읽는 커널 안에서(+1.4%), conv 상태 concat, GDN gated norm, 어텐션 게이트 + q8, q/k norm + rope, indexer key 사슬 12 → 1(+1.1%).
-  같은 빌드 끔 → 켬: none 34.4 → **36.3**(+5.4%), MTP 42.9 → **43.8**(+1.9%, 묶기 대부분이 1토큰 그래프 전용). MoE down + 가중합은 두 번 모두 비트 같지만 느려 뺌.
-- 토큰 시간 영수증(2026-11-05, 35.4 tok/s 회): 단계 29.7 ms 중 GPU 계산 27.0 ms(91%), 토큰 경계 ≈1.5 ms(출력층 1.15 ms — 노드당 0.26 GB 를 ≈227 GB/s).
-- 서버 쪽 argmax(2026-11-05 오후, RESULTS.md): 클라이언트가 토큰마다 두 노드의 로짓 절반(노드당 ≈0.5 MB)을 차례로 받던 것을, 각 노드가 자기 조각에서
-  (최댓값, 번호)만 돌려주고 클라이언트가 고르게 바꿈(새 RPC 명령, 값 같음). 로짓은 누가 실제로 물을 때만 받는다. 같은 날 끔 → 켬 none 35.4 → **36.5**,
-  MTP 44.2 → **45.5**(둘 다 +3.1%). 다음 후보: MTP 검증 그래프 묶기, llama_decode → 첫 부분그래프 발행(≈0.5 ms).
-- MTP(2026-11-05 저녁, RESULTS.md): 한 주기 ≈57 ms 에 ≈2.6 토큰 = 4토큰 검증(2노드) ≈45 ms + 초안 3번(A GPU) ≈11.5 ms. 초안을 2노드로, AR 을 두 번째
-  케이블로, 초안 길이 2·3 은 모두 차이 없음. `--spec-draft-p-min` 은 검증 묶음 크기가 바뀔 때마다 그래프를 새로 보내 크게 느려짐(0.3 −23%, 0.5 −41%).
-- MTP 초안 어휘 줄이기(2026-11-06, RESULTS.md): 초안 1번이 읽는 0.67 GB 중 0.52 GB 가 전체 어휘(248320행) 출력층이었다. 초안의 출력층을 104459행
-  (벤치와 겹치지 않는 프롬프트 48개에 본 모델이 낸 토큰 + BPE 번호 순 앞쪽 + 한글 토큰 전부 + 특수 토큰)으로 줄이고 나머지 로짓은 -inf(`d2t`, DFlash 와 같은 방식).
-  초안 제안만 바뀌고 출력은 본 모델 greedy 검증이 정하므로 해시 그대로. 채택률 0.648 → 0.646, MTP 46.7 → **50.3**(+7.6%),
-  벤치·말뭉치와 겹치지 않는 확인용 12 프롬프트에서도 43.9 → 47.3(+7.7%). 앞쪽 번호만 쓰면 한국어 초안이 무너진다(한글 토큰 96% 가 13만 번 뒤).
+- 토큰당 읽는 가중치: 디코드 1단계에 노드 하나가 읽는 양(`tools/bytes_per_token.py 512 10 loaded tp=2`). 나뉘는 텐서(attention·GDN 투영, 활성 전문가, 출력층)는
+  절반, 두 노드에 복제되는 텐서(hyper-connection, shared expert, 라우터, indexer)는 전부. KV 캐시·GDN 상태·임베딩 조회는 뺐다. MTP 는 한 단계에 여러 토큰을 검증하므로
+  이 값이 생성 토큰당 양은 아니다.
+- 환산 GB/s = 노드당 GB × tok/s(MTP 없음). 큰 행렬곱 하나가 내는 ≈220 GB/s 의 절반쯤이다. 1토큰 27.5 ms 중 가중치만 읽는 시간은 ≈12.6 ms 이고,
+  나머지가 작은 커널(토큰당 ≈1300개, 하나에 ≈3 µs 의 발행 바닥)·all-reduce·토큰 경계다.
+
+큰 단계만 간추리면(자세한 수치·실패한 시도는 RESULTS.md):
+
+- **불러올 때 가중치 합치기**(10-30): 입력이 같은 행렬 168쌍을 한 텐서로 — 커널 수가 줄어 2노드 +9.5%.
+- **작은 연산 묶기**(11-03 – 11-05): 토큰당 커널 2720 → 1313. gfx1151 의 mmvq 는 열 수와 상관없이 워프 하나가 한 행을 같은 순서로 더하므로,
+  32워프 블록이 연속 32행을 맡게 묶으면 비트가 같다. hc 블록, GLU → q8_1, shared expert 꼬리, GDN 게이트·norm, all-reduce 기다림-더하기를 처음 읽는 커널 안에서 등.
+- **서버 쪽 argmax**(11-05): 클라이언트가 토큰마다 두 노드의 로짓(노드당 ≈0.5 MB)을 받던 것을 각 노드가 (최댓값, 번호)만 돌려주게 — +3.1%.
+- **MTP 초안 출력층 줄이기**(11-06): 초안이 읽는 0.67 GB 중 0.52 GB 가 전체 어휘(248320행) 출력층이었다. 초안만 104459행 어휘로 계산하고
+  나머지 로짓은 -inf 로 둔다. 초안 제안만 바뀌고 출력은 본 모델 검증이 정하므로 그대로 — MTP +7.6%(벤치와 겹치지 않는 프롬프트에서도 +7.7%).
+- 지금 MTP 한 주기 ≈54.5 ms 에 ≈2.9 토큰: 4토큰 검증(2노드) 45.7 ms + 초안 따라잡기 1.3 ms + 초안 3번 × 2.5 ms.
+
+### 출력이 그대로인지 확인하는 법
+
+- 기준 해시(6 프롬프트, 256 토큰): `c400cb 40b428 572e7e 412ba5 e5be2a d67a87`. none 과 MTP(초안 3 이하) 모두 같다.
+- 묶은 커널은 할당기가 출력을 아직 읽히는 입력 자리에 놓으면 묶지 않는다(`ggml_cuda_overlaps_srcs`). 이 검사 없이 한 번, 상대 노드 GPU 를 다른 프로세스가 같이 쓸 때만
+  출력이 바뀌는 경쟁이 있었다(RESULTS.md 2026-11-05 23:25). 새 묶기는 상대 노드에 GPU 부하를 띄엄띄엄 거는 조건(`fixcost/nondet-1105/repro.sh`)에서도 확인한다.
+- 묶기마다 `*_VERIFY` 스위치(따로 돌린 결과와 비트 비교)가 있다 — 목록은 [docs/SWITCHES.md](docs/SWITCHES.md).
 
 ## 시각 자료 — 추론 감시 보고서(inferwatch)
 
@@ -71,6 +92,44 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
   휠 = 확대/축소, 끌기 = 이동, 단계 버튼 = 한 단계씩. 아래: 단계당 시간 영수증(GPU 계산·쉼, 클라이언트 몫), 단계 사이, AR 전송 지연, GPU 가 쉰 곳.
 - 주의: MTP 는 초안 단계(A GPU 만)와 검증 단계가 섞여 평균이 나온다(나누기는 `tools/bench/mtpcycle.py`). 서버 쪽 argmax 뒤로는 llama_decode 가 로짓을
   기다리지 않고 돌아오고, 출력 읽기가 GET_TENSOR 대신 ARGMAX_ROWS 다(inferwatch 는 둘 다 출력 읽기로 본다). 그림은 헤드리스 Chrome 으로 찍은 첫 화면.
+
+## 시작하기
+
+준비(빌드는 `rocm/vllm-dev:rocm7.2.1` 컨테이너 안에서 HIP gfx1151 + RPC + RDMA):
+```
+git clone https://github.com/ggml-org/llama.cpp && git -C llama.cpp checkout e09a78a
+git -C llama.cpp apply ../patches/llama-e09a78a-engine2n-t5.patch     # 저장소 최상위에서
+./build_llama.sh                     # + llama-quantize, llama-imatrix
+./eval/make_ppl_text.sh
+./get_models.sh iq4                  # Qwen3.8-Flash-Next UD-IQ4_XS (93.7 GB, sha256 확인). H5 는 아래 '양자화 실험'
+```
+실행:
+```
+./run_1node.sh <q4|iq4|GGUF>                 # 1노드 기준
+./run_tp.sh <GGUF|iq4> local                 # A 혼자 TP 점검(rpc-server 2개)
+./run_tp.sh <GGUF|iq4> 2node [rdma|tcp]      # 2노드 TP: --rpc 10.99.0.2:50052,127.0.0.1:50052 (B = rank 0)
+./eval_ppl.sh <GGUF> 1node|tplocal|tp2node   # 정합성(perplexity)
+./run_server.sh 1node|2node none|mtp [N]     # llama-server 실측(추측 디코딩 포함), 프롬프트 eval/spec_prompts.json
+```
+MTP 초안 파일: `./get_models.sh mtp` 로 받는 공유형 MTP 파일은 본 모델의 `token_embd`·`output` 을 빌려 쓰는 형식이라 이 llama.cpp 가 단독으로 못 연다.
+본 모델 조각에서 두 텐서를 붙이고, 그다음 출력층을 줄인 판(`run_server.sh` 기본)을 만든다. 말뭉치는 2노드 서버를 띄워 모은다
+(우리 것은 `fixcost/dvocab-1106/corpus-tokens.jsonl`):
+```
+python3 -I tools/gguf_merge_mtp.py <MTP/mtp-...-shared-Q8_0.gguf> <UD-IQ4_XS/...-00002-of-00003.gguf> <MTP/mtp-...-merged-IQ4embd.gguf> token_embd.weight output.weight
+BENCH="tools/draft_vocab_corpus.py $PWD/eval/draft_vocab_prompts.json 384 $PWD/corpus-tokens.jsonl" MTP=<merged-IQ4embd.gguf> tools/bench/srv-probe.sh 2node mtp
+python3 -I tools/draft_vocab_select.py corpus-tokens.jsonl 98304 <MTP/mtp-...-merged-IQ4embd.gguf> ids-96k-ko.txt ko
+python3 -I tools/gguf_draft_vocab.py <MTP/mtp-...-merged-IQ4embd.gguf> ids-96k-ko.txt <MTP/mtp-...-merged-IQ4embd-dv96k-ko.gguf>
+```
+
+## 측정 방법
+
+- `run_server.sh`(= `tools/bench/srv-probe.sh`)가 두 rpc-server 와 llama-server 를 띄우고 `tools/spec_bench.py` 로 6 프롬프트를 돌린 뒤 내린다.
+  결과는 `runs/srv-<topo>-<spec>-<시각>/results.jsonl`(프롬프트별 tok/s, 초안 수·채택 수, 출력 해시)과 두 노드의 GPU 클럭·전력 기록.
+- 끔/켬 비교는 `tools/bench/node-ab.sh`: 구성마다 서버·클라이언트 환경을 주고 번갈아 돌린다. 두 노드 부하가 낮을 때 시작하고, all-reduce 링크가 RDMA 로
+  안 붙은 회는 다시 돌린다.
+- 재기 전에: 두 노드 `cat /sys/firmware/acpi/platform_profile` 이 performance 인지(재부팅 뒤 절전으로 켜지면 ≈10% 느림), 상대 노드에서 다른 GPU 작업이 없는지,
+  측정 중에 빌드하지 않는지(돌고 있는 서버 바이너리를 덮어씀).
+- 시간 분해: `tools/watch/`(추론 감시, 위 시각 자료), `tools/bench/prof2node.sh`(A 서버 rocprofv3 커널 표), `tools/bench/mtpcycle.py`(MTP 한 주기 나누기).
 
 ## 양자화 구성 비교 (2026-10-30 엔진)
 
@@ -92,120 +151,6 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
   gfx1151 에서 IQ3_S 는 4-bit 보다 빠르지 않고 K 형식은 묶음 4 에서 1.7배 느려서(커널 표) 고른 형식.
 - MTP 를 켜면 배분과 상관없이 속도가 같다 → 남은 차이는 엔진 고정비(토큰당 ≈19–28 ms).
 
-- 설계: [DESIGN.md](DESIGN.md) (v1, TP). 폐기된 층 분할(PP) 설계는 [DESIGN_v0_pp.md](DESIGN_v0_pp.md), `run_2node.sh` 에 기록용으로만 남김.
-- 측정 기록: [RESULTS.md](RESULTS.md)
-- 노드 점검 도구(읽기만): [tools/probe/](tools/probe/) — `gpumetrics.py`(gpu_metrics v3.0 클럭·전력·DRAM 카운터), `clkmon2.sh`, `nodeinfo.sh`,
-  HIP 시험 `lat.hip`(발행·동기화 지연), `bw.hip`(메모리 대역폭), `wv.hip`(`hipStreamWaitValue32` 동작),
-  `kfloor.hip`(작은 커널 하나의 바닥 비용, 그래프/직접), `bigbuf.hip`(큰 버퍼 안 창 읽기 대역폭). 빌드: `hipcc -O2 --offload-arch=gfx1151 x.hip -o x`
-  `ktok.py`(rocprofv3 기록 → 토큰당 커널 수·시간), `memclk_ts.py`(FCLK·UCLK·DRAM 카운터 시계열)
-- llama.cpp 패치: [patches/llama-e09a78a-engine2n-t5.patch](patches/llama-e09a78a-engine2n-t5.patch)
-  - RDMA 전송: 보내기 묶음(flush 때 SEND 1번)·받기 바이트 스트림, 송신 슬롯 링(`GGML_RDMA_TX_SLOTS`), 조각 크기·수신 깊이(`GGML_RDMA_CHUNK`, `GGML_RDMA_RX_DEPTH`)
-  - 서버 all-reduce: pinned 호스트 버퍼 + 비동기 복사, 양쪽 동시 조각 교환(`GGML_RPC_COMM_SYM_MAX`, `GGML_RPC_COMM_AHEAD`)
-  - AR 뒤 발행 겹치기: `GGML_RPC_COMM_OVERLAP=1|2` — 스트림이 pinned 플래그를 기다리게 하고(ggml-cuda `ggml_backend_stream_wait_u32`,
-    `hipStreamWaitValue32`) 다음 부분그래프를 먼저 발행, 2 는 도우미 스레드가 상대 부분합을 받는 즉시 플래그를 쓴다
-  - 계측: `GGML_RPC_COMM_PROF=N` (AR 단계별·명령별 시간)
-  - AR 호출별 기록: `GGML_RPC_COMM_PROF_TRACE=<file>` (`run_tp.sh` 에서 `TRACE=1`)
-  - TP 분할(클라이언트): `LLAMA_TP_FFN_GRAN` (FFN 알갱이, 스크립트 기본 32 → 전문가 640 을 320/320), `LLAMA_TP_FFN_SPLIT` (FFN 만 장치 0 몫),
-    `LLAMA_TP_SPLIT_DEBUG=1` (0–3층 분할 출력)
-  - `run_tp.sh`: `SRV_ENV` 로 두 서버에 환경변수 전달(기본 `GGML_CUDA_DISABLE_GRAPHS=1`), `APREFIX` 로 A 서버를 rocprofv3 아래에서 실행
-  - `GGML_RPC_COMM_OVERLAP=3`: AR 이 GPU 를 기다리지 않고 돌아가고 송수신은 별도 스레드(`hipStreamWriteValue32` 플래그). 정확하지만 이 APU 에서는
-    펌웨어가 CPU 우선으로 바뀌어 GPU 클럭이 떨어져 느림 → 기본은 2(`run_tp.sh`)
-  - `GGML_RPC_SPIN_US=<n>`: 대기가 n µs 만 바쁘게 돌고 잠듦(RDMA 완료 이벤트, 명령 전달 큐, 송수신 스레드). 미설정이면 기존 동작
-  - `GGML_RPC_COMM_BF16_MIN=<n>`: 이 원소 수 이상인 부분합을 bf16 으로 보냄(기본 32768, 아주 크게 주면 모두 f32). 측정용
-  - `GGML_RPC_COMM_RAIL2=<RDMA 장치>` (+`GGML_RPC_COMM_RAIL2_MIN`): 두 번째 케이블로 큰 부분합을 반씩 교환. 지금 tbv 에서는 이득 없음, 기본 꺼짐
-  - 불러올 때 가중치 합치기(qwen4exp, 기본 켬): `LLAMA_MERGE_WEIGHTS=<mask>` — 1 hc down+inject, 2 GDN qkv+gate, 4 GDN beta+alpha(기본 7, 0 은 끔).
-    형식이 다르면 바이트가 큰 쪽 형식으로 다시 양자화(H5 의 hc inject Q8_0 → Q6_K), `LLAMA_MERGE_WIDE=1` 은 bpw 큰 쪽(hc down → Q8_0). TP 에서도 모두 합친다(`attn_qkv_gate`·`ssm_beta_alpha` 분할 규칙 추가, 2026-10-31)
-  - `GGML_CUDA_SKIP_OPS=<연산|w:가중치이름,...>` (앞에 `!` 면 나열한 것만 남김): 측정 전용, 결과가 틀림. 연산 종류를 GPU 에서 빼 토큰당 시간이 얼마나 주는지 잰다
-    (`fixcost/ablate.sh <GGUF> <회차> 이름=환경 ...`, 프로파일러 없이 고정비 분해)
-  - 2026-10-31 – 11-01 엔진 변경(자세한 수치는 RESULTS.md):
-    - GDN 상태를 캐시에서 바로 읽기(기본 켬, 값 같음): `GGML_CUDA_NO_GDN_DIRECT=1` 이면 끔
-    - 라우터 BF16 사본(기본 켬, 값 같음 — 16-bit 라우터는 F32 정밀도로 계산): `LLAMA_ROUTER_BF16=0` 이면 F32
-    - 4토큰 conv `concat` 원소당 스레드 커널(항상)
-    - hc 경계 묶기 `GGML_CUDA_HC_MIX=1|f32` (기본 끔 — f32 활성값은 품질 손해), 호스트 검사 `GGML_CUDA_HC_MIX_CHECK=<n>`
-    - 받는 쪽 zero-copy AR `GGML_RPC_COMM_ZC` (기본 1, 값 같음): 커널이 coherent 호스트 플래그를 기다렸다 상대 부분합을 더한다. 2 는 보내는 쪽도
-      (APU 펌웨어가 CPU 우선으로 바뀌어 느림), 0 은 끔
-    - 계측: `GGML_RPC_COMM_PROF` 에 받기 대기·보내기 쪼개기 줄, `GGML_RPC_COMM_PROF_TL=<file>` AR 별 시각(`fixcost/zc-allreduce-1101/tlsum.py`)
-    - 양쪽 연속인 2D 복사를 1D 로(HIP 은 4의 배수가 아닌 폭의 2D 복사를 행마다 함 — TP 분할 비율 0.45 로딩 실패의 원인)
-    - 바쁜 대기 줄이기 `GGML_CUDA_BLOCKING_SYNC=1`(기본 끔), 디버그 `GGML_CUDA_DUMP_NODES=<n>`
-  - 2026-11-03 엔진 변경(모두 기본 켬, 값 같음; 끄는 환경변수):
-    - 묶기: hc lo SCALE→SILU 가 q8_1 사본도 `GGML_CUDA_NO_SCALE_SILU_Q8`, shexp 게이트 끝 `GGML_CUDA_NO_SHEXP_GATE_FUSE`, 게이트 행렬곱까지
-      `GGML_CUDA_NO_SHEXP_GATE_DOT`, GDN 게이트 `GGML_CUDA_NO_GDN_GATES_FUSE`, GDN gated norm `GGML_CUDA_NO_NORM_GATE_FUSE`(q8_1 사본만 `GGML_CUDA_NO_NORM_GATE_Q8`),
-      GDN conv 상태 `GGML_CUDA_NO_CONV_STATE_FUSE`(캐시 줄 직접 읽기만 `GGML_CUDA_NO_CONV_DIRECT`), hc_post → norm `GGML_CUDA_NO_HC_POST_NORM`
-      (출력이 입력과 겹치는 곳의 한 블록 커널만 `GGML_CUDA_NO_HC_POST_NORM_1B`), GDN q/k norm 한 커널 `GGML_CUDA_NO_NORM_SCALE_PAIR`
-    - q8_1 사본을 만드는 쪽에서: norm `GGML_CUDA_NO_NORM_Q8`, hc_pre `GGML_CUDA_NO_HC_PRE_Q8`
-    - top-k 전용 커널(512 전문가 softmax) `GGML_CUDA_NO_TOPK_LEAN`, warp 교환 DPP(빌드 `-DGGML_CUDA_NO_XOR_DPP` 면 `__shfl_xor`)
-    - 묶은 커널은 할당기가 비운 입력 메모리와 출력이 겹치면 묶지 않음(`ggml_cuda_tensors_overlap`)
-    - 측정·디버그: `GGML_CUDA_PAD_KERNELS=<n>`(노드마다 빈 커널 n개, 커널 하나 비용 재기), `GGML_CUDA_Q8_VERIFY=1`(그래프 끔에서 q8_1 캐시 적중을 새 양자화와 비교, stderr)
-  - 2026-11-03 저녁: 단계 시작 GPU 쉼 줄이기(값 같음, 2노드 decode +1.9%) — 클라이언트 작은 입력 비동기 `GGML_RPC_ASYNC_SET`(바이트, 0 = 끔), sched 입력 동기화 생략
-    (`GGML_SCHED_INPUT_SYNC_ALWAYS=1` = 예전), 서버 작은 입력 비동기 `GGML_RPC_SERVER_ASYNC_SET`, 명령 묶어 보내기 `GGML_RPC_BATCH_MAX`(기본 끔).
-  - 추론 감시: 서버 `GGML_RPC_TRACE=/dev/shm/ggml-rpc-trace-{port}.bin`, 클라이언트 `GGML_RPC_TRACE_CLIENT=...`(run_tp.sh·srv-probe.sh 가 켬, `TRACE=0` 끔, 부담 ≈1.5%),
-    `tools/watch/inferwatch.sh start` → 실행마다 `runs/watch/<시각>/report.html`·`receipt.md`. tbv 카운터를 리포트에 넣으려면 `inferwatch.sh tbv-copy`(sudo).
-  - 2026-11-04 밤(자세히는 RESULTS.md "11-03 23:50 – 11-04"):
-    - greedy argmax 빠른 경로(llama-server 대상 샘플러, 항상): temperature 0 이고 최댓값을 지울 수 있는 샘플러가 없을 때 후보 배열·정렬 대신 argmax. 값 같음
-    - `GGML_RPC_COMM_DEV=<RDMA 장치>`(두 서버): AR 링크만 그 장치로(두 번째 케이블 `usb4_rdma0`). 권장, 스크립트 기본값에는 아직 없음(`SRV_ENV`)
-    - `GGML_RPC_COMM_ZC=3`: 스트림 안 AR + 프록시 스레드(느림), `GGML_RPC_COMM_ZC3_AHEAD=K`(호스트가 앞서는 AR 수 제한)
-    - `LLAMA_TP_OUTPUT_SPLIT=<f>`(output.weight 의 장치 0 몫), `LLAMA_KV_PAD=<n>`(n_kv 패딩, 256 이 아니면 출력이 바뀜 — 측정용),
-      `GGML_RPC_GRAPH_DEDUP=1`(서버에 이미 있는 내용의 그래프를 다시 보내지 않음, 기본 끔), `GGML_RPC_SYNC_SPIN=1`(클라이언트 대기를 돌며, 기본 끔)
-    - 진단: `GGML_RPC_GC_STATS=1`(서버 새 그래프 비용), `GGML_META_CACHE_STATS=1`(메타 분할 상태 캐시·다시 짓기), `GGML_RPC_DEDUP_TIME=1`(클라이언트 직렬화),
-      클라이언트 DECODE 기록에 llama_decode 앞 단계 도장 4개, 서버 ZC=3 프록시 기록(PROXY)
-    - 측정 도구: `tools/bench/prof2node.sh`(A 서버만 rocprofv3), `kgroup.py`(부분그래프 종류별 커널 시간·빈틈), node-ab.sh `BASE_<cfg>`·`CW_<cfg>`(클라이언트 앞 명령),
-      `tools/probe/gpumetrics_ts.py` fclk·uclk·DRAM 열
-  - 2026-11-04 오후: hc 블록 묶기(SCALE→SILU→hc up 행렬곱→hc_pre 한 커널, 기본 켬, 값 같음, +1.5–2%) `GGML_CUDA_NO_HC_UP_PRE=1` 끔,
-    q8 캐시 그래프 사이 유지 `GGML_CUDA_Q8_CACHE_PERSIST=1`(기본 끔), AR 더하기 미루기 `GGML_CUDA_COMM_DEFER=1`(+`_WINDOW`, 기본 끔).
-    halogen 과의 GPU 사용률·커널 비교는 `fixcost/halogen-compare-1104/`
-  - 2026-11-04 저녁: GLU 행렬곱이 결과의 q8_1 도 씀(전문가·shared expert down 의 양자화 커널 없앰, 기본 켬) `GGML_CUDA_NO_GLU_Q8=1` 끔,
-    shared expert down + 게이트 꼬리(게이트 내적·sigmoid·곱·더하기) 한 커널(기본 켬) `GGML_CUDA_NO_SHEXP_DOWN_TAIL=1` 끔,
-    검증용 `GGML_CUDA_SHEXP_TAIL_VERIFY=1`(묶은 결과와 따로 돌린 결과를 비트로 비교). 커널 토큰당 비교 `tools/bench/kdiff.py`.
-    GDN beta/alpha 행렬곱 + gates 한 커널(기본 켬, +2%) `GGML_CUDA_NO_GDN_MM_GATES=1` 끔, 검증 `GGML_CUDA_GDN_GATES_VERIFY=1`
-  - 2026-11-04 밤: GDN conv + q/k norm 한 커널(기본 켬, +0.5–1%) `GGML_CUDA_NO_CONV_NORM_PAIR=1` 끔, 검증 `GGML_CUDA_CONV_NORM_VERIFY=1`
-    AR 기다림-더하기를 처음 읽는 커널 안에서(+1.4%, 기본 켬, 미루기 포함) `GGML_CUDA_COMM_FUSE=0` 끔
-    conv 상태 concat 도 conv+norm 커널에서(+0.9%, 기본 켬) `GGML_CUDA_NO_CONV_CONCAT=1` 끔
-    GDN 커널 안에서 gated norm(기본 켬, 잡음 안) `GGML_CUDA_NO_GDN_NORM=1` 끔, 검증 `GGML_CUDA_GDN_NORM_VERIFY=1`
-  - 2026-11-05 새벽: 어텐션 출력 게이트+q8 한 커널 `GGML_CUDA_NO_ATTN_GATE_Q8=1` 끔, q/k norm+rope(multi) 한 커널 `GGML_CUDA_NO_NORM_ROPE=1` 끔
-    (검증 `GGML_CUDA_NORM_ROPE_VERIFY=1`), 둘 다 기본 켬·값 같음·속도 차이 잡음 안
-    indexer key 사슬 12 커널 → 1(+1.1%, 기본 켬) `GGML_CUDA_NO_IDX_K_POOL=1` 끔, 검증 `GGML_CUDA_IDX_K_POOL_VERIFY=1`
-  - 2026-11-05 오후: 서버 쪽 argmax(기본 켬, 값 같음, +3.1%) `LLAMA_TP_ARGMAX=0` 끔 — `ggml_backend_tensor_argmax_rows`(meta 는 장치 조각별로 받아 합침,
-    rpc 는 새 명령 `RPC_CMD_ARGMAX_ROWS`), llama-context 가 마지막 ubatch 로짓을 장치에 남기고 `llama_get_argmax_ith` 에 답함(로짓은 물을 때 받음),
-    common sampler greedy 빠른 경로가 이를 먼저 씀. 끝날 때 `LLAMA_TP_ARGMAX: N rows argmax on the devices, M logits fetches` 로그
-  - 2026-11-05 저녁(MTP 검증 4토큰용): shared expert 꼬리 묶기가 1–4 토큰을 받음(기본 켬, 값 같음, MTP 잡음 안) — `GGML_CUDA_FUSE_1TOK=1` 이면 1토큰만(예전),
-    검증 `GGML_CUDA_SHEXP_TAIL_VERIFY=1`(이제 COMM_FUSE 켠 채로 됨). hc 블록 묶기의 여러 토큰판은 값 같지만 느려(MTP −2.7%) 기본 1토큰,
-    `GGML_CUDA_HC_UP_PRE_NTOK=<2..4>` 로 켬, 검증 `GGML_CUDA_HC_UP_PRE_VERIFY=1`. 디버그 `GGML_CUDA_DUMP_NTOK=<n>`(n 토큰 서브그래프 노드 출력)
-  - 2026-11-06 새벽(고침): 묶은 커널의 출력이 다른 블록이 아직 읽는 입력과 메모리를 같이 쓰면 묶지 않는다(`ggml_cuda_overlaps_srcs`). GDN 안 gated norm 이 이 검사
-    없이 다른 head 의 q 입력을 덮어, 상대 노드 GPU 를 다른 프로세스가 같이 쓸 때 출력이 바뀌었다(RESULTS.md 11-05 23:25 절). 디버그 `GGML_CUDA_FUSE_OVERLAP_LOG=1`(거부 출력).
-    argmax 를 노드마다 동시에 묻기(기본), `GGML_META_ARGMAX_SERIAL=1` 이면 차례로
-    서버 argmax 를 GPU 커널로(최댓값의 첫 번호, 기본 켬, 값 같음, 속도 차이 없음) `GGML_CUDA_NO_ARGMAX_ROWS=1` 이면 로짓을 호스트로 읽어 CPU argmax
-
-## 준비
-```
-git clone https://github.com/ggml-org/llama.cpp && git -C llama.cpp checkout e09a78a
-git -C llama.cpp apply ../patches/llama-e09a78a-engine2n-t5.patch     # 저장소 최상위에서
-./build_llama.sh                     # rocm/vllm-dev:rocm7.2.1 컨테이너에서 HIP gfx1151 + RPC + RDMA 빌드(+ llama-quantize, llama-imatrix)
-./eval/make_ppl_text.sh
-./get_models.sh iq4                  # Qwen3.8-Flash-Next UD-IQ4_XS (93.7 GB, sha256 확인)
-```
-## 실행
-```
-./run_1node.sh <q4|iq4|GGUF>                 # 1노드 기준
-./run_tp.sh <GGUF|iq4> local                 # A 혼자 TP 점검(rpc-server 2개)
-./run_tp.sh <GGUF|iq4> 2node [rdma|tcp]      # 2노드 TP: --rpc 10.99.0.2:50052,127.0.0.1:50052 (B = rank 0)
-./eval_ppl.sh <GGUF> 1node|tplocal|tp2node   # 정합성(perplexity)
-./run_server.sh 1node|2node none|mtp [N]      # llama-server 실측(추측 디코딩 포함), 프롬프트 eval/spec_prompts.json
-```
-MTP(추측 디코딩): `./get_models.sh mtp` 로 받는 공유형 MTP 파일은 본 모델의 `token_embd`·`output` 을 빌려 쓰는 형식이라 이 llama.cpp 가 단독으로 못 연다.
-본 모델 조각에서 두 텐서를 붙인 파일을 만들어 쓴다:
-```
-python3 -I tools/gguf_merge_mtp.py <MTP/mtp-...-shared-Q8_0.gguf> <UD-IQ4_XS/...-00002-of-00003.gguf> <MTP/mtp-...-merged-IQ4embd.gguf> token_embd.weight output.weight
-```
-그다음 초안 출력층을 줄인 판(`run_server.sh` 기본, 2026-11-06). 말뭉치는 2노드 서버를 띄워 모으고(`fixcost/dvocab-1106/corpus-tokens.jsonl` 에 있음), 어휘를 골라 파일을 쓴다:
-```
-BENCH="tools/draft_vocab_corpus.py $PWD/eval/draft_vocab_prompts.json 384 $PWD/corpus-tokens.jsonl" MTP=<merged-IQ4embd.gguf> tools/bench/srv-probe.sh 2node mtp
-python3 -I tools/draft_vocab_select.py corpus-tokens.jsonl 98304 <MTP/mtp-...-merged-IQ4embd.gguf> ids-96k-ko.txt ko
-python3 -I tools/gguf_draft_vocab.py <MTP/mtp-...-merged-IQ4embd.gguf> ids-96k-ko.txt <MTP/mtp-...-merged-IQ4embd-dv96k-ko.gguf>
-```
-주의: B 를 rank 0 으로 둔다 — A 서버를 TB 주소로 등록하면 클라이언트↔A 서버가 tbv 루프백으로 협상되는데 tbv 는 같은 노드 안 QP 를 못 잇는다.
-tbv 는 `9a35117`(여러 프레임 SEND 의 RNR 대기) 이상이어야 한다.
-측정 전에 두 노드 `cat /sys/firmware/acpi/platform_profile` 이 performance 인지 본다 — 재부팅 뒤 절전(low-power)으로 켜지면 디코드가 ≈10% 느리다(2026-11-05).
-
 ## 양자화 실험 (`quant/`)
 ```
 python3 -I tools/gguf_head.py <조각.gguf> | grep '  T ' > quant/orig.tensors        # 텐서 목록
@@ -219,10 +164,23 @@ python3 -I tools/gguf_head.py <변형.gguf> | python3 -I tools/bytes_per_token.p
 `quant/run_variant.sh` 는 변형 디렉터리(`UD-IQ4_XS-dense4/`) 안의 이전 변형 파일만 지우고 새로 만든다(디스크 부족으로 사용자 허락, 2026-10-29).
 형식별 커널 속도: `TARGETS=test-backend-ops ./build_llama.sh` 후 `test-backend-ops perf -b ROCm0 -o MUL_MAT -p 'm=10240,n=[0-9]+,k=2560,bs=\[16,1\]'`(패치에 qwen4exp 모양 추가).
 
-## 구성
-- `run_*.sh`, `eval_ppl.sh`, `build_llama.sh`, `get_models.sh` + `models_manifest.json`: 빌드·모델 받기·측정 실행기
-- `patches/`: llama.cpp `e09a78a` 에 대한 우리 변경 전체(diff)
-- `tools/`: 측정·분석(`spec_bench.py`, `cmp_runs.py`, `kgroups.py`, GGUF 도구), `tools/probe/`: 노드·GPU 점검
-- `eval/`: 평가 프롬프트, 평가·보정 글 생성 스크립트
-- `quant/`: 밀집 부분 비트 배분 실험의 형식 파일·로그
+## 한계와 알려진 문제
 
+- 스크립트는 우리 두 기기의 경로·주소(`/data/parksThink/...`, `10.99.0.1/2`)를 그대로 쓴다. 다른 환경에서는 `MODEL`·`MTP`·`BIN` 같은 환경변수와 스크립트 안 주소를 바꿔야 한다.
+- 서버 시작 때 all-reduce 링크가 안 올라오면(`[comm_init] failed to connect to peer`) TCP 로 떨어져 매우 느리고 출력 해시도 달라진다(원인 미확인, 다시 띄우면 정상).
+- B 를 rank 0 으로 둔다 — A 서버를 TB 주소로 등록하면 클라이언트↔A 서버가 tbv 루프백으로 협상되는데 tbv 는 같은 노드 안 QP 를 잇지 못한다.
+- 초안 길이 4 이상은 출력이 바뀐다 — 검증 묶음이 5토큰이 되면 반올림 순서가 달라진다(초안 3 이하, 즉 검증 4토큰까지는 같음). 기본 초안 길이는 3.
+- 엔진 패치는 이 모델(qwen4exp)과 gfx1151 에 맞춘 묶기가 많다. 다른 모델·GPU 에서는 대부분 원래 경로로 돌아간다(묶기 조건이 안 맞음).
+
+## 저장소 구성
+
+- `run_*.sh`, `eval_ppl.sh`, `build_llama.sh`, `get_models.sh` + `models_manifest.json`: 빌드·모델 받기·측정 실행기
+- `patches/`: llama.cpp `e09a78a` 에 대한 우리 변경 전체(diff 하나)
+- `tools/`: 측정·분석(`spec_bench.py`, `bench/`, `watch/`, GGUF 도구, 초안 어휘 도구), `tools/probe/`: 노드·GPU 점검(읽기만)
+- `eval/`: 평가 프롬프트, 초안 어휘용 프롬프트·확인용 프롬프트, 평가·보정 글 생성 스크립트
+- `quant/`: 밀집 부분 비트 배분 실험의 형식 파일·로그
+- `fixcost/`: 실험별 원자료(로그·커널 표·회별 기록) — RESULTS.md 각 절이 가리킨다
+- `docs/`: [SWITCHES.md](docs/SWITCHES.md)(패치·환경변수·도구 기록), `watch/`(추론 감시 보고서)
+
+문서: [DESIGN.md](DESIGN.md)(TP 설계, 폐기한 층 분할 설계는 [DESIGN_v0_pp.md](DESIGN_v0_pp.md)), [RESULTS.md](RESULTS.md)(측정 기록, 날짜 순).
+이 저장소의 앞 7개 커밋은 [zbook-thunderbolt-RDMA](https://github.com/mminggmmingg/zbook-thunderbolt-RDMA) 의 `engine2n/` 이력을 옮긴 것이다.
