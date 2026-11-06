@@ -10,7 +10,7 @@ HP ZBook Ultra G1a(AMD Strix Halo, Radeon 8060S gfx1151, 메모리 128 GB) 두 �
 | 구성 | 디코드 tok/s | 비고 |
 |---|---:|---|
 | 2노드 TP | **36.3** | 토큰마다 노드 하나가 가중치 2.83 GB 를 읽음 |
-| 2노드 TP + MTP 추측 디코딩 | **50.3** | 초안 3토큰(모델의 MTP 층), 채택률 0.65 |
+| 2노드 TP + MTP 추측 디코딩 | **50.8** | 초안 3토큰(모델의 MTP 층), 채택률 0.64 |
 | (참고) 1노드, 같은 모델 | 18.5 / MTP 31.2 | 2026-10-30 엔진, A 의 느린 상태. 그 뒤 개선은 2노드로만 쟀다 |
 
 - 측정: llama-server, greedy(temperature 0), 프롬프트 6개(영어 글·코드·한국어·수학·JSON·요약) × 256 토큰, 서버가 잰 디코드 속도의 토큰 가중 평균.
@@ -50,7 +50,8 @@ HP ZBook Ultra G1a(AMD Strix Halo, Radeon 8060S gfx1151, 메모리 128 GB) 두 �
 | 11-04 | hc 블록 묶기(11-05 최종 비교의 '끔') | 2.83 | 34.4 | 42.9 | 97 |
 | 11-05 새벽 | 값 그대로 커널 묶기 10개 더(A 노드 토큰당 커널 1886 → 1313) | 2.83 | 36.3 | 43.8 | 103 |
 | 11-05 오후 | 서버 쪽 argmax — 로짓 대신 (최댓값, 번호)만 받음(같은 날 끔 35.4 / 44.2) | 2.83 | 36.5 | 45.5 | 103 |
-| **11-06** | **MTP 초안 출력층을 어휘 104459개로 줄임 — 초안만 바뀌고 출력은 그대로(같은 날 기준 MTP 46.7)** | **2.83** | **36.3**(초안 없음, 그대로) | **50.3** | **103** |
+| 11-06 | MTP 초안 출력층을 어휘 104459개로 줄임 — 초안만 바뀌고 출력은 그대로(같은 날 기준 MTP 46.7) | 2.83 | 36.3(초안 없음, 그대로) | 50.3 | 103 |
+| **11-06** | **초안 가중치를 본 모델과 같은 낮은 비트로(같은 회차 어휘만 줄인 판 49.9)** | **2.83** | **36.3** | **50.8** | **103** |
 
 - 토큰당 읽는 가중치: 디코드 1단계에 노드 하나가 읽는 양(`tools/bytes_per_token.py 512 10 loaded tp=2`). 나뉘는 텐서(attention·GDN 투영, 활성 전문가, 출력층)는
   절반, 두 노드에 복제되는 텐서(hyper-connection, shared expert, 라우터, indexer)는 전부. KV 캐시·GDN 상태·임베딩 조회는 뺐다. MTP 는 한 단계에 여러 토큰을 검증하므로
@@ -66,7 +67,8 @@ HP ZBook Ultra G1a(AMD Strix Halo, Radeon 8060S gfx1151, 메모리 128 GB) 두 �
 - **서버 쪽 argmax**(11-05): 클라이언트가 토큰마다 두 노드의 로짓(노드당 ≈0.5 MB)을 받던 것을 각 노드가 (최댓값, 번호)만 돌려주게 — +3.1%.
 - **MTP 초안 출력층 줄이기**(11-06): 초안이 읽는 0.67 GB 중 0.52 GB 가 전체 어휘(248320행) 출력층이었다. 초안만 104459행 어휘로 계산하고
   나머지 로짓은 -inf 로 둔다. 초안 제안만 바뀌고 출력은 본 모델 검증이 정하므로 그대로 — MTP +7.6%(벤치와 겹치지 않는 프롬프트에서도 +7.7%).
-- 지금 MTP 한 주기 ≈54.5 ms 에 ≈2.9 토큰: 4토큰 검증(2노드) 45.7 ms + 초안 따라잡기 1.3 ms + 초안 3번 × 2.5 ms.
+  이어서 초안(Q8_0 MTP 층 + Q6_K 출력층)을 본 모델 H5 와 같은 형식(Q5_0·IQ4_XS·IQ4_NL, 출력층 Q4_K)으로 다시 양자화 — 초안이 읽는 양 0.37 → 0.24 GB, +1–2%.
+- MTP 한 주기(어휘만 줄인 판) ≈54.5 ms 에 ≈2.9 토큰: 4토큰 검증(2노드) 45.7 ms + 초안 따라잡기 1.3 ms + 초안 3번 × 2.5 ms. 남은 큰 몫은 검증이다.
 
 ### 출력이 그대로인지 확인하는 법
 
@@ -112,13 +114,14 @@ git -C llama.cpp apply ../patches/llama-e09a78a-engine2n-t5.patch     # 저장�
 ./run_server.sh 1node|2node none|mtp [N]     # llama-server 실측(추측 디코딩 포함), 프롬프트 eval/spec_prompts.json
 ```
 MTP 초안 파일: `./get_models.sh mtp` 로 받는 공유형 MTP 파일은 본 모델의 `token_embd`·`output` 을 빌려 쓰는 형식이라 이 llama.cpp 가 단독으로 못 연다.
-본 모델 조각에서 두 텐서를 붙이고, 그다음 출력층을 줄인 판(`run_server.sh` 기본)을 만든다. 말뭉치는 2노드 서버를 띄워 모은다
+본 모델 조각에서 두 텐서를 붙이고, 출력층을 줄인 다음 낮은 비트로 다시 양자화한다(`run_server.sh` 기본). 말뭉치는 2노드 서버를 띄워 모은다
 (우리 것은 `fixcost/dvocab-1106/corpus-tokens.jsonl`):
 ```
 python3 -I tools/gguf_merge_mtp.py <MTP/mtp-...-shared-Q8_0.gguf> <UD-IQ4_XS/...-00002-of-00003.gguf> <MTP/mtp-...-merged-IQ4embd.gguf> token_embd.weight output.weight
 BENCH="tools/draft_vocab_corpus.py $PWD/eval/draft_vocab_prompts.json 384 $PWD/corpus-tokens.jsonl" MTP=<merged-IQ4embd.gguf> tools/bench/srv-probe.sh 2node mtp
 python3 -I tools/draft_vocab_select.py corpus-tokens.jsonl 98304 <MTP/mtp-...-merged-IQ4embd.gguf> ids-96k-ko.txt ko
 python3 -I tools/gguf_draft_vocab.py <MTP/mtp-...-merged-IQ4embd.gguf> ids-96k-ko.txt <MTP/mtp-...-merged-IQ4embd-dv96k-ko.gguf>
+llama-quantize --allow-requantize --pure --tensor-type-file fixcost/dvocab-1106/draft-qmix.types <...-dv96k-ko.gguf> <MTP/mtp-...-merged-IQ4embd-dv96k-ko-qmix.gguf> Q8_0
 ```
 
 ## 측정 방법
