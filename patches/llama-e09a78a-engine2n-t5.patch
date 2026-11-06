@@ -6418,7 +6418,7 @@ index c6ffdb9..6dff7c3 100644
 +        ggml_tensor * dst, void * q8);
 +
 diff --git a/ggml/src/ggml-rpc/ggml-rpc.cpp b/ggml/src/ggml-rpc/ggml-rpc.cpp
-index 8cedee7..e9c1f9c 100644
+index 8cedee7..f8d2388 100644
 --- a/ggml/src/ggml-rpc/ggml-rpc.cpp
 +++ b/ggml/src/ggml-rpc/ggml-rpc.cpp
 @@ -6,6 +6,12 @@
@@ -7823,7 +7823,7 @@ index 8cedee7..e9c1f9c 100644
  
      auto new_scratch_tensor = [&](ggml_type type, size_t offset) {
          ggml_tensor * t = ggml_new_tensor_4d(ctx, type, t_dst->ne[0], t_dst->ne[1], t_dst->ne[2], t_dst->ne[3]);
-@@ -2352,41 +3406,353 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2352,41 +3406,355 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
          GGML_ASSERT(status == GGML_STATUS_SUCCESS && "Unsuccessful graph computations are not supported with RPC");
      };
  
@@ -7894,14 +7894,15 @@ index 8cedee7..e9c1f9c 100644
 +            return true;
 +        }
 +    }
-+    // GGML_RPC_COMM_ZC (default 1; overlap >= 2, decode-sized f32 partials): no stream wait and no copy-in. After the
-+    // send, one kernel waits on the receive flag in coherent host memory (set by the helper thread) and adds the peer's
-+    // partial from there (same f32 add, same result). ZC=2 also replaces the copy-out + stream synchronize: a kernel
-+    // writes our partial into coherent host memory and marks a flag this thread spins on — on gfx1151 that flips the
-+    // APU firmware to CPU-first (GPU ~2.1 GHz), so it is slower. ZC=0: the copy + stream wait path.
++    // GGML_RPC_COMM_ZC (default 3 since 2026-11-06, before 1; overlap >= 2, decode-sized f32 partials): no stream wait and
++    // no copy-in. After the send, one kernel waits on the receive flag in coherent host memory (set by the helper thread)
++    // and adds the peer's partial from there (same f32 add, same result). ZC=2 also replaces the copy-out + stream
++    // synchronize: a kernel writes our partial into coherent host memory and marks a flag this thread spins on — on gfx1151
++    // that flips the APU firmware to CPU-first (GPU ~2.1 GHz), so it is slower. ZC=3 keeps the whole allreduce in the
++    // stream (below). ZC=0: the copy + stream wait path.
 +    static const int zc_env = [] {
 +        const char * env = getenv("GGML_RPC_COMM_ZC");
-+        return env != nullptr ? atoi(env) : 1;
++        return env != nullptr ? atoi(env) : 3;
 +    }();
 +    static const size_t zc_max = 65536;
 +    typedef void * (*zc_alloc_t)(size_t);
@@ -7976,12 +7977,13 @@ index 8cedee7..e9c1f9c 100644
 +            }
 +            state.xfer->submit(seq, state.zc_send, state.zc_recv, wire_bytes);
 +            state.seq = seq;
-+            // GGML_RPC_COMM_ZC3_AHEAD=K: return only once exchange seq-K is done, so the stream holds at most ~K+1 subgraphs.
-+            // Unbounded (0), this thread ran ~10 ms ahead and each kernel of a deep queue took longer (gfx1151: subgraphs
-+            // 5–20% longer, more for those with more kernels). Bounding it brings the exchange latency back: no K beat ZC=1
++            // GGML_RPC_COMM_ZC3_AHEAD=K (default 2): return only once exchange seq-K is done, so the stream holds at most
++            // ~K+1 subgraphs. Unbounded (0), this thread ran ~10 ms ahead and each kernel of a deep queue took longer
++            // (gfx1151: subgraphs 5–20% longer, more for those with more kernels). On 11-04 no K beat ZC=1; after the
++            // kernel fusions (1313 kernels/token) K = 1..4 all beat it, none +6%, MTP +7% (2026-11-06)
 +            static const uint32_t ahead = [] {
 +                const char * env = getenv("GGML_RPC_COMM_ZC3_AHEAD");
-+                return env != nullptr ? (uint32_t) atoi(env) : 0u;
++                return env != nullptr ? (uint32_t) atoi(env) : 2u;
 +            }();
 +            if (ahead > 0 && seq > ahead && !state.xfer->wait(seq - ahead)) {
 +                return false;
@@ -8192,7 +8194,7 @@ index 8cedee7..e9c1f9c 100644
      }
  
      ggml_tensor * t_red = ggml_new_tensor_4d(ctx, t_dst->type, t_dst->ne[0], t_dst->ne[1], t_dst->ne[2], t_dst->ne[3]);
-@@ -2402,6 +3768,40 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2402,6 +3770,40 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
      } else {
          compute_nodes(t_red, nullptr);
      }
@@ -8233,7 +8235,7 @@ index 8cedee7..e9c1f9c 100644
      return true;
  }
  
-@@ -2409,6 +3809,15 @@ bool rpc_server::comm_free(const rpc_msg_comm_free_req & request) {
+@@ -2409,6 +3811,15 @@ bool rpc_server::comm_free(const rpc_msg_comm_free_req & request) {
      if (request.device >= backends.size()) {
          return false;
      }
@@ -8249,7 +8251,7 @@ index 8cedee7..e9c1f9c 100644
      comm_states[request.device] = comm_state();
      return true;
  }
-@@ -2474,10 +3883,34 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+@@ -2474,10 +3885,34 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
      // Activate transport upgrade using client's caps
      sock->update_caps(req.conn_caps);
      LOG_DBG("[%s] client connected, transport: %s\n", __func__, sock->transport_name());
@@ -8284,7 +8286,7 @@ index 8cedee7..e9c1f9c 100644
          if (cmd >= RPC_CMD_COUNT) {
              // fail fast if the command is invalid
              LOG_ERROR("Unknown command: %d\n", cmd);
-@@ -2613,6 +4046,7 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+@@ -2613,6 +4048,7 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
              case RPC_CMD_SET_TENSOR_2D: {
                  std::vector<uint8_t> input;
                  if (!recv_msg(sock, input)) {
@@ -8292,7 +8294,7 @@ index 8cedee7..e9c1f9c 100644
                      return;
                  }
                  if (!server.set_tensor_2d(input)) {
-@@ -2634,6 +4068,20 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+@@ -2634,6 +4070,20 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
                  }
                  break;
              }
@@ -8313,7 +8315,7 @@ index 8cedee7..e9c1f9c 100644
              case RPC_CMD_SET_TENSOR_HASH: {
                  rpc_msg_set_tensor_hash_req request;
                  if (!recv_msg(sock, &request, sizeof(request))) {
-@@ -2701,9 +4149,14 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+@@ -2701,9 +4151,14 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
                  if (!recv_msg(sock, &request, sizeof(request))) {
                      return;
                  }
@@ -8328,7 +8330,7 @@ index 8cedee7..e9c1f9c 100644
                  break;
              }
              case RPC_CMD_COMM_INIT: {
-@@ -2812,6 +4265,7 @@ void ggml_backend_rpc_start_server(const char * endpoint, const char * cache_dir
+@@ -2812,6 +4267,7 @@ void ggml_backend_rpc_start_server(const char * endpoint, const char * cache_dir
          LOG_ERROR("Failed to initialize RPC transport\n");
          return;
      }
@@ -8336,7 +8338,7 @@ index 8cedee7..e9c1f9c 100644
      auto server_socket = socket_t::create_server(host.c_str(), port);
      if (server_socket == nullptr) {
          LOG_ERROR("Failed to create server socket\n");
-@@ -3102,6 +4556,9 @@ static void * ggml_backend_rpc_get_proc_address(ggml_backend_reg_t reg, const ch
+@@ -3102,6 +4558,9 @@ static void * ggml_backend_rpc_get_proc_address(ggml_backend_reg_t reg, const ch
      if (std::strcmp(name, "ggml_backend_rpc_add_server") == 0) {
          return (void *)ggml_backend_rpc_add_server;
      }
@@ -8346,7 +8348,7 @@ index 8cedee7..e9c1f9c 100644
      if (std::strcmp(name, "ggml_backend_rpc_start_server") == 0) {
          return (void *)ggml_backend_rpc_start_server;
      }
-@@ -3114,6 +4571,9 @@ static void * ggml_backend_rpc_get_proc_address(ggml_backend_reg_t reg, const ch
+@@ -3114,6 +4573,9 @@ static void * ggml_backend_rpc_get_proc_address(ggml_backend_reg_t reg, const ch
      if (std::strcmp(name, "ggml_backend_comm_allreduce_tensor") == 0) {
          return (void *)ggml_backend_rpc_comm_allreduce_tensor;
      }

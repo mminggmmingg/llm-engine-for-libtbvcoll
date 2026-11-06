@@ -87,3 +87,5 @@
 - 2026-11-06 오후: MTP 초안 출력층을 일부 어휘로 — 초안 GGUF 에 `d2t`(I64) 가 있으면 qwen4exp 가 줄인 `output.weight` 를 받아 그 행만 계산하고
   나머지 로짓을 -inf 로 둔다(만들기: `tools/draft_vocab_corpus.py` → `tools/draft_vocab_select.py` → `tools/gguf_draft_vocab.py`).
   `tools/bench/srv-probe.sh` 의 `BENCH`(벤치 대신 돌릴 클라이언트, `{OUT}` = 실행 폴더).
+- 2026-11-06 저녁: AR 기본 경로를 스트림 안으로 — `GGML_RPC_COMM_ZC` 기본 3(예전 1), `GGML_RPC_COMM_ZC3_AHEAD` 기본 2(예전 0, 서버 스레드가 앞서는 AR 수).
+  `GGML_RPC_COMM_ZC=1` 이면 예전 경로(동기화 → 보내기 → 기다림 커널).
