@@ -1,0 +1,14 @@
+runs/prof2node-unr-base-1106-223347: tokens 33.0 kernels/token 1342 kernel us/token 24155
+runs/prof2node-unr-4-1106-223503: tokens 33.0 kernels/token 1342 kernel us/token 21615
+  89.0 ->   89.0 /tok    2790.8 ->   1445.3 us/tok  rms_norm_f32<1024, 1, true, true, false, false, true, false, g4096x1 w1024
+  48.0 ->   48.0 /tok    2692.4 ->   1372.6 us/tok  mul_mat_vec_q_shexp_tail< g81920x1 w1024
+  96.0 ->   96.0 /tok    1627.3 ->   1532.5 us/tok  mul_mat_vec_q< g10368x1 w32
+   8.0 ->    8.0 /tok     160.1 ->     99.4 us/tok  rms_norm_hcpost_one_block<4, true> g1024x1 w1024
+  36.0 ->   36.0 /tok    2519.6 ->   2479.6 us/tok  mul_mat_vec_q< g262144x1 w32
+   1.0 ->    1.0 /tok      67.1 ->     29.5 us/tok  k_comm_wait_add g1024x1 w1024
+  48.0 ->   48.0 /tok     643.2 ->    659.2 us/tok  mul_mat_vec_q_glu_q8< g20480x1 w1024
+  48.0 ->   48.0 /tok     228.4 ->    245.6 us/tok  topk_moe_softmax_cuda<512> g32x8 w32
+  48.0 ->   48.0 /tok    2361.4 ->   2389.8 us/tok  mul_mat_vec_q_glu_q8< g10240x10 w1024
+  60.0 ->   60.0 /tok    1007.1 ->   1039.8 us/tok  mul_mat_vec_f<__hip_bfloat16, float, 1, 256, false, false> g131072x1 w256
+  96.0 ->   96.0 /tok    2081.3 ->   2129.1 us/tok  k_hc_up_pre<true, 1> g81920x1 w1024
+  48.0 ->   48.0 /tok    1540.5 ->   1666.9 us/tok  mul_mat_vec_q< g81920x10 w32
