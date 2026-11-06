@@ -89,3 +89,5 @@
   `tools/bench/srv-probe.sh` 의 `BENCH`(벤치 대신 돌릴 클라이언트, `{OUT}` = 실행 폴더).
 - 2026-11-06 저녁: AR 기본 경로를 스트림 안으로 — `GGML_RPC_COMM_ZC` 기본 3(예전 1), `GGML_RPC_COMM_ZC3_AHEAD` 기본 2(예전 0, 서버 스레드가 앞서는 AR 수).
   `GGML_RPC_COMM_ZC=1` 이면 예전 경로(동기화 → 보내기 → 기다림 커널).
+  두 번째 케이블: `GGML_RPC_COMM_RAIL2=usb4_rdma0`(두 서버, `GGML_RDMA_RX_DEPTH=32` 와 함께)이면 ZC=3 대리 스레드가 레일마다 하나씩 절반을 주고받는다
+  (`GGML_RPC_COMM_RAIL2_ZC_MIN`, 기본 4096 B). 엔진에서는 이득이 없어 기본 꺼짐(RESULTS.md 11-06 18:10).
