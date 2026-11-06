@@ -1,0 +1,166 @@
+--- a/ggml/src/ggml-cuda/dsv4-hc.cu
++++ b/ggml/src/ggml-cuda/dsv4-hc.cu
+@@ -471,6 +471,117 @@
+     }
+ }
+ 
++// engine2n: k_hc_up_pre with one warp per hc row, for more parallelism with several tokens: a block of 32 warps owns 8 hc_pre
++// outputs (4 hc rows each), so a launch has n_embd/8 blocks instead of n_embd/32. A warp computes its row as k_hc_up_pre's
++// warp computes that row (same loop and warp sum), the block shares the gate values in shared memory, and warp t*8 + o makes
++// hc_pre value (t, o) with the same function. A q8_1 block covers 32 outputs, i.e. 4 blocks: the last of them to finish
++// writes it from the stored values (counters are zero between launches). Same values as k_hc_up_pre.
++template <bool do_q8, int T>
++static __global__ void __launch_bounds__(1024, 1) k_hc_up_pre_rows(
++        const float * xs, const int64_t sxs1, float * silu, const int64_t ssi1, const int ne_s, const float s_scale, const float s_bias,
++        const char * w_up, const int stride_row_x, float * gate, const int64_t sg1,
++        const float * x, float * dst, const int64_t sx0, const int64_t sx1, const int64_t sx2, const int64_t sd1,
++        const int64_t sw0, const int64_t sw1, const float scale, block_q8_1 * q8, unsigned * counters) {
++    constexpr int warp_size = 32;
++    constexpr int n_out     = warp_size / DSV4_HC;  // hc_pre outputs per block
++    constexpr int n_group   = QK8_1 / n_out;        // blocks per q8_1 block
++    __shared__ block_q8_1 ys[T][16];  // the silu input of each token, ne_s <= 512
++    __shared__ float gs[T][n_out][DSV4_HC];
++    const int lane = threadIdx.x % warp_size;
++    const int warp = threadIdx.x / warp_size;
++
++    // q8_1 of silu(scale*xs + bias), as in k_hc_up_pre
++    const int nb_s = ne_s / QK8_1;
++    for (int b = warp; b < T*nb_s; b += 32) {
++        const int t = b / nb_s;
++        const int i = (b % nb_s)*warp_size + lane;
++        const float v = ggml_cuda_scale_silu_single(xs[t*sxs1 + i], s_scale, s_bias);
++        if (blockIdx.x == 0) {
++            silu[t*ssi1 + i] = v;
++        }
++        float amax = fabsf(v);
++        float sum  = v;
++        amax = warp_reduce_max<QK8_1>(amax);
++        sum  = warp_reduce_sum<QK8_1>(sum);
++        const float  d  = amax / 127.0f;
++        const int8_t qv = amax == 0.0f ? 0 : roundf(v / d);
++        ys[t][b % nb_s].qs[lane] = qv;
++        if (lane == 0) {
++            ys[t][b % nb_s].ds = make_half2(d, sum);
++        }
++    }
++    __syncthreads();
++
++    // this warp's hc row ih of output o
++    const int     o   = warp / DSV4_HC;
++    const int     ih  = warp % DSV4_HC;
++    const int64_t row = ((int64_t) blockIdx.x*n_out + o)*sw0 + ih*sw1;
++    constexpr int qk  = QK8_0;
++    constexpr int qi  = QI8_0;
++    constexpr int vdr = VDR_Q8_0_Q8_1_MMVQ;
++    constexpr int blocks_per_iter = vdr*warp_size/qi;
++    const int blocks_per_row_x = ne_s / qk;
++    float tmp[T] = { 0.0f };
++    for (int kbx = lane / (qi/vdr); kbx < blocks_per_row_x; kbx += blocks_per_iter) {
++        const int kby = kbx * (qk/QK8_1);
++        const int kqs = vdr * (lane % (qi/vdr));
++#pragma unroll
++        for (int t = 0; t < T; ++t) {
++            tmp[t] += vec_dot_q8_0_q8_1(w_up, &ys[t][kby], (int) row*stride_row_x + kbx, kqs);
++        }
++    }
++#pragma unroll
++    for (int t = 0; t < T; ++t) {
++        const float g = warp_reduce_sum<warp_size>(tmp[t]);
++        if (lane == 0) {
++            gate[row + t*sg1] = g;
++            gs[t][o][ih] = g;
++        }
++    }
++    __syncthreads();
++
++    if (warp < T*n_out) {
++        const int     t  = warp / n_out;
++        const int     oo = warp % n_out;
++        const int64_t i0 = (int64_t) blockIdx.x*n_out + oo;
++        const float v = dsv4_hc_pre_value<true>(x, i0, t, DSV4_HC, sx0, sx1, sx2, [&](int64_t jh) {
++            return jh == 0 ? gs[t][oo][0] : jh == 1 ? gs[t][oo][1] : jh == 2 ? gs[t][oo][2] : gs[t][oo][3];
++        }, scale);
++        if (lane == 0) {
++            dst[i0 + t*sd1] = v;
++        }
++    }
++
++    if constexpr (do_q8) {
++        __shared__ unsigned last;
++        __threadfence();
++        __syncthreads();
++        const int grp = blockIdx.x / n_group;
++        if (threadIdx.x == 0) {
++            last = atomicAdd(&counters[grp], 1u) == n_group - 1;
++            if (last) {
++                atomicExch(&counters[grp], 0u);
++            }
++        }
++        __syncthreads();
++        if (last && warp < T) {
++            __threadfence();
++            const float w = ((volatile const float *) dst)[(int64_t) grp*QK8_1 + lane + warp*sd1];
++            float amax = fabsf(w);
++            float vsum = w;
++            amax = warp_reduce_max<QK8_1>(amax);
++            vsum = warp_reduce_sum<QK8_1>(vsum);
++            const float  d = amax / 127.0f;
++            const int8_t q = amax == 0.0f ? 0 : roundf(w / d);
++            block_q8_1 & out = q8[warp*(gridDim.x/n_group) + grp];  // token t's blocks follow token t-1's, as in k_hc_up_pre
++            out.qs[lane] = q;
++            if (lane == 0) {
++                out.ds = make_half2(d, vsum);
++            }
++        }
++    }
++}
++
+ template <int T>
+ static void ggml_cuda_hc_up_pre_launch(ggml_backend_cuda_context & ctx, const ggml_tensor * sc, const ggml_tensor * si,
+         const ggml_tensor * mm, ggml_tensor * pre, void * q8) {
+@@ -486,6 +597,22 @@
+     // the gate as the up matmul output: element (i0, ih) of token t is i0*sw0 + ih*sw1 + t*(mm->nb[1] / 4)
+     const int64_t sw0 = gw->nb[0] / sizeof(float);
+     const int64_t sw1 = gw->nb[1] / sizeof(float);
++    // GGML_CUDA_HC_UP_PRE_ROWS=<n>: k_hc_up_pre_rows from n tokens up (0 never)
++    static const int rows_from = [] { const char * e = getenv("GGML_CUDA_HC_UP_PRE_ROWS"); return e ? atoi(e) : 0; }();
++    if (rows_from > 0 && T >= rows_from && n_embd/32 <= 256) {
++        if (ctx.hc_counters == nullptr) {
++            ggml_cuda_set_device(ctx.device);
++            CUDA_CHECK(cudaMalloc(&ctx.hc_counters, 256*sizeof(unsigned)));
++            CUDA_CHECK(cudaMemsetAsync(ctx.hc_counters, 0, 256*sizeof(unsigned), ctx.stream()));
++        }
++        auto kernel = q8 != nullptr ? k_hc_up_pre_rows<true, T> : k_hc_up_pre_rows<false, T>;
++        kernel<<<dim3(n_embd / 8, 1, 1), 1024, 0, ctx.stream()>>>((const float *) xs->data, xs->nb[1] / sizeof(float), (float *) si->data,
++            si->nb[1] / sizeof(float), (int) si->ne[0], s_scale, s_bias, (const char *) w->data, (int) (w->nb[1] / ggml_type_size(w->type)),
++            (float *) mm->data, mm->nb[1] / sizeof(float), (const float *) x->data, (float *) pre->data, x->nb[0] / sizeof(float),
++            x->nb[1] / sizeof(float), x->nb[2] / sizeof(float), pre->nb[1] / sizeof(float), sw0, sw1, scale, (block_q8_1 *) q8,
++            ctx.hc_counters);
++        return;
++    }
+     const dim3 grid(n_embd / 32, 1, 1);
+     auto kernel = q8 != nullptr ? k_hc_up_pre<true, T> : k_hc_up_pre<false, T>;
+     kernel<<<grid, 1024, 0, ctx.stream()>>>((const float *) xs->data, xs->nb[1] / sizeof(float), (float *) si->data, si->nb[1] / sizeof(float),
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -1639,6 +1639,7 @@
+     unsigned * comm_sync   = nullptr;     // engine2n: GGML_CUDA_COMM_FUSE device words (ggml_cuda_comm_fused::sync)
+     unsigned   comm_ticket = 0;
+     unsigned * gdn_counters = nullptr;  // engine2n: per-head counters of the GDN kernel's fused gated norm (zero between launches)
++    unsigned * hc_counters  = nullptr;  // engine2n: per-q8_1-block counters of k_hc_up_pre_rows (zero between launches)
+     const ggml_tensor * conv_ahead_node = nullptr;  // engine2n: a node group already run earlier in this graph (the conv after its
+     int                 conv_ahead_n    = 0;        // state concat), skipped when the loop reaches it: its first node, nodes after it
+ 
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -765,6 +765,10 @@
+         ggml_cuda_set_device(device);
+         CUDA_CHECK(cudaFree(gdn_counters));
+     }
++    if (hc_counters != nullptr) {
++        ggml_cuda_set_device(device);
++        CUDA_CHECK(cudaFree(hc_counters));
++    }
+ 
+     if (copy_event != nullptr) {
+         CUDA_CHECK(cudaEventDestroy(copy_event));

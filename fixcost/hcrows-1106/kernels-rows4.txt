@@ -1,0 +1,63 @@
+runs/prof2node-hc-rows4-1106-155702: tokens 31.0 kernels/token 1747 kernel us/token 33304
+   96.0 /tok    17.6 us  mul_mat_vec_q< g10368x1 w32
+   95.0 /tok    55.2 us  k_hc_up_pre_rows<true, 4> g327680x1 w1024
+   94.0 /tok    12.7 us  rms_norm_f32<1024, 1, true, true, false, false, true, false, g4096x4 w1024
+   94.0 /tok     8.2 us  mul_mat_vec_q< g20480x1 w32
+   49.0 /tok    33.1 us  mul_mat_vec_q< g81920x1 w32
+   48.0 /tok     4.8 us  topk_moe_softmax_cuda<512> g32x8 w32
+   48.0 /tok     2.1 us  quantize_q8_1 g2560x4 w256
+   48.0 /tok    35.3 us  mul_mat_vec_q_shexp_tail< g81920x1 w1024
+   47.0 /tok    24.0 us  mul_mat_vec_f<__hip_bfloat16, float, 4, 256, false, false> g131072x1 w256
+   47.0 /tok   129.9 us  mul_mat_vec_q_moe< g5120x40 w32
+   47.0 /tok     3.2 us  quantize_q8_1 g512x10 w256
+   47.0 /tok    98.2 us  mul_mat_vec_q_moe< g40960x40 w32
+   47.0 /tok     5.0 us  moe_weighted_reduction_f32 g1024x10 w256
+   47.0 /tok     1.8 us  unary_gated_op_kernel<& g2560x1 w256
+   47.0 /tok     1.3 us  quantize_q8_1 g1024x4 w256
+   36.0 /tok     2.5 us  scale_f32<float> g15360x1 w256
+   36.0 /tok    70.2 us  mul_mat_vec_q< g262144x1 w32
+   36.0 /tok     4.6 us  concat_dim0_tail_direct_f32 g5120x1 w256
+   36.0 /tok    13.0 us  scale_f32<float> g393216x1 w256
+   36.0 /tok     4.1 us  ssm_conv_f32<true, 128ul, 4ul> g128x40 w128
+   36.0 /tok     7.5 us  mul_mat_vec_q< g1536x1 w32
+   36.0 /tok     2.7 us  rms_norm_scale_pair_f32 g512x4 w32
+   36.0 /tok     2.9 us  k_gdn_gates g64x4 w64
+   36.0 /tok    10.0 us  gated_delta_net_cuda<128, false, false, 4, false> g768x4 w32
+   36.0 /tok     4.6 us  rms_norm_f32<32, 1, true, true, false, false, true, true, fa g768x4 w32
+   36.0 /tok     1.6 us  k_bin_bcast<& g64x2 w64
+   24.0 /tok     2.2 us  k_set_rows<float, long, __half> g1024x1 w256
+   24.0 /tok     5.4 us  mul_mat_vec_q< g8192x1 w32
+   23.7 /tok     2.2 us  __amd_rocclr_copyBuffer g512x1 w512
+   15.0 /tok     1.5 us  scale_f32<float> g256x1 w256
+   12.5 /tok     1.3 us  __amd_rocclr_fillBufferAligned g256x1 w256
+   12.0 /tok     8.8 us  mul_mat_f<__hip_bfloat162, 32, 4, 7, false> g128x7 w32
+   12.0 /tok     1.7 us  fill_kernel<float> g512x1 w256
+   12.0 /tok     1.8 us  concat_cont<unsigned int, 0> g1024x1 w256
+   12.0 /tok     2.3 us  k_get_rows_float<__half, float> g2048x1 w256
+   12.0 /tok     1.7 us  __amd_rocclr_copyBufferRectAligned g32x16 w16
+   12.0 /tok     2.5 us  rms_norm_f32<32, 1, true, true, false, false, false, false,  g64x1 w32
+   12.0 /tok     5.9 us  rope_multi<true, false, float, float> g2x256 w1
+   12.0 /tok     1.3 us  k_set_rows<float, long, __half> g256x1 w256
+   12.0 /tok    53.4 us  mul_mat_vec_q< g196608x1 w32
+   12.0 /tok     7.4 us  rms_norm_mul_rope_multi_f32<128, false, float> g1536x4 w128
+   12.0 /tok     6.1 us  rms_norm_mul_rope_multi_f32<128, false, __half> g128x4 w128
+   12.0 /tok     1.2 us  fill_kernel<__half> g256x1 w256
+   12.0 /tok    15.6 us  mul_mat_f<__hip_bfloat162, 32, 4, 7, false> g512x7 w32
+   12.0 /tok     7.2 us  rms_norm_mul_rope_multi_f32<32, false, float> g128x4 w32
+   12.0 /tok     2.4 us  k_get_rows_float<__half, float> g16384x1 w256
+   12.0 /tok     1.2 us  fill_kernel<float> g256x1 w256
+   12.0 /tok     4.6 us  lightning_indexer_kernel_vec<8, 64, 128l, 4l,  g32x32 w32
+   12.0 /tok     8.2 us  k_argsort_f32_i32< g256x1 w64
+   12.0 /tok     1.4 us  __amd_rocclr_copyBufferRectAligned g16x16 w16
+   12.0 /tok     4.6 us  top_k_mask_kernel<__half> g2048x1 w512
+   12.0 /tok    11.8 us  flash_attn_tile<256, 256, 4, 4, false> g32x64 w32
+   12.0 /tok     3.2 us  k_gate_sigmoid_mul_q8 g12288x1 w256
+   12.0 /tok     3.4 us  flash_attn_combine_results<256> g1024x12 w256
+    9.4 /tok     4.9 us  __amd_rocclr_copyBuffer g1024x1 w512
+    6.0 /tok     2.4 us  k_bin_bcast<& g20480x1 w128
+    5.0 /tok     1.8 us  unary_op_kernel<& g256x1 w256
+    4.0 /tok     4.6 us  cpy_scalar<& g40960x1 w64
+    4.0 /tok     5.0 us  __amd_rocclr_copyBufferRectAligned g16x10240 w16
+    4.0 /tok     1.9 us  k_bin_bcast<& g5120x4 w128
+    3.0 /tok     3.5 us  k_bin_bcast<& g1280x4 w128
+    3.0 /tok     1.5 us  k_bin_bcast<& g1280x1 w128
