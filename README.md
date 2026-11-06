@@ -187,3 +187,8 @@ python3 -I tools/gguf_head.py <변형.gguf> | python3 -I tools/bytes_per_token.p
 
 문서: [DESIGN.md](DESIGN.md)(TP 설계, 폐기한 층 분할 설계는 [DESIGN_v0_pp.md](DESIGN_v0_pp.md)), [RESULTS.md](RESULTS.md)(측정 기록, 날짜 순).
 이 저장소의 앞 7개 커밋은 [zbook-thunderbolt-RDMA](https://github.com/mminggmmingg/zbook-thunderbolt-RDMA) 의 `engine2n/` 이력을 옮긴 것이다.
+
+## 라이선스
+
+GPL-3.0 — [LICENSE](LICENSE). Copyright (C) 2026 mminggmmingg. 고쳐서 배포할 때도 같은 GPL-3.0 으로 소스를 공개해야 한다.
+`patches/` 안의 llama.cpp 원래 코드(diff 의 문맥 줄)는 llama.cpp 의 MIT 라이선스(Copyright (c) 2023-2026 The ggml authors)를 따른다.
