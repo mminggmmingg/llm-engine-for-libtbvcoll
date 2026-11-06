@@ -6,8 +6,9 @@ set -uo pipefail
 D=$(cd "$(dirname "$0")" && pwd); TOPO=${1:?1node|2node}; SPEC=${2:?none|mtp}; NMAX=${3:-256}
 B=parks-zbook@10.99.0.2; BIN=${BIN:-$D/llama.cpp/build-rocm/bin}; BBIN=/home/parks-zbook/engine2n/bin
 M=${MODEL:-/data/parksThink/hf-models/qwen38-flash-next-gguf/UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf}
-# 공유형 MTP 파일에 본 모델의 token_embd·output 을 붙인 파일(tools/gguf_merge_mtp.py) — 이 llama.cpp 는 공유형을 단독으로 못 연다
-MTP=${MTP:-/data/parksThink/hf-models/qwen38-flash-next-gguf/MTP/mtp-Qwen3.8-Flash-Next-merged-IQ4embd.gguf}
+# 공유형 MTP 파일에 본 모델의 token_embd·output 을 붙인 파일(tools/gguf_merge_mtp.py) — 이 llama.cpp 는 공유형을 단독으로 못 연다 —
+# 의 출력층을 어휘 104459개로 줄인 판(tools/gguf_draft_vocab.py, 2026-11-06, MTP +7.6%, 출력 그대로). 예전 판: ...-merged-IQ4embd.gguf
+MTP=${MTP:-/data/parksThink/hf-models/qwen38-flash-next-gguf/MTP/mtp-Qwen3.8-Flash-Next-merged-IQ4embd-dv96k-ko.gguf}
 OUT=$D/runs/srv-$TOPO-$SPEC${TAG:+-$TAG}-$(date +%m%d-%H%M%S); mkdir -p "$OUT"; PORT=8077
 export LD_LIBRARY_PATH=/opt/rocm/lib
 export GGML_RDMA_CHUNK=${GGML_RDMA_CHUNK:-65536} GGML_RDMA_RX_DEPTH=${GGML_RDMA_RX_DEPTH:-48} GGML_RDMA_TX_SLOTS=${GGML_RDMA_TX_SLOTS:-4}

@@ -6,7 +6,7 @@ Strix Halo(gfx1151) 노트북 두 대를 Thunderbolt/USB4 RDMA(tbv, libtbvcoll)�
 원칙: **다중 노드는 텐서 병렬(TP)만** 쓴다(층 분할·PP 는 중간 단계로도 쓰지 않음). 하드웨어·전원·펌웨어 설정은 바꾸지 않는다(소프트웨어만).
 tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) 저장소에 있다. 이 저장소의 앞 7개 커밋은 그 저장소 `engine2n/` 의 이력을 그대로 옮긴 것.
 
-## 지금 (2026-11-05, Flash-Next H5, 자세한 값은 RESULTS.md)
+## 지금 (2026-11-06, Flash-Next H5, 자세한 값은 RESULTS.md)
 
 2노드 TP 디코드가 올라온 과정. 가중치는 모두 H5, tok/s 는 llama-server 6 프롬프트. 11-03 부터의 변경은 모두 값 그대로(출력이 같음).
 
@@ -19,7 +19,8 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
 | 11-03 – 11-04 | 묶기 셋, 단계 시작 GPU 쉼 줄이기, greedy argmax, AR 링크를 두 번째 케이블로 | 2.83 | 33.6 | — | 95 |
 | 11-04 | hc 블록 묶기(11-05 최종 비교의 '끔') | 2.83 | 34.4 | 42.9 | 97 |
 | 11-05 새벽 | 값 그대로 커널 묶기 10개 더(A 노드 토큰당 커널 1886 → 1313) | 2.83 | 36.3 | 43.8 | 103 |
-| **11-05 오후** | **서버 쪽 argmax — 로짓 대신 (최댓값, 번호)만 받음(같은 날 끔 35.4 / 44.2)** | **2.83** | **36.5** | **45.5** | **103** |
+| 11-05 오후 | 서버 쪽 argmax — 로짓 대신 (최댓값, 번호)만 받음(같은 날 끔 35.4 / 44.2) | 2.83 | 36.5 | 45.5 | 103 |
+| **11-06** | **MTP 초안 출력층을 어휘 104459개로 줄임 — 초안만 바뀌고 출력은 그대로(같은 날 기준 MTP 46.7)** | **2.83** | **36.5**(초안 없음, 그대로) | **50.3** | **103** |
 
 - 토큰당 읽는 가중치: 디코드 1단계에 노드 하나가 읽는 가중치(`tools/bytes_per_token.py 512 10 loaded tp=2`). 나뉘는 텐서(attention·GDN 투영, 전문가 활성분, 출력층)는 절반,
   두 노드에 복제되는 텐서(hyper-connection 0.61, shared expert + 라우터 0.29, indexer 등)는 전부. KV 캐시·GDN 상태·임베딩 조회는 뺐다.
@@ -48,6 +49,10 @@ tbv·libtbvcoll 자체는 [zbook-thunderbolt-RDMA](../zbook-thunderbolt-RDMA) �
   MTP 44.2 → **45.5**(둘 다 +3.1%). 다음 후보: MTP 검증 그래프 묶기, llama_decode → 첫 부분그래프 발행(≈0.5 ms).
 - MTP(2026-11-05 저녁, RESULTS.md): 한 주기 ≈57 ms 에 ≈2.6 토큰 = 4토큰 검증(2노드) ≈45 ms + 초안 3번(A GPU) ≈11.5 ms. 초안을 2노드로, AR 을 두 번째
   케이블로, 초안 길이 2·3 은 모두 차이 없음. `--spec-draft-p-min` 은 검증 묶음 크기가 바뀔 때마다 그래프를 새로 보내 크게 느려짐(0.3 −23%, 0.5 −41%).
+- MTP 초안 어휘 줄이기(2026-11-06, RESULTS.md): 초안 1번이 읽는 0.67 GB 중 0.52 GB 가 전체 어휘(248320행) 출력층이었다. 초안의 출력층을 104459행
+  (벤치와 겹치지 않는 프롬프트 48개에 본 모델이 낸 토큰 + BPE 번호 순 앞쪽 + 한글 토큰 전부 + 특수 토큰)으로 줄이고 나머지 로짓은 -inf(`d2t`, DFlash 와 같은 방식).
+  초안 제안만 바뀌고 출력은 본 모델 greedy 검증이 정하므로 해시 그대로. 채택률 0.648 → 0.646, MTP 46.7 → **50.3**(+7.6%),
+  벤치·말뭉치와 겹치지 않는 확인용 12 프롬프트에서도 43.9 → 47.3(+7.7%). 앞쪽 번호만 쓰면 한국어 초안이 무너진다(한글 토큰 96% 가 13만 번 뒤).
 
 ## 시각 자료 — 추론 감시 보고서(inferwatch)
 
@@ -190,6 +195,12 @@ MTP(추측 디코딩): `./get_models.sh mtp` 로 받는 공유형 MTP 파일은 
 본 모델 조각에서 두 텐서를 붙인 파일을 만들어 쓴다:
 ```
 python3 -I tools/gguf_merge_mtp.py <MTP/mtp-...-shared-Q8_0.gguf> <UD-IQ4_XS/...-00002-of-00003.gguf> <MTP/mtp-...-merged-IQ4embd.gguf> token_embd.weight output.weight
+```
+그다음 초안 출력층을 줄인 판(`run_server.sh` 기본, 2026-11-06). 말뭉치는 2노드 서버를 띄워 모으고(`fixcost/dvocab-1106/corpus-tokens.jsonl` 에 있음), 어휘를 골라 파일을 쓴다:
+```
+BENCH="tools/draft_vocab_corpus.py $PWD/eval/draft_vocab_prompts.json 384 $PWD/corpus-tokens.jsonl" MTP=<merged-IQ4embd.gguf> tools/bench/srv-probe.sh 2node mtp
+python3 -I tools/draft_vocab_select.py corpus-tokens.jsonl 98304 <MTP/mtp-...-merged-IQ4embd.gguf> ids-96k-ko.txt ko
+python3 -I tools/gguf_draft_vocab.py <MTP/mtp-...-merged-IQ4embd.gguf> ids-96k-ko.txt <MTP/mtp-...-merged-IQ4embd-dv96k-ko.gguf>
 ```
 주의: B 를 rank 0 으로 둔다 — A 서버를 TB 주소로 등록하면 클라이언트↔A 서버가 tbv 루프백으로 협상되는데 tbv 는 같은 노드 안 QP 를 못 잇는다.
 tbv 는 `9a35117`(여러 프레임 SEND 의 RNR 대기) 이상이어야 한다.

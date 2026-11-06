@@ -6,8 +6,9 @@ set -uo pipefail
 D=/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll; TOPO=${1:?1node|2node}; SPEC=${2:?none|mtp}; NMAX=${3:-256}
 B=parks-zbook@10.99.0.2; BIN=${BIN:-$D/llama.cpp/build-rocm/bin}; BBIN=/home/parks-zbook/engine2n/bin
 M=${MODEL:-/data/parksThink/hf-models/qwen38-flash-next-gguf/UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf}
-# 공유형 MTP 파일에 본 모델의 token_embd·output 을 붙인 파일(tools/gguf_merge_mtp.py) — 이 llama.cpp 는 공유형을 단독으로 못 연다
-MTP=${MTP:-/data/parksThink/hf-models/qwen38-flash-next-gguf/MTP/mtp-Qwen3.8-Flash-Next-merged-IQ4embd.gguf}
+# 공유형 MTP 파일에 본 모델의 token_embd·output 을 붙인 파일(tools/gguf_merge_mtp.py) — 이 llama.cpp 는 공유형을 단독으로 못 연다 —
+# 의 출력층을 어휘 104459개로 줄인 판(tools/gguf_draft_vocab.py, 2026-11-06, MTP +7.6%, 출력 그대로). 예전 판: ...-merged-IQ4embd.gguf
+MTP=${MTP:-/data/parksThink/hf-models/qwen38-flash-next-gguf/MTP/mtp-Qwen3.8-Flash-Next-merged-IQ4embd-dv96k-ko.gguf}
 OUT=$D/runs/srv-$TOPO-$SPEC${TAG:+-$TAG}-$(date +%m%d-%H%M%S); mkdir -p "$OUT"; PORT=8077
 export LD_LIBRARY_PATH=/opt/rocm/lib
 export GGML_RDMA_CHUNK=${GGML_RDMA_CHUNK:-65536} GGML_RDMA_RX_DEPTH=${GGML_RDMA_RX_DEPTH:-48} GGML_RDMA_TX_SLOTS=${GGML_RDMA_TX_SLOTS:-4}
@@ -33,7 +34,14 @@ PS=${PROBE_S:-80}
 python3 -I $D/tools/probe/gpumetrics_ts.py $PS > "$OUT/gm-a.txt" 2>&1 &
 APID=$(pgrep -x ggml-rpc-server | head -1); top -H -b -d 2 -n $((PS/2)) -p $APID > "$OUT/thr-a.txt" 2>&1 &
 ssh -o BatchMode=yes $B "cd $BBIN; (python3 -I gpumetrics_ts.py $PS > gm-b.txt 2>&1 &); top -H -b -d 2 -n $((PS/2)) -p \$(pgrep -x ggml-rpc-server) > thr-b.txt 2>&1 &" &
-python3 -I "$D/tools/spec_bench.py" http://127.0.0.1:$PORT "$D/eval/spec_prompts.json" "$NMAX" "$OUT/results.jsonl" | tee "$OUT/bench.txt"
+# BENCH: 벤치 대신 돌릴 클라이언트("<저장소 안 스크립트> <서버 URL 뒤 인자들>", 인자는 절대 경로 — 이 스크립트는 다른 곳에서 돈다),
+#   예: BENCH="tools/draft_vocab_corpus.py $D/eval/draft_vocab_prompts.json 384 $D/fixcost/x/corpus-tokens.jsonl". {OUT} 은 이 실행의 폴더
+if [ -n "${BENCH:-}" ]; then
+  BENCH=${BENCH//\{OUT\}/$OUT}
+  python3 -I "$D/${BENCH%% *}" http://127.0.0.1:$PORT ${BENCH#* } | tee "$OUT/bench.txt"
+else
+  python3 -I "$D/tools/spec_bench.py" http://127.0.0.1:$PORT "$D/eval/spec_prompts.json" "$NMAX" "$OUT/results.jsonl" | tee "$OUT/bench.txt"
+fi
 grep -iE 'draft|mtp|spec' "$OUT/server.log" | grep -v '^\s*$' | head -6
 # llama-server 를 먼저 내리고(끝날 때 RPC 서버에 메모리를 묻는다) 그다음 RPC 서버
 SP=$(tail -1 "$OUT/pids"); kill $SP 2>/dev/null; while kill -0 $SP 2>/dev/null; do sleep 1; done

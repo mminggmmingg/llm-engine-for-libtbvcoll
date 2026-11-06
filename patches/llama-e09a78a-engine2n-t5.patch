@@ -9376,10 +9376,24 @@ index 81af890..cb23593 100644
          memset(split_state.ne, 0, sizeof(split_state.ne));
          split_state.nr[0] = 1;
 diff --git a/src/models/qwen4exp.cpp b/src/models/qwen4exp.cpp
-index c3e2b01..90f0472 100644
+index c3e2b01..4500860 100644
 --- a/src/models/qwen4exp.cpp
 +++ b/src/models/qwen4exp.cpp
-@@ -217,6 +217,13 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
+@@ -190,7 +190,12 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
+     hc_head_down = create_tensor(tn(LLM_TENSOR_HC_HEAD_DOWN, "weight"), { hc_dim, hc_lr }, trunk_flags);
+     hc_head_up   = create_tensor(tn(LLM_TENSOR_HC_HEAD_UP,   "weight"), { hc_lr, hc_dim }, trunk_flags);
+ 
+-    output = create_tensor(tn(LLM_TENSOR_OUTPUT, "weight"), { n_embd, n_vocab }, TENSOR_NOT_REQUIRED);
++    // engine2n: a draft file with a reduced vocab (tools/gguf_draft_vocab.py) keeps only the output rows d2t lists
++    const ggml_tensor * d2t_meta = ml.get_tensor_meta("d2t");
++    if (d2t_meta) {
++        d2t = create_tensor(tn(LLM_TENSOR_D2T), { d2t_meta->ne[0] }, 0);
++    }
++    output = create_tensor(tn(LLM_TENSOR_OUTPUT, "weight"), { n_embd, d2t_meta ? d2t_meta->ne[0] : n_vocab }, d2t_meta ? 0 : TENSOR_NOT_REQUIRED);
+     if (output == NULL) {
+         output = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), { n_embd, n_vocab }, TENSOR_DUPLICATED);
+     }
+@@ -217,6 +222,13 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
                                             { hparams.ple_head_dim, ple_rows }, TENSOR_READ_LAZY);
      }
  
@@ -9393,7 +9407,7 @@ index c3e2b01..90f0472 100644
      auto load_block = [&](int il, int flags) {
          auto & layer = layers[il];
  
-@@ -231,7 +238,8 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
+@@ -231,7 +243,8 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
          const int64_t value_dim  = head_v_dim * n_v_heads;
          const int64_t conv_dim   = key_dim * 2 + value_dim;
  
@@ -9403,7 +9417,7 @@ index c3e2b01..90f0472 100644
          auto create_merged = [&](llm_tensor t_merged, llm_tensor t_a, llm_tensor t_b, int64_t n_in, int64_t n_a, int64_t n_b,
                  ggml_tensor *& merged, ggml_tensor *& a, ggml_tensor *& b) {
              if (flags & TENSOR_SKIP) {
-@@ -242,6 +250,13 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
+@@ -242,6 +255,13 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
                  return;
              }
              merged = create_tensor(tn(t_merged, "weight", il), { n_in, n_a + n_b }, flags | TENSOR_NOT_REQUIRED | TENSOR_SKIP_IF_VIRTUAL);
@@ -9417,7 +9431,7 @@ index c3e2b01..90f0472 100644
              if (!merged) {
                  a = create_tensor(tn(t_a, "weight", il), { n_in, n_a }, flags);
                  b = create_tensor(tn(t_b, "weight", il), { n_in, n_b }, flags);
-@@ -292,7 +307,20 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
+@@ -292,7 +312,20 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
              layer.ple_conv1d     = create_tensor(tn(LLM_TENSOR_PLE_CONV1D,     "weight", il), { hparams.ple_conv_kernel, hc_dim }, flags);
          }
  
@@ -9439,7 +9453,7 @@ index c3e2b01..90f0472 100644
          layer.ffn_down_exps = create_tensor(tn(LLM_TENSOR_FFN_DOWN_EXPS, "weight", il), { n_ff_exp, n_embd, n_expert }, flags);
          create_tensor_gate_up_exps(layer, il, n_embd, n_ff_exp, n_expert, flags);
  
-@@ -369,10 +397,11 @@ llama_model_qwen4exp::graph::build_hc_mix(
+@@ -369,10 +402,11 @@ llama_model_qwen4exp::graph::build_hc_mix(
          // one matmul for both: the hc_down rows, then the hc_inject rows
          const int64_t n_lo = w_down_inject->ne[1] - hc;
          ggml_tensor * lo_inject = build_lora_mm(w_down_inject, xn);
@@ -9455,7 +9469,31 @@ index c3e2b01..90f0472 100644
          cb(inject, "hc_inject", il);
      } else {
          lo = ggml_scale(ctx0, build_lora_mm(w_down, xn), 1.0f / (float) hc);
-@@ -808,6 +837,12 @@ llama_model_qwen4exp::llm_graph_input_kpool * llama_model_qwen4exp::graph::build
+@@ -669,6 +703,23 @@ llama_model_qwen4exp::graph_mtp::graph_mtp(const llama_model & model, const llm_
+     res->t_embd = cur;
+ 
+     cur = build_lora_mm(model.output, cur, model.output_s);
++
++    // engine2n: a reduced draft vocab scores only the rows d2t lists and scatters them over the vocab, the other logits -inf
++    // (as dflash does). Only the drafts can change: the target model's verification still decides every output token.
++    if (model.d2t) {
++        const int64_t n_draft_vocab = cur->ne[0];
++        const int64_t n_outputs     = cur->ne[1];
++        const int64_t n_vocab       = (int64_t) model.vocab.n_tokens();
++
++        GGML_ASSERT(model.d2t->type == GGML_TYPE_I64);
++        GGML_ASSERT(model.d2t->ne[0] == n_draft_vocab);
++
++        ggml_tensor * logits = ggml_fill(ctx0, ggml_new_tensor_3d(ctx0, GGML_TYPE_F32, 1, n_vocab, n_outputs), -INFINITY);
++        cur = ggml_set_rows(ctx0, logits,
++                ggml_reshape_3d(ctx0, cur,       1,             n_draft_vocab, n_outputs),
++                ggml_reshape_3d(ctx0, model.d2t, n_draft_vocab, 1,             1));
++        cur = ggml_reshape_2d(ctx0, cur, n_vocab, n_outputs);
++    }
+     cb(cur, "result_output", -1);
+     res->t_logits = cur;
+ }
+@@ -808,6 +859,12 @@ llama_model_qwen4exp::llm_graph_input_kpool * llama_model_qwen4exp::graph::build
      inp->new_pool_pos = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, 4*inp->n_new);
      ggml_set_input(inp->new_pool_pos);
  
