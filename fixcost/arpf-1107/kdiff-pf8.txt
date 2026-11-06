@@ -1,0 +1,13 @@
+runs/prof2node-pf0-1107-014816: tokens 33.0 kernels/token 1342 kernel us/token 21228
+runs/prof2node-pf8-1107-014932: tokens 33.0 kernels/token 1342 kernel us/token 21653
+  96.0 ->   96.0 /tok    1642.6 ->   1108.2 us/tok  mul_mat_vec_q< g10368x1 w32
+  96.0 ->   96.0 /tok    2098.8 ->   1763.9 us/tok  k_hc_up_pre<true, 1> g81920x1 w1024
+  36.0 ->   36.0 /tok    2528.0 ->   2287.9 us/tok  mul_mat_vec_q< g262144x1 w32
+   1.0 ->    1.0 /tok     135.7 ->     21.0 us/tok  k_comm_wait_add g1024x1 w1024
+  12.0 ->   12.0 /tok     654.8 ->    612.0 us/tok  mul_mat_vec_q< g196608x1 w32
+  12.0 ->   12.0 /tok      66.8 ->     41.2 us/tok  mul_mat_vec_f<__hip_bfloat16, float, 1, 256, false, false> g32768x1 w256
+  49.0 ->   49.0 /tok    1591.7 ->   1568.3 us/tok  mul_mat_vec_q< g81920x1 w32
+  12.0 ->   12.0 /tok      37.0 ->     52.2 us/tok  k_get_rows_float<__half, float> g16384x1 w256
+  12.0 ->   12.0 /tok      78.7 ->    107.2 us/tok  flash_attn_tile<256, 256, 1, 4, false> g32x32 w32
+  89.0 ->   89.0 /tok    1438.0 ->   1492.1 us/tok  rms_norm_f32<1024, 1, true, true, false, false, true, false, g4096x1 w1024
+  48.0 ->   48.0 /tok    1076.1 ->   2661.1 us/tok  mul_mat_vec_q_shexp_tail< g81920x1 w1024

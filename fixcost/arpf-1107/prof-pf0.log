@@ -1,0 +1,8 @@
+| qwen4exp A3B IQ4_NL - 4.5 bpw  |  91.69 GiB |   176.94 B | ROCm,RPC   |  -1 | tensor |   1 | RPC0/RPC1    |            tg32 |         36.83 ± 0.00 |
+tools/bench/prof2node.sh: line 34: 863520 Killed                     env $(echo $ENV) /opt/rocm/bin/rocprofv3 --kernel-trace --memory-copy-trace --output-format csv -d $O/prof -o a -- "$BIN/ggml-rpc-server" -H 127.0.0.1 -p 50052 > rpc-a.log 2>&1
+a_kernel_trace.csv
+a_memory_copy_trace.csv
+bench.txt
+prof
+rpc-a.log
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-pf0-1107-014816

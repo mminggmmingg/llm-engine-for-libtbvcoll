@@ -98,3 +98,9 @@
   (같은 설정끼리는 결정적). `GGML_CUDA_MMVQ_SPLITK_VERIFY=1` 은 같은 입력으로 기존 커널을 한 번 더 돌려 가중치별 차이를 2000번마다 출력.
   디버그 `LLAMA_DEBUG_DUMP=<파일>`(llama-eval-callback 이 `LLAMA_DEBUG_DUMP_RE`, 기본 `l_last|result_output` 에 맞는 텐서를 f32 로 덤프, 비교는
   `tools/layerdiff.py`), `tools/divergence.py`(greedy 생성 기록과 처음 갈린 자리).
+- 2026-11-07 새벽: 구간 커널 디버그 `GGML_CUDA_SEG_TIMES=<n>`(상주 커널 단계별 시간, n 번 평균, 매번 동기화), `GGML_CUDA_SEG_AHEAD=<비트>`(기본 0; 1 라우터
+  가중치 선읽기, 2 hc up 가중치를 1단계 동안, 4 hc down 행 고르게 — 이득 없음), `GGML_CUDA_SEG_PREFETCH` 기본을 꺼짐으로(문서와 맞춤).
+  고침(기본 경로): 묶은 hc 블록 커널은 silu 가 gate·hc_pre 와 메모리를 같이 쓰면 silu 를 쓰지 않는다(`hc_up_silu_out`, 블록 사이 경쟁).
+  `GGML_CUDA_COMM_PREFETCH=<MB>`(기본 0): AR 기다림을 맡은 커널(hc_post+norm, shared expert 꼬리)이 기다리는 동안 워프 0 을 뺀 워프가 이 부분그래프의
+  다음 행렬곱 가중치(MUL_MAT_ID 제외) 앞부분을 읽어 L2/MALL 에 올린다(`ggml_cuda_comm_plan_prefetch`, 읽기만).
+  감시기(inferwatch): ZC=3 에서 GPU 도장이 없는 AR 은 대리 스레드 기록(플래그 본 때·상대 부분합 도착)으로 GPU 계산/기다림을 나눈다.

@@ -119,6 +119,7 @@ pub struct Node {
     pub cmds: Vec<CmdRec>,
     pub cal: Vec<(f64, f64)>, // (tick, host us)
     pub gpu_raw: HashMap<u32, [i64; 5]>,
+    pub proxy: HashMap<u32, (f64, f64, f64)>, // ZC=3: our partial's flag seen, posted, the peer's partial landed
 }
 
 fn conv_fn(cal: &[(f64, f64)]) -> impl Fn(f64) -> f64 + '_ {
@@ -209,6 +210,7 @@ impl Node {
                 }
             }
             n.recv.entry(q).or_insert((posted, landed, bytes));
+            n.proxy.insert(q, (seen, posted, landed));
         }
         n.cal.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
         n.cal.dedup_by(|a, b| a.0 == b.0);
@@ -244,6 +246,11 @@ impl Node {
         for r in self.recv.values_mut() {
             r.0 = f(r.0);
             r.1 = f(r.1);
+        }
+        for p in self.proxy.values_mut() {
+            p.0 = f(p.0);
+            p.1 = f(p.1);
+            p.2 = f(p.2);
         }
         for c in self.cmds.iter_mut() {
             c.wait = f(c.wait);
@@ -483,6 +490,22 @@ fn gpu_row(n: &Node) -> Row {
             push(&mut row, g[2], g[3], if g[3] - g[2] > 1000.0 { C_STALL } else { C_PEER_WAIT });
             push(&mut row, g[3], g[4], C_COPY_ADD);
             prev_end = Some(g[4]);
+        } else if let (false, Some(&(seen, _, landed))) = (ar.sync, n.proxy.get(&ar.seq)) {
+            // ZC=3 without GPU stamps: the GPU wrote its partial and flag at ≈ seen (the proxy thread polls for it), and the
+            // kernel that adds the peer's partial waits until it has landed. The server thread runs up to two allreduces ahead of
+            // the GPU, so its command times say nothing about the GPU; only the launch of the step's first subgraph can be late.
+            if let Some(pe) = prev_end {
+                if seen > pe && seen - pe < 1.0e6 {
+                    let i = launches.partition_point(|&s| s <= ar.entry);
+                    let launch = if i > 0 { launches[i - 1] } else { pe };
+                    let lw = (launch - pe).clamp(0.0, seen - pe);
+                    push(&mut row, pe, pe + lw, C_LAUNCH_WAIT);
+                    push(&mut row, pe + lw, seen, C_COMPUTE);
+                }
+            }
+            let resume = seen.max(landed);
+            push(&mut row, seen, resume, if resume - seen > 1000.0 { C_STALL } else { C_PEER_WAIT });
+            prev_end = Some(resume);
         } else {
             // no GPU stamps: host-side estimate (subgraph until the partial was on the host, then the exchange)
             if let Some(pe) = prev_host_end.or(prev_end) {
@@ -610,6 +633,10 @@ pub fn analyze(a_recs: &[Rec], b_recs: &[Rec], c_recs: &[Rec], a_host: &str, b_h
             b.cal.len()
         ));
     }
+    if !a.proxy.is_empty() {
+        notes.push("ZC=3(스트림 안 AR): GPU 도장이 없는 AR 은 대리 스레드 기록으로 — 계산 = 앞 AR 이 풀린 때 → 우리 부분합 플래그를 본 때, \
+            상대 기다림 = 그때 → 상대 부분합 도착(그 사이 GPU 가 다음 커널을 돌릴 수 있어 기다림의 상한)".into());
+    }
     let (shift, offs) = align(&a, &b, &mut notes);
     let off0 = if offs.is_empty() { 0.0 } else { offs[offs.len() / 2].1 };
     if !offs.is_empty() {
@@ -703,6 +730,12 @@ pub fn analyze(a_recs: &[Rec], b_recs: &[Rec], c_recs: &[Rec], a_host: &str, b_h
             if g[3] - g[2] > 1000.0 {
                 d.stalls += 1;
                 d.stall_us += g[3] - g[2];
+            }
+        }
+        for (q, p) in n.proxy.iter() {
+            if !n.gpu.contains_key(q) && p.2 - p.0 > 1000.0 {
+                d.stalls += 1;
+                d.stall_us += p.2 - p.0;
             }
         }
     }
