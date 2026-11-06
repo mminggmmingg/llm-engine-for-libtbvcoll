@@ -1,0 +1,28 @@
+none hbase bin=bin load A=0.49 B=0.05 rdma=1 zc=ZC=3/ZC=3: TOTAL tokens 2991, decode 38.80 tok/s (token-weighted) | srv-2node-none-bs-hbase-1107-045548
+   a: n=773 gfx 2274/2601/2705 상한 2332/2710/2858 활동 65/90/95 소켓W 66/70/70 gfxW 20/28/30 코어W 4/8/20 코어상한 1911/1938/4708 fclk 1607/1633/1685 uclk 1000/1000/1000 dramR 18421/46430/54108 dramW 3784/3962/4967 
+   b: n=777 gfx 2430/2628/2718 상한 2563/2714/2878 활동 63/89/96 소켓W 64/69/70 gfxW 25/31/33 코어W 3/5/13 코어상한 1592/1952/4960 fclk 1604/1617/1645 uclk 1000/1000/1000 dramR 17800/47192/54995 dramW 3798/3916/4082 
+Traceback (most recent call last):
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 16, in <module>
+    print(f"{p.split('/')[-1][:48]:48s} n={len(r):3d} gap {f('gap'):6.1f} sync {f('sync'):6.1f} net {f('net'):5.1f} h2d {f('h2d'):4.1f} cycle {f('gap')+f('sync')+f('net')+f('h2d'):6.1f} | sent->landed {f('pw'):5.1f} (med {st.median(x['pw'] for x in r):5.1f})")
+                                                           ~^^^^^^^
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 15, in <lambda>
+    f = lambda k: st.mean(x[k] for x in r)
+                  ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/park2/miniconda3/lib/python3.14/statistics.py", line 177, in mean
+    raise StatisticsError('mean requires at least one data point')
+statistics.StatisticsError: mean requires at least one data point
+   cyc: 
+mtp hbase bin=bin load A=0.58 B=0.27 rdma=1 zc=ZC=3/ZC=3: TOTAL tokens 2991, decode 52.75 tok/s (token-weighted) | srv-2node-mtp-bs-hbase-1107-050210
+   a: n=689 gfx 2043/2393/2519 상한 2173/2559/2814 활동 59/86/93 소켓W 65/69/70 gfxW 19/28/31 코어W 6/10/23 코어상한 1909/1938/4877 fclk 1607/1629/1670 uclk 1000/1000/1000 dramR 11533/28256/54824 dramW 6202/7146/7658 
+   b: n=633 gfx 2136/2239/2284 상한 2300/2493/2886 활동 55/75/81 소켓W 62/68/70 gfxW 25/30/31 코어W 4/6/14 코어상한 1586/1947/4980 fclk 1606/1619/1643 uclk 1000/1000/1000 dramR 5359/13897/57621 dramW 5696/6955/7504 
+Traceback (most recent call last):
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 16, in <module>
+    print(f"{p.split('/')[-1][:48]:48s} n={len(r):3d} gap {f('gap'):6.1f} sync {f('sync'):6.1f} net {f('net'):5.1f} h2d {f('h2d'):4.1f} cycle {f('gap')+f('sync')+f('net')+f('h2d'):6.1f} | sent->landed {f('pw'):5.1f} (med {st.median(x['pw'] for x in r):5.1f})")
+                                                           ~^^^^^^^
+  File "/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf/profsum.py", line 15, in <lambda>
+    f = lambda k: st.mean(x[k] for x in r)
+                  ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/park2/miniconda3/lib/python3.14/statistics.py", line 177, in mean
+    raise StatisticsError('mean requires at least one data point')
+statistics.StatisticsError: mean requires at least one data point
+   cyc: 
