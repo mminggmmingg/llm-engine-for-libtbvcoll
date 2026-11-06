@@ -91,3 +91,5 @@
   `GGML_RPC_COMM_ZC=1` 이면 예전 경로(동기화 → 보내기 → 기다림 커널).
   두 번째 케이블: `GGML_RPC_COMM_RAIL2=usb4_rdma0`(두 서버, `GGML_RDMA_RX_DEPTH=32` 와 함께)이면 ZC=3 대리 스레드가 레일마다 하나씩 절반을 주고받는다
   (`GGML_RPC_COMM_RAIL2_ZC_MIN`, 기본 4096 B). 엔진에서는 이득이 없어 기본 꺼짐(RESULTS.md 11-06 18:10).
+- 2026-11-06 밤(구간 커널 1a, 기본 꺼짐): `GGML_CUDA_SEG_MOE=1` — hc down → hc up/pre → BF16 행렬곱(라우터·indexer k)을 상주 커널 하나로(`k_seg_moe_head`),
+  `GGML_CUDA_SEG_VERIFY=1` 비트 비교, `GGML_CUDA_SEG_PREFETCH=1` 다음 단계 가중치 앞서 읽기, `GGML_CUDA_SEG_COOP=1` 협동 실행. 디버그 `GGML_CUDA_DUMP_MOE=<n>`(MUL_MAT_ID 있는 1토큰 그래프 노드).
