@@ -15,16 +15,25 @@ export LD_LIBRARY_PATH=/opt/rocm/lib
 export GGML_RDMA_CHUNK=${GGML_RDMA_CHUNK:-65536} GGML_RDMA_RX_DEPTH=${GGML_RDMA_RX_DEPTH:-48} GGML_RDMA_TX_SLOTS=${GGML_RDMA_TX_SLOTS:-4}
 export GGML_RPC_COMM_OVERLAP=${GGML_RPC_COMM_OVERLAP:-2} LLAMA_TP_FFN_GRAN=${LLAMA_TP_FFN_GRAN:-32}
 SRV_ENV=${SRV_ENV-GGML_CUDA_DISABLE_GRAPHS=1}
+# TBPIN=1(기본): 두 rpc-server 와 llama-server 를 Thunderbolt 인터럽트를 받는 CPU 밖에서 돌린다(tools/bench/tbcpus.sh, 노드마다 읽음).
+# 그 CPU 의 kworker 가 받은 메시지를 마무리하는데, 거기서 엔진의 바쁜 대기 스레드가 3 ms 단위로 CPU 를 나눠 쓰면 AR 이 ms 단위로 늦는다
+# (fixcost/lnk-1107, none +1.1%, 출력 그대로). A_WRAP / B_WRAP / CLI_WRAP 을 주면 그것을 쓴다. TBPIN=0 이면 끔
+PIN_A=""; PIN_B=""
+if [ "${TBPIN:-1}" != 0 ]; then
+  PIN_A="taskset -c $(bash "$D/tools/bench/tbcpus.sh")"
+  [ "$TOPO" = 2node ] && PIN_B="taskset -c $(ssh -o BatchMode=yes $B "bash -s" < "$D/tools/bench/tbcpus.sh")"
+fi
+echo "A ${A_WRAP:-$PIN_A} | B ${B_WRAP:-$PIN_B} | client ${CLI_WRAP:-$PIN_A}" > "$OUT/pin.txt"
 ARGS=(-m "$M" -ngl 99 -fa on -c 8192 -np 1 --port $PORT --host 127.0.0.1 ${SRV_EXTRA:-})
 [ "$SPEC" = mtp ] && ARGS+=(-md "$MTP" --spec-type draft-mtp -ngld 99 ${SPEC_EXTRA:-})
 if [ "$TOPO" = 2node ]; then
-  env $SRV_ENV nohup "$BIN/ggml-rpc-server" -H 127.0.0.1 -p 50052 > "$OUT/rpc-a.log" 2>&1 & echo $! >> "$OUT/pids"
+  env $SRV_ENV nohup ${A_WRAP:-$PIN_A} "$BIN/ggml-rpc-server" -H 127.0.0.1 -p 50052 > "$OUT/rpc-a.log" 2>&1 & echo $! >> "$OUT/pids"
   ssh -o BatchMode=yes $B "mkdir -p $BBIN; pkill -x ggml-rpc-server; sleep 1"; scp -q "$BIN/ggml-rpc-server" "$B:$BBIN/" || exit 3
-  ssh -o BatchMode=yes $B "cd $BBIN && LD_LIBRARY_PATH=/opt/rocm/lib GGML_RDMA_RX_DEPTH=$GGML_RDMA_RX_DEPTH GGML_RDMA_CHUNK=$GGML_RDMA_CHUNK GGML_RDMA_TX_SLOTS=$GGML_RDMA_TX_SLOTS GGML_RPC_COMM_OVERLAP=$GGML_RPC_COMM_OVERLAP $SRV_ENV setsid -f ./ggml-rpc-server -H 10.99.0.2 -p 50052 -c > rpc-server.log 2>&1 < /dev/null"
+  ssh -o BatchMode=yes $B "cd $BBIN && LD_LIBRARY_PATH=/opt/rocm/lib GGML_RDMA_RX_DEPTH=$GGML_RDMA_RX_DEPTH GGML_RDMA_CHUNK=$GGML_RDMA_CHUNK GGML_RDMA_TX_SLOTS=$GGML_RDMA_TX_SLOTS GGML_RPC_COMM_OVERLAP=$GGML_RPC_COMM_OVERLAP $SRV_ENV ${B_WRAP:-$PIN_B} setsid -f ./ggml-rpc-server -H 10.99.0.2 -p 50052 -c > rpc-server.log 2>&1 < /dev/null"
   ARGS+=(--rpc 10.99.0.2:50052,127.0.0.1:50052 -sm tensor -dev RPC0,RPC1)
   sleep 3
 fi
-env ${CLI_ENV:-} nohup "$BIN/llama-server" "${ARGS[@]}" > "$OUT/server.log" 2>&1 & echo $! >> "$OUT/pids"
+env ${CLI_ENV:-} nohup ${CLI_WRAP:-$PIN_A} "$BIN/llama-server" "${ARGS[@]}" > "$OUT/server.log" 2>&1 & echo $! >> "$OUT/pids"
 for i in $(seq 600); do curl -sf http://127.0.0.1:$PORT/health > /dev/null && break; sleep 1; done
 curl -sf http://127.0.0.1:$PORT/health > /dev/null || { echo "server not ready"; tail -20 "$OUT/server.log"; }
 python3 -I "$D/tools/spec_bench.py" http://127.0.0.1:$PORT "$D/eval/spec_prompts.json" "$NMAX" "$OUT/results.jsonl" | tee "$OUT/bench.txt"

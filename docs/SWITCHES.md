@@ -51,7 +51,8 @@
     `tools/watch/inferwatch.sh start` → 실행마다 `runs/watch/<시각>/report.html`·`receipt.md`. tbv 카운터를 리포트에 넣으려면 `inferwatch.sh tbv-copy`(sudo).
   - 2026-11-04 밤(자세히는 RESULTS.md "11-03 23:50 – 11-04"):
     - greedy argmax 빠른 경로(llama-server 대상 샘플러, 항상): temperature 0 이고 최댓값을 지울 수 있는 샘플러가 없을 때 후보 배열·정렬 대신 argmax. 값 같음
-    - `GGML_RPC_COMM_DEV=<RDMA 장치>`(두 서버): AR 링크만 그 장치로(두 번째 케이블 `usb4_rdma0`). 권장, 스크립트 기본값에는 아직 없음(`SRV_ENV`)
+    - `GGML_RPC_COMM_DEV=<RDMA 장치>`(두 서버): AR 링크만 그 장치로(두 번째 케이블). 스크립트 기본값에는 없다 — 11-05(ZC=1)·11-07(ZC=3) 다시 재 보니
+      이득이 없어 그대로 둠(RESULTS.md 11-07 08:00 절). 장치 이름은 재부팅 때 노드마다 바뀔 수 있다
     - `GGML_RPC_COMM_ZC=3`: 스트림 안 AR + 프록시 스레드(느림), `GGML_RPC_COMM_ZC3_AHEAD=K`(호스트가 앞서는 AR 수 제한)
     - `LLAMA_TP_OUTPUT_SPLIT=<f>`(output.weight 의 장치 0 몫), `LLAMA_KV_PAD=<n>`(n_kv 패딩, 256 이 아니면 출력이 바뀜 — 측정용),
       `GGML_RPC_GRAPH_DEDUP=1`(서버에 이미 있는 내용의 그래프를 다시 보내지 않음, 기본 끔), `GGML_RPC_SYNC_SPIN=1`(클라이언트 대기를 돌며, 기본 끔)
@@ -101,6 +102,12 @@
 - 2026-11-07 새벽: 구간 커널 디버그 `GGML_CUDA_SEG_TIMES=<n>`(상주 커널 단계별 시간, n 번 평균, 매번 동기화), `GGML_CUDA_SEG_AHEAD=<비트>`(기본 0; 1 라우터
   가중치 선읽기, 2 hc up 가중치를 1단계 동안, 4 hc down 행 고르게 — 이득 없음), `GGML_CUDA_SEG_PREFETCH` 기본을 꺼짐으로(문서와 맞춤).
   고침(기본 경로): 묶은 hc 블록 커널은 silu 가 gate·hc_pre 와 메모리를 같이 쓰면 silu 를 쓰지 않는다(`hc_up_silu_out`, 블록 사이 경쟁).
-  `GGML_CUDA_COMM_PREFETCH=<MB>`(기본 0): AR 기다림을 맡은 커널(hc_post+norm, shared expert 꼬리)이 기다리는 동안 워프 0 을 뺀 워프가 이 부분그래프의
+  `GGML_CUDA_COMM_PREFETCH=<MB>`(기본 16, 0 이면 끔; 읽는 워프 수 `GGML_CUDA_COMM_PREFETCH_WARPS`, 기본 128): AR 기다림을 맡은 커널(hc_post+norm, shared expert 꼬리)이 기다리는 동안 워프 0 을 뺀 워프가 이 부분그래프의
   다음 행렬곱 가중치(MUL_MAT_ID 제외) 앞부분을 읽어 L2/MALL 에 올린다(`ggml_cuda_comm_plan_prefetch`, 읽기만).
   감시기(inferwatch): ZC=3 에서 GPU 도장이 없는 AR 은 대리 스레드 기록(플래그 본 때·상대 부분합 도착)으로 GPU 계산/기다림을 나눈다.
+- 2026-11-07 오전(링크 튐): `run_server.sh`·`tools/bench/srv-probe.sh` 기본 `TBPIN=1` — 두 rpc-server 와 llama-server 를 Thunderbolt NHI 인터럽트를
+  받는 CPU 밖에서 돌린다(`taskset -c $(tools/bench/tbcpus.sh)`, 노드마다 시작할 때 읽음, 지금 두 노드 `0-1,7-30`). 그 CPU 의 시스템 작업 큐 kworker 가
+  받은 프레임을 마무리하는데 엔진의 바쁜 대기 스레드가 같은 CPU 에 있으면 3 ms 조각으로 나눠 써 AR 이 늦는다. none +1.1%, MTP +2.1%, 출력 그대로.
+  `TBPIN=0` 이면 끔, `A_WRAP`/`B_WRAP`/`CLI_WRAP`(명령 앞에 붙임)을 주면 그것을 쓴다. 회마다 쓴 목록은 실행 폴더의 `pin.txt`.
+  `tools/bench/tbcpus.sh [최소 인터럽트 수, 기본 100000]`: 썬더볼트 벡터의 `effective_affinity_list` 를 뺀 CPU 목록.
+  `tools/bench/node-ab.sh`: `AW_<cfg>`/`BW_<cfg>`(서버 앞 명령), `TBPIN_<cfg>=0`(그 구성만 고정 끔, 모든 구성 `TBPIN_ALL`).

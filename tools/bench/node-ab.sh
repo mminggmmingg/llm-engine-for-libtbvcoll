@@ -19,6 +19,8 @@ for run in ${RUNS:?}; do
   tr=$(eval echo \${TR_$cfg}); export TRACE=${tr:-${TRACE:-1}}   # 기록 링(tools/watch) 켬/끔: TR_<cfg>=0|1
   export CLI_ENV=$(eval echo \${CL_$cfg})                          # 클라이언트(llama-server) 환경: CL_<cfg>
   export CLI_WRAP=$(eval echo \${CW_$cfg})                         # 클라이언트 앞 명령(taskset 등): CW_<cfg>
+  export A_WRAP=$(eval echo \${AW_$cfg}) B_WRAP=$(eval echo \${BW_$cfg})   # A·B rpc-server 앞 명령: AW_<cfg>, BW_<cfg>
+  tp=$(eval echo \${TBPIN_$cfg}); export TBPIN=${tp:-${TBPIN_ALL:-1}}   # TB 인터럽트 CPU 피하기(srv-probe 기본 1): TBPIN_<cfg>=0 이면 끔
   # MTP 초안 모델 인자: SE_<cfg>(빈 값이면 -devd 없이 본 모델처럼 2노드 TP), 없으면 -devd ROCm0(A GPU 혼자)
   if eval "[ -n \"\${SE_$cfg+x}\" ]"; then export SPEC_EXTRA=$(eval echo \${SE_$cfg}); else export SPEC_EXTRA="-devd ROCm0"; fi
   for i in $(seq 60); do b=$(timeout 10 ssh -o BatchMode=yes parks-zbook@10.99.0.2 "cut -d' ' -f1 /proc/loadavg"); a=$(cut -d' ' -f1 /proc/loadavg); awk "BEGIN{exit !($a<0.6 && $b<0.6)}" && break; sleep 5; done
@@ -29,7 +31,7 @@ for run in ${RUNS:?}; do
     [ "$(grep -c "RDMA activated" $d/rpc-a.log)" -ge 1 ] && break
     echo "   ($n: rdma=0 — 다시 $try)"; sleep 10
   done
-  for x in gm-a gm-b bench thr-a thr-b; do cp $d/$x.txt $OUT/$n-$x.txt 2>/dev/null; done
+  for x in gm-a gm-b bench thr-a thr-b pin; do cp $d/$x.txt $OUT/$n-$x.txt 2>/dev/null; done
   scp -q parks-zbook@10.99.0.2:/home/parks-zbook/engine2n/bin/rpc-server.log $d/rpc-b.log; grep comm_prof $d/rpc-a.log > $OUT/$n-prof-a.txt; grep comm_prof $d/rpc-b.log > $OUT/$n-prof-b.txt
   echo "$spec $cfg bin=$(basename $BIN) load A=$a B=$b rdma=$(grep -c "RDMA activated" $d/rpc-a.log) zc=$(grep -o 'ZC=[0-9]' $d/rpc-a.log | head -1)/$(grep -o 'ZC=[0-9]' $d/rpc-b.log | head -1): $(echo "$out" | grep TOTAL) | $n"
   for x in a b; do echo "   $x: $(python3 -I gmsum.py $d/gm-$x.txt | cut -d'|' -f1)"; done
