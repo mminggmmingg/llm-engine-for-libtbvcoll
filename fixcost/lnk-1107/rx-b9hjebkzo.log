@@ -1,0 +1,8 @@
+tools/bench/srv-probe.sh:13:OUT=$D/runs/srv-$TOPO-$SPEC${TAG:+-$TAG}-$(date +%m%d-%H%M%S); mkdir -p "$OUT"; PORT=8077
+run_server.sh:13:OUT=$D/runs/srv-$TOPO-$SPEC${TAG:+-$TAG}-$(date +%m%d-%H%M%S); mkdir -p "$OUT"; PORT=8077
+none def2 bin=bin load A=0.54 B=0.29 rdma=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 39.84 tok/s (token-weighted) | srv-2node-none-bs-def2-1107-124539
+mtp def2 bin=bin load A=0.58 B=0.42 rdma=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 56.57 tok/s (token-weighted) | srv-2node-mtp-bs-def2-1107-125013
+srv-2node-mtp-bs-def2-1107-125013: A taskset -c 0-1,7-30 | B taskset -c 0-1,7-30 | client taskset -c 0-1,7-30 | AR dev A usb4_rdma0 B usb4_rdma5 | A log: [comm_init] device 0: allreduce link on usb4_rdma0 (RDMA)
+srv-2node-none-bs-def2-1107-124539: A taskset -c 0-1,7-30 | B taskset -c 0-1,7-30 | client taskset -c 0-1,7-30 | AR dev A usb4_rdma0 B usb4_rdma5 | A log: [comm_init] device 0: allreduce link on usb4_rdma0 (RDMA)
+
+[exited with code 0]

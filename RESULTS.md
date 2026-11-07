@@ -2065,7 +2065,7 @@ CPU 20 의 `kworker/20:1` 이 두 노드 모두 1087/1088/1024 ms 마다 9–13 
 tbv 가 `start_poll` 을 주고 높은 우선순위 작업에서 `tb_ring_poll`/`tb_ring_poll_complete` 로 처리(thunderbolt_net 의 NAPI 와 같은 꼴). 높은 우선순위 풀은
 events 풀과 따로라 1 초 작업에도, nice 0 회전 대기에도 밀리지 않는다.
 
-**드라이버 패치(준비만, 적재·측정 전).** tbv 브랜치 `rx-highpri-poll`(22e32aa, `fixcost/lnk-1107/tbv-rx-highpri-poll.patch`, +111줄):
+**드라이버 패치(11:00 에 사용자가 두 노드에 적재, 아래 '새 드라이버' 절).** tbv 브랜치 `rx-highpri-poll`(22e32aa, `fixcost/lnk-1107/tbv-rx-highpri-poll.patch`, +111줄):
 RX 링에 `start_poll` — 인터럽트는 링을 가리고 작업만 건다, 작업은 `tb_ring_poll` 로 프레임을 꺼내 같은 콜백을 부르고 `tb_ring_poll_complete` 로 다시 연 뒤
 그 사이 끝난 프레임을 한 번 더 본다(이 트리의 NHI 는 열 때 대기 비트를 지우지 않는다). 256 프레임마다 링을 가린 채 다시 걸고, 링을 멈추기 전에 작업을 끝낸다.
 `rx_wq_poll`: -1 auto(native 면 1, 기본) · 0 기본 NHI 경로 · 1 CPU 별 `system_highpri_wq` · 2 tbv 의 unbound highpri 큐. Apple 상대는 그대로.
@@ -2079,3 +2079,30 @@ sha256 f2adab45…, 새로 가져오는 심볼은 `system_highpri_wq` 하나, �
 **앞 절 고침.** 05:00 절의 "선읽기 뒤 링크 늦음이 25% 늘어난 것은 GPU 의 DRAM 읽기가 USB4 DMA 와 부딪힌다는 추정" — 오늘 같은 설정 기본 5회만으로도 A→B 1 ms
 넘는 늦음이 365–513번으로 흔들려 그 차이는 잡음 안이고, 늦음은 위의 CPU 쪽 원인으로 설명된다. DMA 충돌 증거는 없다.
 또 README 표의 11-03 – 11-04 줄 'AR 링크를 두 번째 케이블로'는 그날 A/B 에서 환경변수로 준 것이고 스크립트 기본에는 들어가지 않았다.
+
+## 2026-11-07 10:56–12:45 — 새 tbv 드라이버(받은 프레임을 높은 우선순위 작업에서) + AR 을 두 번째 케이블로: none 40.4, MTP 56.2(출력 그대로, 스크립트 기본)
+자료: `fixcost/lnk-1107/`(무결성 `rxwq-verify/`, 지연 `rxwq-perftest/summary.txt`, 늦음·영수증 `stalls/*-112304*`·`*-112716*`, 실행 `srv-*-rx*`).
+사용자가 `tools/tbv_rxwq.sh install` 로 두 노드에 새 모듈(srcversion 979EBFFB…, `rx_wq_poll=1` = CPU 별 `system_highpri_wq`)을 올렸다. 커널 로그 경고·오류 없음.
+- 무결성(`rdma_verify`, A 서버 · B 클라이언트): 두 케이블 × QP 1·4 × 200회, WRITE·READ 합 1.5 GiB, 불일치 0 B, 보호 바이트 0 → PASS.
+- 10 KB `ib_send_lat`(왕복/2, 10만 번): rdma0 중앙 17.2 µs·1 ms 넘음 0번(아침 같은 시험 17.5–17.9 µs, 6–15번 — 그중 33–37 ms 3–10번),
+  인터럽트 CPU 에 회전 루프를 두어도 1번(아침 19번). rdma5 17.6 µs·7번(≈1.5 ms 값).
+- 엔진(감시기, CPU 고정 켬): 같은 케이블이면 7–12 ms 튐 0번(전 27·41번), AR 지연 중앙 19.3 → 16.0 µs. 그러나 디코드 단계마다 한 번꼴로 A→B 방향 3 ms 튐
+  (2.5–3.5 ms 168번, 226/239 가 B 가 기다린 것, 간격 ≈26 ms = 한 단계)이 늘어 1 ms 넘는 기다림 1.44 ms/단계, 속도는 그대로(39.57·39.39·39.53).
+  해석(추정): 클라이언트가 단계마다 B 에 명령을 몰아 보내고, 같은 장치의 A→B AR 이 그 뒤에 선다(송신 칸 64 · 크레딧 · 송신 완료는 아직 events `ring_work`/1 ms 폴링).
+- AR 을 클라이언트가 안 쓰는 장치로(`GGML_RPC_COMM_DEV`): 1 ms 넘는 기다림 **0.75 ms/단계**(아침 기본 1.7–2.4), 7 ms 넘는 튐 0번, 2.5–3.5 ms 61번,
+  AR 지연 중앙 16.5·17.6 µs, 최대 3.9·6.5 ms(전 10–14 ms). 옛 드라이버에서는 같은 분리가 −0.6% 였다(위 절) — 받기 마무리가 밀리지 않아야 분리가 산다.
+- 장치: 엔진은 GID 가 맞는 첫 장치를 쓴다(`ibv_get_device_list` 순서) — 오늘 A 는 `usb4_rdma5`, B 는 `usb4_rdma0` 가 첫째. `COMM_DEV=usb4_rdma0` 두 노드(A 만 분리)와
+  A `rdma0` · B `rdma5`(양쪽 분리)는 같다.
+
+| 새 드라이버 + CPU 고정 | none tok/s | 평균 | MTP tok/s | 평균 |
+|---|---|---:|---|---:|
+| AR 같은 장치 | 39.65 · 39.46 · 39.76 (그 앞 39.57 · 39.39 · 39.53) | 39.56 | 55.37 · 54.78 (그 앞 54.97 · 56.28) | 55.35 |
+| AR A rdma0 · B rdma0 | 40.61 · 40.29 · 40.34 · 40.27 · 40.57 · 40.26 | **40.39** | 56.65 · 55.60 | 56.13 |
+| AR A rdma0 · B rdma5 | 40.37 · 40.38 · 40.33 | **40.36** | 57.46 · 55.20 | 56.33 |
+번갈아 잰 쌍(같은 드라이버): none +2.0%, MTP +2.1–2.3%. 오늘 아침 기본(옛 드라이버, 고정 없음 39.15 / 54.87) 대비 none +3.1%, MTP +2.4%.
+모든 회 해시 6개 같음. MTP 는 같은 설정 안에서도 55.2–57.5 로 흔들린다.
+
+**바꾼 것.** `run_server.sh`·`tools/bench/srv-probe.sh` 기본 `TBDEV=1`: 노드마다 `tools/bench/tbcommdev.sh` 가 tbv 에 `rx_wq_poll` 이 켜져 있으면 클라이언트 연결이 쓰지 않는
+장치(목록의 둘째)를 골라 그 노드 서버에 `GGML_RPC_COMM_DEV` 로 준다(옛 드라이버면 비워 둠). 지금 A `usb4_rdma0`, B `usb4_rdma5`. 쓴 장치는 `pin.txt` 와 서버 로그
+`[comm_init] ... allreduce link on <장치>`. `TBDEV=0` 이면 끔, node-ab `TBDEV_<cfg>`.
+**남은 것.** 1 ms 넘는 기다림 ≈0.75 ms/단계(≈3%) 중 1–3.5 ms 튐 ≈140번: 송신 완료(아직 events `ring_work` + tbv 1 ms 폴링)와 크레딧 반환 경로 — 다음 후보.

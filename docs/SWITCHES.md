@@ -113,3 +113,7 @@
   `tools/bench/node-ab.sh`: `AW_<cfg>`/`BW_<cfg>`(서버 앞 명령), `TBPIN_<cfg>=0`(그 구성만 고정 끔, 모든 구성 `TBPIN_ALL`).
   tbv 받기 마무리 패치(tbv 브랜치 `rx-highpri-poll`, 적재 전): 모듈 파라미터 `rx_wq_poll`(-1 auto · 0 기본 NHI 경로 · 1 `system_highpri_wq` · 2 tbv 큐).
   `tools/tbv_rxwq.sh install|on|off|restore|status`(A 에서, 두 노드 sudo) — 설치·A/B·되돌리기.
+- 2026-11-07 낮(새 tbv 드라이버 적재 뒤): `run_server.sh`·`tools/bench/srv-probe.sh` 기본 `TBDEV=1` — tbv 에 `rx_wq_poll` 이 켜져 있으면 노드마다
+  클라이언트 연결이 쓰지 않는 RDMA 장치(`tools/bench/tbcommdev.sh`, 목록의 둘째, 지금 A `usb4_rdma0`·B `usb4_rdma5`)를 `GGML_RPC_COMM_DEV` 로 준다.
+  옛 드라이버면 비워 둔다. none +2.0%, MTP +2.1%(같은 드라이버 같은 케이블 대비). `TBDEV=0` 이면 끔, node-ab `TBDEV_<cfg>`. 쓴 장치는 `pin.txt`.
+

@@ -4,7 +4,7 @@
 set -u
 TAG=$1; LCPU=$2; SPIN=$3; N=${4:-100000}
 LA=${LCPU%%:*}; LB=${LCPU##*:}   # "a:b" pins A and B differently
-B=parks-zbook@10.99.0.2
+B=parks-zbook@10.99.0.2; DEV=${DEV:-usb4_rdma0}
 D=$(dirname "$0")/out; mkdir -p $D
 OUT=$D/$TAG.txt
 SECS=$(( N / 15000 + 20 ))
@@ -20,9 +20,9 @@ spin_on() {  # $1 = where (local|B)
 }
 spin_on local; spin_on B
 sleep 1
-ssh -o BatchMode=yes $B "setsid -f taskset -c $LB ib_send_lat -d usb4_rdma0 -x 1 -s 10240 -n $N -F -H > /tmp/lat-srv-$TAG.txt 2>&1 < /dev/null"
+ssh -o BatchMode=yes $B "setsid -f taskset -c $LB ib_send_lat -d $DEV -x 1 -s 10240 -n $N -F -H > /tmp/lat-srv-$TAG.txt 2>&1 < /dev/null"
 sleep 1.5
-taskset -c $LA ib_send_lat -d usb4_rdma0 -x 1 -s 10240 -n $N -F -H 10.99.0.2 > $OUT 2>&1
+taskset -c $LA ib_send_lat -d $DEV -x 1 -s 10240 -n $N -F -H 10.99.0.2 > $OUT 2>&1
 sleep 1
 scp -q $B:/tmp/lat-srv-$TAG.txt $D/$TAG-srv.txt
 pkill -P $$ timeout 2>/dev/null
