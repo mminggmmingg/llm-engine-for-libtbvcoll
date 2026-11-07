@@ -116,4 +116,7 @@
 - 2026-11-07 낮(새 tbv 드라이버 적재 뒤): `run_server.sh`·`tools/bench/srv-probe.sh` 기본 `TBDEV=1` — tbv 에 `rx_wq_poll` 이 켜져 있으면 노드마다
   클라이언트 연결이 쓰지 않는 RDMA 장치(`tools/bench/tbcommdev.sh`, 목록의 둘째, 지금 A `usb4_rdma0`·B `usb4_rdma5`)를 `GGML_RPC_COMM_DEV` 로 준다.
   옛 드라이버면 비워 둔다. none +2.0%, MTP +2.1%(같은 드라이버 같은 케이블 대비). `TBDEV=0` 이면 끔, node-ab `TBDEV_<cfg>`. 쓴 장치는 `pin.txt`.
+- 2026-11-07 오후(측정 도구): `tools/bench/node-ab.sh` 는 속도 회를 기록 링 끄고(`TRACE` 기본 0, 예전 1) 잰 뒤 `WATCH=1`(기본)이면 RUNS 의 spec:cfg 마다
+  기록 켠 회를 하나 더 돌려 감시기 세션을 남기고 `tools/watch/stallsum.py` 비교표를 `$OUT/watch-summary-<시각>.md` 에 쓴다(영수증 사본 `watch-receipt-*.md`).
+  `stallsum.py <이름>=<세션 폴더> ...` 는 따로도 쓴다(늦음 목록은 세션의 `stalls.txt` 로 한 번 만듦). bench 스크립트들은 이제 저장소 `tools/bench` 에서 돈다(예전 scratchpad 사본 `pf/`).
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # MTP 초안 길이(--spec-draft-n-max) 쓸기, 2노드 H5: RUNS="3 2 4 ..." — 회마다 tok/s, 수락률, 단계당 받아들인 토큰, 두 노드 gpu_metrics·prof
-S=/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf; cd $S
+cd "$(dirname "$(readlink -f "$0")")"   # tools/bench 에서(srv-probe.sh·gmsum.py·profsum.py 옆). 예전에는 세션 scratchpad 의 사본 pf/
 R=/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll; OUT=$R/fixcost/${OUTDIR:-mtp-ndraft-1102}; mkdir -p $OUT
 export BIN=/data/parksThink/macos_reversing/codex/zbook-rdma/experiments/engine2n/llama.cpp/build-rocm3/bin
 export MODEL=/data/parksThink/hf-models/qwen38-flash-next-gguf/UD-IQ4_XS-dense4/Qwen3.8-Flash-Next-Q8mix-q8mix-H5.gguf

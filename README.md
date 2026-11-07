@@ -153,7 +153,8 @@ llama-quantize --allow-requantize --pure --tensor-type-file fixcost/dvocab-1106/
 - `run_server.sh`(= `tools/bench/srv-probe.sh`)가 두 rpc-server 와 llama-server 를 띄우고 `tools/spec_bench.py` 로 6 프롬프트를 돌린 뒤 내린다.
   결과는 `runs/srv-<topo>-<spec>-<시각>/results.jsonl`(프롬프트별 tok/s, 초안 수·채택 수, 출력 해시)과 두 노드의 GPU 클럭·전력 기록.
 - 끔/켬 비교는 `tools/bench/node-ab.sh`: 구성마다 서버·클라이언트 환경을 주고 번갈아 돌린다. 두 노드 부하가 낮을 때 시작하고, all-reduce 링크가 RDMA 로
-  안 붙은 회는 다시 돌린다.
+  안 붙은 회는 다시 돌린다. 속도 회는 기록 링을 끄고 재고, 이어서 구성마다 추론 감시 세션을 하나씩 남겨 비교표(단계 시간, AR 지연, 1 ms 넘는 기다림의 원인,
+  링크 늦음 크기 — `tools/watch/stallsum.py`)를 `watch-summary-*.md` 로 쓴다(`WATCH=0` 이면 속도 회만).
 - 재기 전에: 두 노드 `cat /sys/firmware/acpi/platform_profile` 이 performance 인지(재부팅 뒤 절전으로 켜지면 ≈10% 느림), 상대 노드에서 다른 GPU 작업이 없는지,
   측정 중에 빌드하지 않는지(돌고 있는 서버 바이너리를 덮어씀).
 - 시간 분해: `tools/watch/`(추론 감시, 위 시각 자료), `tools/bench/prof2node.sh`(A 서버 rocprofv3 커널 표), `tools/bench/mtpcycle.py`(MTP 한 주기 나누기).

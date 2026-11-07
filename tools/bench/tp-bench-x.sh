@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 2노드 TP llama-bench (짧은 진단): tp-bench.sh "<llama-bench args>" [client env...]
-S=/tmp/claude-1000/-data-parksThink-macos-reversing-claude-code/643ce5c3-138e-406c-bfc6-676a2e96b284/scratchpad/pf
+S=$(cd "$(dirname "$(readlink -f "$0")")/../.." && pwd)/runs/tpb; mkdir -p $S   # 기록(예전에는 세션 scratchpad — 세션이 바뀌면 사라짐)
 BIN=/data/parksThink/macos_reversing/codex/zbook-rdma/experiments/engine2n/llama.cpp/build-rocm3/bin; B=parks-zbook@10.99.0.2; BBIN=/home/parks-zbook/engine2n/bin
 M=/data/parksThink/hf-models/qwen38-flash-next-gguf/UD-IQ4_XS-dense4/Qwen3.8-Flash-Next-Q8mix-q8mix-H5.gguf
 export LD_LIBRARY_PATH=/opt/rocm/lib GGML_RDMA_CHUNK=65536 GGML_RDMA_RX_DEPTH=48 GGML_RDMA_TX_SLOTS=4 GGML_RPC_COMM_OVERLAP=2 LLAMA_TP_FFN_GRAN=32
