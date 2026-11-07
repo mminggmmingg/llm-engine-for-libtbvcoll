@@ -7,7 +7,8 @@
 //   S <t> <tid> <drun us> <dwait us> <dslices> the thread ran / waited on a runqueue that much more (wait is added when
 //                                             the thread gets the CPU, so <t> is about when its wait ended). Process
 //                                             threads only when they waited or switched (a spinner's run time is noise)
-//   T <t> <tid> <cpu> <comm>                  thread found (cpu = the CPU a kworker/ksoftirqd is bound to, else -1)
+//   T <t> <tid> <cpu> <comm>                  thread found (cpu = the CPU a kworker/ksoftirqd is bound to, -2 for an
+//                                             unbound kworker/u*, -1 for a process thread)
 //   V <t> <irq> <cpu> <name>                  vector found
 // No root needed. Build: gcc -O2 -o tbsample tbsample.c
 #define _GNU_SOURCE
@@ -97,6 +98,12 @@ static void scan(long long t) {
             add_thr(pid, cpu, p, comm, t);
             continue;
         }
+        int pool;
+        if (sscanf(comm, "kworker/u%d:", &pool) == 1) {   // unbound workers (tbv rx_wq_poll=2 runs its RX work there): cpu -2
+            snprintf(p, sizeof p, "/proc/%d/schedstat", pid);
+            add_thr(pid, -2, p, comm, t);
+            continue;
+        }
         for (int k = 0; k < nnames; k++) {
             if (strcmp(comm, names[k]) != 0) continue;
             snprintf(p, sizeof p, "/proc/%d/task", pid);
@@ -140,7 +147,7 @@ int main(int argc, char **argv) {
             buf[r] = 0; long long run, wait, sl;
             if (sscanf(buf, "%lld %lld %lld", &run, &wait, &sl) != 3) continue;
             // kworkers / ksoftirqd: every change; process threads (busy spinners): only when they waited or switched
-            if (T[i].cpu >= 0 ? (run != T[i].run || wait != T[i].wait) : (wait != T[i].wait || sl != T[i].sl)) {
+            if (T[i].cpu != -1 ? (run != T[i].run || wait != T[i].wait) : (wait != T[i].wait || sl != T[i].sl)) {
                 fprintf(out, "S %lld %d %lld %lld %lld\n", t, T[i].tid, (run - T[i].run) / 1000, (wait - T[i].wait) / 1000, sl - T[i].sl);
                 T[i].run = run; T[i].wait = wait; T[i].sl = sl;
             }

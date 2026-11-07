@@ -23,6 +23,9 @@
   - `GGML_RPC_COMM_BF16_MIN=<n>`: 이 원소 수 이상인 부분합을 bf16 으로 보냄(기본 32768, 아주 크게 주면 모두 f32). 측정용
   - `GGML_RPC_COMM_HALF=1|2`(2026-11-08, 기본 0 = f32): ZC=3 decode 부분합을 bf16(1)·f16(2)로 보냄 — 두 서버에 같은 값. 자기 부분합도 같이 반올림해
     두 노드 합이 같다. 출력이 바뀜(KLD 0.017 vs 잡음 0.014), 속도 이득 ≈0 이라 측정용(RESULTS.md 2026-11-08 00:50 절)
+  - 컴파일 매크로 `MMVQ_RDNA2_IQ4NL_ROWS`(2026-11-08, 기본 4): gfx1151(RDNA2 표, 워프 1개) 1토큰 IQ4_NL 행렬곱(MoE down, K=320)을 블록당 4행으로 —
+    행마다 같은 루프·워프 합이라 값이 같다. none +1.7%(RESULTS.md 2026-11-08 03:10 절). `MMVQ_RDNA2_Q5_0_ROWS`(기본 1 = 끔)는 같은 것을 Q5_0 에 —
+    행 2 −0.7%, 행 4 −1.5% 라 끔(같은 날 05:48 절). 바꿔 보려면 `-DCMAKE_HIP_FLAGS=-DMMVQ_RDNA2_IQ4NL_ROWS=2` 처럼 다른 빌드 폴더에서.
   - `GGML_RPC_COMM_RAIL2=<RDMA 장치>` (+`GGML_RPC_COMM_RAIL2_MIN`): 두 번째 케이블로 큰 부분합을 반씩 교환. 지금 tbv 에서는 이득 없음, 기본 꺼짐
   - 불러올 때 가중치 합치기(qwen4exp, 기본 켬): `LLAMA_MERGE_WEIGHTS=<mask>` — 1 hc down+inject, 2 GDN qkv+gate, 4 GDN beta+alpha(기본 7, 0 은 끔).
     형식이 다르면 바이트가 큰 쪽 형식으로 다시 양자화(H5 의 hc inject Q8_0 → Q6_K), `LLAMA_MERGE_WIDE=1` 은 bpw 큰 쪽(hc down → Q8_0). TP 에서도 모두 합친다(`attn_qkv_gate`·`ssm_beta_alpha` 분할 규칙 추가, 2026-10-31)
@@ -115,11 +118,12 @@
   되돌려 받기 CPU 에 앉던 것을 막는다(링크 늦음 389 → 56번, RESULTS.md 2026-11-07 19:50 절). `tbcpus.sh` 는 기준 없이 할당된 TB 벡터의 CPU 를 모두 뺀다
   (재부팅 직후엔 인터럽트 수가 적어 예전 기준 10만이 아무것도 빼지 못했다).
   밤(B 미사용) 재측정에선 old/def 차이 없음 — 받기 CPU 에 런타임 스레드가 앉는 운 나쁜 회만 막는다(RESULTS.md 2026-11-07 23:17 절).
-  `tools/tbv_rxwq.sh on2` = tbv `rx_wq_poll=2`(받기 작업을 모듈의 WQ_UNBOUND|WQ_HIGHPRI 큐로 — 인터럽트 CPU 에 묶이지 않음), 미측정.
-  `tools/bench/tbcpus.sh [최소 인터럽트 수, 기본 100000]`: 썬더볼트 벡터의 `effective_affinity_list` 를 뺀 CPU 목록.
+  `tools/tbv_rxwq.sh on2` = tbv `rx_wq_poll=2`(받기 작업을 모듈의 WQ_UNBOUND|WQ_HIGHPRI 큐로 — 인터럽트 CPU 에 묶이지 않음). 2026-11-08 측정:
+  링크 늦음 79 → 0번, none +1.2%, 출력 그대로(RESULTS.md 2026-11-08 00:05 절) → 권장. 재부팅 뒤에도 쓰려면 두 노드 `/etc/modprobe.d` 의 옵션 줄에 `rx_wq_poll=2`(sudo).
+  `tools/bench/tbcpus.sh [최소 인터럽트 수, 기본 0 = 할당된 벡터 모두]`: 썬더볼트 벡터의 `effective_affinity_list` 를 뺀 CPU 목록.
   `tools/bench/node-ab.sh`: `AW_<cfg>`/`BW_<cfg>`(서버 앞 명령), `TBPIN_<cfg>=0`(그 구성만 고정 끔, 모든 구성 `TBPIN_ALL`).
   tbv 받기 마무리 패치(tbv 브랜치 `rx-highpri-poll`, 적재 전): 모듈 파라미터 `rx_wq_poll`(-1 auto · 0 기본 NHI 경로 · 1 `system_highpri_wq` · 2 tbv 큐).
-  `tools/tbv_rxwq.sh install|on|off|restore|status`(A 에서, 두 노드 sudo) — 설치·A/B·되돌리기.
+  `tools/tbv_rxwq.sh install|on|on2|off|restore|status`(A 에서, 두 노드 sudo) — 설치·A/B·되돌리기.
 - 2026-11-07 낮(새 tbv 드라이버 적재 뒤): `run_server.sh`·`tools/bench/srv-probe.sh` 기본 `TBDEV=1` — tbv 에 `rx_wq_poll` 이 켜져 있으면 노드마다
   클라이언트 연결이 쓰지 않는 RDMA 장치(`tools/bench/tbcommdev.sh`, 목록의 둘째, 지금 A `usb4_rdma0`·B `usb4_rdma5`)를 `GGML_RPC_COMM_DEV` 로 준다.
   옛 드라이버면 비워 둔다. none +2.0%, MTP +2.1%(같은 드라이버 같은 케이블 대비). `TBDEV=0` 이면 끔, node-ab `TBDEV_<cfg>`. 쓴 장치는 `pin.txt`.

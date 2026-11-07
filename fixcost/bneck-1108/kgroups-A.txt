@@ -1,0 +1,41 @@
+window 1200.0 ms, tokens 52.1, per token 23.01 ms, kernel time/token 19.22 ms, kernels/token 1281
+    2436 us/tok  12.7% (cum  12.7%) n/tok   35.2 avg   69.2 us  grid  262144 wg   32  mul_mat_vec_q<t6, 1, false, false, false>
+    2293 us/tok  11.9% (cum  24.6%) n/tok   47.0 avg   48.8 us  grid   10240 wg 1024  mul_mat_vec_q_glu_q8<t23>
+    1807 us/tok   9.4% (cum  34.0%) n/tok   94.0 avg   19.2 us  grid   81920 wg 1024  k_hc_up_pre<true, 1>
+    1454 us/tok   7.6% (cum  41.6%) n/tok   85.2 avg   17.1 us  grid    4096 wg 1024  rms_norm_f32<1024, 1, true, true, false, false, true, false, true>
+    1424 us/tok   7.4% (cum  49.0%) n/tok   47.0 avg   30.3 us  grid   81920 wg   32  mul_mat_vec_q<t20, 1, false, false, false>
+    1126 us/tok   5.9% (cum  54.8%) n/tok    1.0 avg 1129.5 us  grid 3973120 wg   32  mul_mat_vec_q<t14, 1, false, false, false>
+    1082 us/tok   5.6% (cum  60.5%) n/tok   94.0 avg   11.5 us  grid   10368 wg   32  mul_mat_vec_q<t14, 1, false, false, false>
+     990 us/tok   5.1% (cum  65.6%) n/tok   35.2 avg   28.1 us  grid   81920 wg   32  mul_mat_vec_q<t6, 1, false, false, false>
+     951 us/tok   4.9% (cum  70.6%) n/tok   58.8 avg   16.2 us  grid  131072 wg  256  mul_mat_vec_f<__hip_bfloat16, float, 1, 256, false, false>
+     920 us/tok   4.8% (cum  75.3%) n/tok   47.0 avg   19.6 us  grid   81920 wg 1024  mul_mat_vec_q_shexp_tail<t6, 1>
+     637 us/tok   3.3% (cum  78.7%) n/tok   11.8 avg   54.2 us  grid  196608 wg   32  mul_mat_vec_q<t6, 1, false, false, false>
+     606 us/tok   3.2% (cum  81.8%) n/tok   47.0 avg   12.9 us  grid   20480 wg 1024  mul_mat_vec_q_glu_q8<t6>
+     530 us/tok   2.8% (cum  84.6%) n/tok   12.7 avg   41.6 us  grid   81920 wg   32  mul_mat_vec_q<t8, 1, false, false, false>
+     370 us/tok   1.9% (cum  86.5%) n/tok   28.4 avg   13.0 us  grid     768 wg   32  gated_delta_net_cuda<128, false, false, 4, false>
+     289 us/tok   1.5% (cum  88.0%) n/tok   94.0 avg    3.1 us  grid    1024 wg 1024  k_comm_partial_out
+     220 us/tok   1.1% (cum  89.1%) n/tok   47.0 avg    4.7 us  grid      32 wg   32  topk_moe_softmax_cuda<512>
+     197 us/tok   1.0% (cum  90.2%) n/tok   35.2 avg    5.6 us  grid    1536 wg   32  mul_mat_vec_q_gdn_gates<t8>
+     152 us/tok   0.8% (cum  91.0%) n/tok    2.0 avg   77.0 us  grid  327680 wg   32  mul_mat_vec_q<t8, 1, false, false, false>
+     146 us/tok   0.8% (cum  91.7%) n/tok   47.0 avg    3.1 us  grid     256 wg  256  moe_weighted_reduction_f32
+     115 us/tok   0.6% (cum  92.3%) n/tok   35.2 avg    3.3 us  grid     128 wg  128  ssm_conv_silu_norm_pair_f32<4ul, true>
+     109 us/tok   0.6% (cum  92.9%) n/tok   11.8 avg    9.3 us  grid      32 wg   32  idx_k_pool_f32<false>
+     108 us/tok   0.6% (cum  93.4%) n/tok   23.5 avg    4.6 us  grid    8192 wg   32  mul_mat_vec_q<t6, 1, false, false, false>
+     105 us/tok   0.5% (cum  94.0%) n/tok    6.8 avg   15.4 us  grid     768 wg   32  gated_delta_net_cuda<128, false, false, 4, true>
+     102 us/tok   0.5% (cum  94.5%) n/tok    6.8 avg   14.8 us  grid    1024 wg 1024  rms_norm_hcpost_one_block<4, true>
+      88 us/tok   0.5% (cum  95.0%) n/tok   49.0 avg    1.8 us  grid    2560 wg  256  quantize_q8_1
+      82 us/tok   0.4% (cum  95.4%) n/tok   28.4 avg    2.9 us  grid     768 wg   32  rms_norm_f32<32, 1, true, true, false, false, true, true, false>
+      79 us/tok   0.4% (cum  95.8%) n/tok   11.8 avg    6.7 us  grid      64 wg   64  k_argsort_f32_i32<(ggml_sort_order)1>
+      75 us/tok   0.4% (cum  96.2%) n/tok   11.8 avg    6.4 us  grid    1536 wg  128  rms_norm_mul_rope_multi_f32<128, false, float>
+      73 us/tok   0.4% (cum  96.6%) n/tok   11.8 avg    6.2 us  grid      32 wg   32  flash_attn_tile<256, 256, 1, 4, false>
+      66 us/tok   0.3% (cum  96.9%) n/tok   11.8 avg    5.6 us  grid     128 wg  128  rms_norm_mul_rope_multi_f32<128, false, __half>
+      65 us/tok   0.3% (cum  97.3%) n/tok   11.8 avg    5.6 us  grid     128 wg   32  rms_norm_mul_rope_multi_f32<32, false, float>
+      64 us/tok   0.3% (cum  97.6%) n/tok   11.8 avg    5.4 us  grid   32768 wg  256  mul_mat_vec_f<__hip_bfloat16, float, 1, 256, false, false>
+      51 us/tok   0.3% (cum  97.9%) n/tok   11.8 avg    4.4 us  grid      32 wg   32  lightning_indexer_kernel_vec<8, 64, 128l, 4l, t0>
+      42 us/tok   0.2% (cum  98.1%) n/tok   11.8 avg    3.6 us  grid     512 wg  512  top_k_mask_kernel<__half>
+      37 us/tok   0.2% (cum  98.3%) n/tok    1.0 avg   37.2 us  grid    1024 wg 1024  k_comm_wait_add
+      32 us/tok   0.2% (cum  98.5%) n/tok   11.8 avg    2.8 us  grid   16384 wg  256  k_get_rows_float<__half, float>
+      31 us/tok   0.2% (cum  98.6%) n/tok   11.8 avg    2.6 us  grid     256 wg  256  flash_attn_combine_results<256>
+      25 us/tok   0.1% (cum  98.7%) n/tok   11.8 avg    2.2 us  grid    3072 wg  256  k_gate_sigmoid_mul_q8
+      25 us/tok   0.1% (cum  98.9%) n/tok   11.8 avg    2.1 us  grid     256 wg  256  k_set_rows<float, long, __half>
+      20 us/tok   0.1% (cum  99.0%) n/tok   11.8 avg    1.7 us  grid     256 wg  256  __amd_rocclr_copyBufferRectAligned

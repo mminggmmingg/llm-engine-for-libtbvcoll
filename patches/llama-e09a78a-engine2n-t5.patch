@@ -5206,7 +5206,7 @@ index 72e961d..5e119a4 100644
          return (void *)ggml_backend_cuda_comm_allreduce_tensor;
      }
 diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
-index 930f1ad..c0f8178 100644
+index 930f1ad..85a5d6f 100644
 --- a/ggml/src/ggml-cuda/mmvq.cu
 +++ b/ggml/src/ggml-cuda/mmvq.cu
 @@ -1,4 +1,6 @@
@@ -5216,7 +5216,32 @@ index 930f1ad..c0f8178 100644
  #include "quantize.cuh"
  #include "unary.cuh"
  #include "vecdotq.cuh"
-@@ -1452,6 +1454,406 @@ static void mul_mat_vec_q_switch_type(
+@@ -592,7 +594,24 @@ static constexpr __host__ __device__ bool mmvq_two_rows_ncols1(ggml_type type) {
+     }
+ }
+ 
++// engine2n (gfx1151: RDNA3.5 takes the RDNA2 table, one warp and one row per block): the routed experts' down projection
++// (IQ4_NL, 320 columns per node) reads 180 weight bytes per row but 360 bytes of q8_1 activations per block, so a block of
++// MMVQ_RDNA2_IQ4NL_ROWS rows shares the activation loads. Each row keeps its own sum in the same loop and warp reduction, so
++// the values are the same. 4 rows: none +1.7% (2: +1.1%, 8: +1.3%). MMVQ_RDNA2_Q5_0_ROWS does the same for Q5_0 (1 = off).
++#ifndef MMVQ_RDNA2_IQ4NL_ROWS
++#define MMVQ_RDNA2_IQ4NL_ROWS 4
++#endif
++#ifndef MMVQ_RDNA2_Q5_0_ROWS
++#define MMVQ_RDNA2_Q5_0_ROWS 1
++#endif
++
+ static constexpr __host__ __device__ int calc_rows_per_block(ggml_type type, int ncols_dst, int table_id, bool small_k = false, int nwarps = 1) {
++    if (table_id == MMVQ_PARAMETERS_RDNA2 && ncols_dst == 1 && type == GGML_TYPE_IQ4_NL && !small_k && nwarps == 1) {
++        return MMVQ_RDNA2_IQ4NL_ROWS;
++    }
++    if (table_id == MMVQ_PARAMETERS_RDNA2 && ncols_dst == 1 && type == GGML_TYPE_Q5_0 && !small_k && nwarps == 1) {
++        return MMVQ_RDNA2_Q5_0_ROWS;
++    }
+     if (table_id == MMVQ_PARAMETERS_GENERIC || table_id == MMVQ_PARAMETERS_GCN || table_id == MMVQ_PARAMETERS_TURING || table_id == MMVQ_PARAMETERS_GB10) {
+         switch (ncols_dst) {
+             case 1:
+@@ -1452,6 +1471,406 @@ static void mul_mat_vec_q_switch_type(
      }
  }
  
@@ -5623,7 +5648,7 @@ index 930f1ad..c0f8178 100644
  void ggml_cuda_mul_mat_vec_q(
          ggml_backend_cuda_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1, const ggml_tensor * ids, ggml_tensor * dst,
          const ggml_cuda_mm_fusion_args_host * fusion) {
-@@ -1483,7 +1885,7 @@ void ggml_cuda_mul_mat_vec_q(
+@@ -1483,7 +1902,7 @@ void ggml_cuda_mul_mat_vec_q(
      if (fusion) {
          const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
          GGML_ASSERT( !ids || dst->ne[2] <= get_mmvq_mmid_max_batch(src0->type, cc));
@@ -5632,7 +5657,7 @@ index 930f1ad..c0f8178 100644
          // Scale fusion is only allowed for NVFP4 currently as the cost of checking this at run-time in the prologue is
          // non-negligible for some models such as gpt-oss-20b
          GGML_ASSERT((fusion->x_scale == nullptr && fusion->gate_scale == nullptr) || src0->type == GGML_TYPE_NVFP4);
-@@ -1549,12 +1951,76 @@ void ggml_cuda_mul_mat_vec_q(
+@@ -1549,12 +1968,76 @@ void ggml_cuda_mul_mat_vec_q(
      }
  
      const int64_t ne10_padded = GGML_PAD(ne10, MATRIX_ROW_PADDING);
@@ -5712,7 +5737,7 @@ index 930f1ad..c0f8178 100644
      }
  
      const int64_t s01 = src0->nb[1] / ts_src0;
-@@ -1579,8 +2045,60 @@ void ggml_cuda_mul_mat_vec_q(
+@@ -1579,8 +2062,60 @@ void ggml_cuda_mul_mat_vec_q(
  
      const int64_t ids_stride = ids ? ids->nb[1] / ggml_type_size(ids->type) : 0;
  

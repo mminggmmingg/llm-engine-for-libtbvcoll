@@ -1,0 +1,1 @@
+A env HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0 taskset -c 0-1,7-20,25-29,31 | B env HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0 taskset -c 0-1,7-20,25-30 | client env HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0 taskset -c 0-1,7-20,25-29,31 | AR dev A usb4_rdma5 B usb4_rdma5
