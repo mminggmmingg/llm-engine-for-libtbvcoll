@@ -1,0 +1,30 @@
+== runs/prof2node-night1108-1108-022721
+window 1200 ms, tokens 52, per token 23.08 ms, kernel time/token 19.28 ms, kernels/token 1285
+    2443 us/tok  n/tok   35.3  avg    69.2 us  grid   262144 wg    32  mul_mat_vec_q<t6, 1, false, false, false>
+    2299 us/tok  n/tok   47.1  avg    48.8 us  grid   102400 wg  1024  mul_mat_vec_q_glu_q8<t23>
+    1812 us/tok  n/tok   94.2  avg    19.2 us  grid    81920 wg  1024  k_hc_up_pre<true, 1>
+    1458 us/tok  n/tok   85.4  avg    17.1 us  grid     4096 wg  1024  rms_norm_f32<1024, 1, true, true, false, false, true, false, true>
+    1428 us/tok  n/tok   47.1  avg    30.3 us  grid   819200 wg    32  mul_mat_vec_q<t20, 1, false, false, false>
+    1129 us/tok  n/tok    1.0  avg  1129.5 us  grid  3973120 wg    32  mul_mat_vec_q<t14, 1, false, false, false>
+    1085 us/tok  n/tok   94.2  avg    11.5 us  grid    10368 wg    32  mul_mat_vec_q<t14, 1, false, false, false>
+     992 us/tok  n/tok   35.3  avg    28.1 us  grid    81920 wg    32  mul_mat_vec_q<t6, 1, false, false, false>
+     953 us/tok  n/tok   58.9  avg    16.2 us  grid   131072 wg   256  mul_mat_vec_f<__hip_bfloat16, float, 1, 256, false, false>
+     922 us/tok  n/tok   47.1  avg    19.6 us  grid    81920 wg  1024  mul_mat_vec_q_shexp_tail<t6, 1>
+     639 us/tok  n/tok   11.8  avg    54.2 us  grid   196608 wg    32  mul_mat_vec_q<t6, 1, false, false, false>
+     608 us/tok  n/tok   47.1  avg    12.9 us  grid    20480 wg  1024  mul_mat_vec_q_glu_q8<t6>
+     531 us/tok  n/tok   12.8  avg    41.6 us  grid    81920 wg    32  mul_mat_vec_q<t8, 1, false, false, false>
+== runs/prof2node-rows4-1108-1108-063049
+window 1200 ms, tokens 52, per token 23.08 ms, kernel time/token 19.22 ms, kernels/token 1308
+    2503 us/tok  n/tok   36.0  avg    69.5 us  grid   262144 wg    32  mul_mat_vec_q<t6, 1, false, false, false>
+    2320 us/tok  n/tok   48.0  avg    48.3 us  grid   102400 wg  1024  mul_mat_vec_q_glu_q8<t23>
+    1900 us/tok  n/tok   96.0  avg    19.8 us  grid    81920 wg  1024  k_hc_up_pre<true, 1>
+    1268 us/tok  n/tok   87.0  avg    14.6 us  grid     4096 wg  1024  rms_norm_f32<1024, 1, true, true, false, false, true, false, true>
+    1195 us/tok  n/tok   48.0  avg    24.9 us  grid   204800 wg    32  mul_mat_vec_q<t20, 1, false, false, false>
+    1187 us/tok  n/tok   96.0  avg    12.4 us  grid    10368 wg    32  mul_mat_vec_q<t14, 1, false, false, false>
+    1131 us/tok  n/tok    1.0  avg  1130.5 us  grid  3973120 wg    32  mul_mat_vec_q<t14, 1, false, false, false>
+    1016 us/tok  n/tok   36.0  avg    28.2 us  grid    81920 wg    32  mul_mat_vec_q<t6, 1, false, false, false>
+     966 us/tok  n/tok   60.0  avg    16.1 us  grid   131072 wg   256  mul_mat_vec_f<__hip_bfloat16, float, 1, 256, false, false>
+     894 us/tok  n/tok   48.0  avg    18.6 us  grid    81920 wg  1024  mul_mat_vec_q_shexp_tail<t6, 1>
+     655 us/tok  n/tok   12.0  avg    54.6 us  grid   196608 wg    32  mul_mat_vec_q<t6, 1, false, false, false>
+     621 us/tok  n/tok   48.0  avg    12.9 us  grid    20480 wg  1024  mul_mat_vec_q_glu_q8<t6>
+     545 us/tok  n/tok   13.0  avg    41.9 us  grid    81920 wg    32  mul_mat_vec_q<t8, 1, false, false, false>
