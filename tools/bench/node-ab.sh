@@ -2,7 +2,7 @@
 # 노드별 서버 환경 A/B, 2노드 H5: RUNS="none:<cfg> ..." — cfg 마다 A 환경(SA)·B 환경(SB)·클라이언트 환경(CL)·바이너리(BIN)·기록 링(TR). 회마다 두 노드 gpu_metrics·스레드·prof
 # 속도 회는 기록 링을 끄고(TRACE 기본 0 — 켜면 ≈6% 느림) 잰다. 그다음 WATCH=1(기본)이면 RUNS 의 spec:cfg 마다 기록을 켠 회를 하나씩 더 돌려
 # 추론 감시(tools/watch) 세션을 남기고, 그 비교표(tools/watch/stallsum.py: 단계 시간, AR 지연, 1 ms 넘는 기다림의 원인, 링크 늦음 크기)를
-# $OUT/watch-summary-<시각>.md 에 쓴다 — 실험마다 감시기 결과를 같이 남긴다(사용자 규칙, 2026-11-07). WATCH=0 이면 속도 회만.
+# $OUT/watch-summary-<시각>.md 에 쓴다 — 실험마다 감시기 결과를 같이 남긴다(사용자 규칙, 2026-11-07). WATCH=0 이면 속도 회만, SPEED=0 이면 감시기 회만.
 cd "$(dirname "$(readlink -f "$0")")"   # tools/bench 에서(srv-probe.sh·gmsum.py·profsum.py 옆). 예전에는 세션 scratchpad 의 사본 pf/
 R=/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll; OUT=$R/fixcost/${OUTDIR:-bstate-1101}; mkdir -p $OUT
 BIN0=/data/parksThink/macos_reversing/codex/zbook-rdma/experiments/engine2n/llama.cpp/build-rocm3/bin   # cfg 별 바이너리: BIN_<cfg>
@@ -42,7 +42,7 @@ one_run() {  # $1 = spec:cfg, $2 = 기록 링 0|1 (비면 TR_<cfg>, 없으면 TR
   for x in a b; do echo "   $x: $(python3 -I gmsum.py $d/gm-$x.txt | cut -d'|' -f1)"; done
   c=$(python3 -I profsum.py $OUT/$n-prof-a.txt 2>/dev/null | grep -o 'cycle *[0-9.]*'); [ -n "$c" ] && echo "   cyc: $c"
 }
-for run in ${RUNS:?}; do one_run $run "" ""; done
+[ "${SPEED:-1}" != 0 ] && for run in ${RUNS:?}; do one_run $run "" ""; done   # SPEED=0: 감시기 회만
 
 if [ "${WATCH:-1}" != 0 ]; then
   W=$R/runs/watch; started=0

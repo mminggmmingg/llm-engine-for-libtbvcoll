@@ -82,6 +82,9 @@ HP ZBook Ultra G1a(AMD Strix Halo, Radeon 8060S gfx1151, 메모리 128 GB) 두 �
   그 풀에 앉으면 9–13 ms 를 기다린다(7–12 ms 튐). 스크립트가 노드마다 인터럽트 CPU 를 읽어 세 프로세스를 그 밖에 둔다(`tools/bench/tbcpus.sh`) — none +1.1%, MTP +2.1%.
   이어 tbv 드라이버가 받은 프레임을 CPU 별 높은 우선순위 작업 큐에서 마무리하게 고치고([tbv 브랜치 rx-highpri-poll](https://github.com/mminggmmingg/thunderbolt-ibverbs-zbook/tree/rx-highpri-poll),
   `tools/tbv_rxwq.sh`), AR 을 클라이언트 명령이 몰리지 않는 두 번째 케이블로 보내 1 ms 넘는 기다림이 단계당 1.7–2.4 → 0.75 ms — 둘을 합쳐 none +2.0%, MTP +2.1%.
+  남은 튐도 송신 쪽이 아니라 받는 쪽이었다(11-07 저녁): 프레임은 제때 도착하는데 받기 작업이 ROCm 런타임 스레드 뒤에 3–4 ms 줄을 섰다 — 런타임이 자기
+  스레드의 CPU 고정을 모든 CPU 로 되돌리기 때문. `HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0` 으로 고정을 물려받게 해 링크 늦음 −86%, 1 ms 넘는 기다림
+  단계당 0.36 ms(속도는 잡음 안쪽 +0.5%, B 를 다른 작업에 쓰던 중이라 밤에 다시 잼).
 - **AR 을 스트림 안에서**(11-06 저녁): AR 한 번을 GPU 도장으로 나눠 보니 252 µs 주기 중 GPU 가 호스트를 기다리는 몫(동기화에서 깨어남 7 + 보내기 9 + 다음 커널 시작 8 µs)이
   선을 기다리는 몫(17 µs)보다 컸다. GPU 가 부분합과 플래그를 호스트 메모리에 직접 쓰고 대리 스레드가 주고받는 경로(ZC=3)에 서버가 2 AR 까지만 앞서게 하니
   none +6%·MTP +7%(11-04 에는 커널이 많아 깊은 큐에서 느려져 졌던 경로).

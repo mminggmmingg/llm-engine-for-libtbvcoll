@@ -1,0 +1,69 @@
+A: vectors (irq:cpu:count) 51:21:0 52:22:0 53:5:128405 54:6:128608 67:23:0 68:24:0 69:30:215979 70:2:248260 71:3:16935 72:4:18358 | AR tx 53 rx 54
+B: vectors (irq:cpu:count) 52:21:0 53:22:0 54:5:128874 55:6:128738 68:23:0 69:24:0 70:30:249074 71:2:215775 72:3:19011 73:4:16855 | AR tx 54 rx 55
+link delays >= 1 ms inside the sampled window: 389
+  waiter A: frame landed late (sender / wire): 2
+  waiter A: landed on time, receiver late: 77
+  waiter B: frame landed late (sender / wire): 3
+  waiter B: in between: 2
+  waiter B: landed on time, receiver late: 305
+waiter link_us tx_irq_us rx_irq_us | receiver runqueue waits >=200us in the window (comm[cpu]:us)
+A   3852    -132     -29 | kworker/6:1H-events_highpri[6]:3839
+B   3702     -46      68 | kworker/6:1H-kblockd[6]:3675
+B   3693    -144      54 | kworker/6:1H-kblockd[6]:3667
+B   3662     122      26 | kworker/6:1H-kblockd[6]:3626
+B   3657     -82    1648 | 
+B   3643     118     -13 | kworker/6:1H-kblockd[6]:3592
+B   3636    -241       3 | kworker/6:1H-kblockd[6]:3610 kworker/2:1H-events_highpri[2]:720
+B   3635     227     -14 | kworker/6:1H-kblockd[6]:3596 kworker/2:1H-events_highpri[2]:1920
+B   3617     -61     -23 | kworker/6:1H-kblockd[6]:3595
+B   3615     213     -14 | kworker/6:1H-kblockd[6]:3594
+B   3604    -121     -34 | kworker/6:1H-kblockd[6]:3584
+B   3592     198     -44 | kworker/6:1H-kblockd[6]:3577
+B   3582     194     -52 | kworker/6:1H-kblockd[6]:3565
+B   3579     195     131 | kworker/6:1H-kblockd[6]:3527
+B   3571    -191       6 | kworker/6:1H-kblockd[6]:3519
+B   3561    -143     -84 | kworker/6:1H-kblockd[6]:3522
+B   3544    -184     -86 | kworker/6:1H-kblockd[6]:3733 kworker/5:1-events[5]:1451
+A   3543     242    -184 | kworker/6:1H-events_highpri[6]:3508
+B   3542     144    -103 | kworker/6:1H-kblockd[6]:3517
+B   3541     153     -95 | kworker/6:1H-kblockd[6]:3512
+B   3529     -32    -115 | kworker/6:1H-kblockd[6]:3504
+A   3519     212    -206 | kworker/6:1H-events_highpri[6]:3482
+B   3509    -204    -131 | kworker/6:1H-kblockd[6]:3469
+A   3502     192    -224 | kworker/6:1H-events_highpri[6]:3466
+A   3502      42    -220 | kworker/6:1H-events_highpri[6]:3668
+A   3434    3997     205 | kworker/6:1H-events_highpri[6]:3400
+B   3434      49    -204 | kworker/6:1H-kblockd[6]:3416
+B   3433      26    -199 | kworker/6:1H-kblockd[6]:3502
+B   3432    -216    -209 | kworker/6:1H-kblockd[6]:3402
+B   3414     -94    -244 | kworker/6:1H-kblockd[6]:3364
+B   3404     -15    -239 | kworker/6:1H-kblockd[6]:3513
+B   3404       5    -246 | kworker/6:1H-kblockd[6]:3366
+B   3380     148     233 | kworker/6:1H-kblockd[6]:3349
+B   3371    -181     239 | kworker/6:1H-kblockd[6]:3347
+A   3324     -39      87 | kworker/6:1H-events_highpri[6]:3277
+A   3313    -187      89 | kworker/6:1H-events_highpri[6]:3276
+A   3304     215      71 | kworker/6:1H-events_highpri[6]:3271
+B   3289    -190     245 | kworker/6:1H-kblockd[6]:3237
+B   3278     238     141 | kworker/6:1H-kblockd[6]:3262
+B   3238     -91      98 | kworker/6:1H-kblockd[6]:3207
+A   3235    -245      13 | kworker/6:1H-events_highpri[6]:3215
+B   3231      87      91 | kworker/6:1H-kblockd[6]:3208 kworker/6:2-memcg[6]:3023
+B   3207     -12      58 | kworker/6:1H-kblockd[6]:3196
+B   3197     161      55 | kworker/6:1H-kblockd[6]:3313 kworker/30:2-cgroup_free[30]:1447
+B   3175      -9      28 | kworker/6:1H-kblockd[6]:3127
+B   3171     388      37 | kworker/6:1H-kblockd[6]:3131
+A   3150      39     -72 | kworker/6:1H-events_highpri[6]:3116
+B   3147     -57      26 | kworker/6:1H-kblockd[6]:3130
+B   3143     -12     138 | kworker/6:1H-kblockd[6]:3101
+B   3139     -62      13 | kworker/6:1H-kblockd[6]:3126
+B   3136     218     345 | kworker/6:1H-kblockd[6]:3117
+A   3108    -106    -113 | kworker/6:1H-events_highpri[6]:3077
+B   3104     235     -50 | kworker/6:1H-kblockd[6]:3058 kworker/3:1-events[3]:1056
+B   3104    -240     -36 | kworker/6:1H-kblockd[6]:3071
+A   3103    -193    -121 | kworker/6:1H-events_highpri[6]:3268
+B   3095      41    -237 | kworker/6:1H-kblockd[6]:3043
+B   3095     213     -50 | kworker/6:1H-kblockd[6]:3262 kworker/30:2-cgroup_free[30]:739
+B   3092     249      55 | kworker/6:1H-kblockd[6]:3041
+A   3087     -79    -122 | kworker/6:1H-events_highpri[6]:3067
+B   3067      -6     -82 | kworker/6:1H-kblockd[6]:3033

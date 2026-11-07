@@ -1,0 +1,69 @@
+A: vectors (irq:cpu:count) 51:21:0 52:22:0 53:5:63938 54:6:64068 67:23:0 68:24:0 69:30:122153 70:2:138093 71:3:5593 72:4:6019 | AR tx 53 rx 54
+B: vectors (irq:cpu:count) 52:21:0 53:22:0 54:5:63978 55:6:63926 68:23:0 69:24:0 70:30:138452 71:2:121886 72:3:6028 73:4:5569 | AR tx 54 rx 55
+link delays >= 1 ms inside the sampled window: 100
+  waiter A: in between: 1
+  waiter A: landed on time, receiver late: 36
+  waiter B: frame landed late (sender / wire): 4
+  waiter B: in between: 1
+  waiter B: landed on time, receiver late: 58
+waiter link_us tx_irq_us rx_irq_us | receiver runqueue waits >=200us in the window (comm[cpu]:us)
+B   3853     223    3914 | kworker/6:1H-events_highpri[6]:3834
+A   3629    -203    2618 | kworker/30:0-events[30]:3795 kworker/6:1H-events_highpri[6]:3504
+B   3587      30     124 | kworker/6:1H-events_highpri[6]:3548 kworker/30:0-memcg[30]:2591
+B   3570      17     119 | kworker/6:1H-events_highpri[6]:3554
+A   3567      83      -1 | kworker/6:1H-events_highpri[6]:3540
+B   3559     -11      96 | kworker/6:1H-events_highpri[6]:3532 kworker/30:0-memcg[30]:435
+B   3559    -148     113 | kworker/6:1H-events_highpri[6]:3532
+A   3532     126     -28 | kworker/6:1H-events_highpri[6]:3513
+B   3471     -71      14 | kworker/6:1H-events_highpri[6]:3438
+B   3445    -177      -6 | kworker/6:1H-events_highpri[6]:3469
+B   3427     298    3411 | kworker/6:1H-events_highpri[6]:3452
+A   3426     -50    -154 | kworker/6:1H-events_highpri[6]:3383
+B   3424     216     -31 | kworker/6:1H-events_highpri[6]:3643
+B   3410     196     -56 | kworker/6:1H-events_highpri[6]:3378
+B   3399     218     -60 | kworker/6:1H-events_highpri[6]:3368
+B   3387     167     -85 | kworker/6:1H-events_highpri[6]:3338
+A   3383    -100    -194 | kworker/6:1H-events_highpri[6]:3353
+B   3343    -209    -125 | kworker/6:1H-events_highpri[6]:3305
+A   3325    -109     249 | kworker/6:1H-events_highpri[6]:3296
+B   3322     -22    -138 | 
+B   3271     -29    -185 | kworker/6:1H-events_highpri[6]:3243
+B   3270       1     244 | kworker/6:1H-events_highpri[6]:3355
+A   3194     216     113 | kworker/6:1H-events_highpri[6]:3155
+A   3112     167      48 | kworker/2:1H-kblockd[2]:3873 kworker/6:1H-events_highpri[6]:3266
+A   3098     123      19 | kworker/6:1H-events_highpri[6]:3061
+B   3059      10      96 | kworker/6:1H-events_highpri[6]:3024
+B   3038     -20      84 | kworker/6:1H-events_highpri[6]:3014
+B   3003     -74      32 | kworker/6:1H-events_highpri[6]:2991
+A   3000    3650     -79 | kworker/6:1H-events_highpri[6]:2962
+B   2984    -149      24 | kworker/6:1H-events_highpri[6]:3091
+B   2975    -153      27 | kworker/6:1H-events_highpri[6]:2955
+B   2965    -238       0 | kworker/6:1H-events_highpri[6]:2935
+A   2956      99    -132 | kworker/6:1H-events_highpri[6]:2914
+B   2948     -54     195 | kworker/6:1H-events_highpri[6]:2892
+B   2944     -94    -164 | kworker/6:1H-events_highpri[6]:2927
+A   2944     -48    -139 | kworker/6:1H-events_highpri[6]:2904
+A   2943      94    -138 | kworker/6:1H-events_highpri[6]:2902
+B   2928    -214     -37 | kworker/6:1H-events_highpri[6]:2893
+A   2920      11    -161 | kworker/6:1H-events_highpri[6]:2885
+B   2920     216     -31 | kworker/6:1H-events_highpri[6]:2907
+A   2894     -50    -192 | kworker/6:1H-events_highpri[6]:2850
+B   2890     199     -74 | kworker/6:1H-events_highpri[6]:2857
+B   2883     178     -65 | kworker/6:1H-events_highpri[6]:2875
+A   2882     -70    -196 | kworker/6:1H-events_highpri[6]:2848
+B   2872    -173     -88 | kworker/6:1H-events_highpri[6]:2837
+B   2846     130     872 | kworker/6:1H-events_highpri[6]:2807
+B   2842    -198    -114 | kworker/6:1H-events_highpri[6]:2805
+B   2838     446     383 | kworker/6:1H-events_highpri[6]:2806
+B   2818    -248     -35 | kworker/6:1H-events_highpri[6]:2782
+B   2817      80    -126 | kworker/6:1H-events_highpri[6]:2793
+A   2781    -175     201 | kworker/6:1H-events_highpri[6]:2740
+A   2780    -178     202 | kworker/6:1H-events_highpri[6]:2748
+B   2747      49    -214 | kworker/6:1H-events_highpri[6]:2705
+A   2744     -81    -236 | kworker/6:1H-events_highpri[6]:2718
+B   2722      24     248 | kworker/6:1H-events_highpri[6]:2691
+A   2703    -134     123 | kworker/6:1H-events_highpri[6]:2663
+B   2687     152     233 | kworker/6:1H-events_highpri[6]:2670
+B   2676      86     188 | kworker/6:1H-events_highpri[6]:2642
+B   2676     133     217 | kworker/6:1H-events_highpri[6]:2639
+B   2656      84     203 | kworker/6:1H-events_highpri[6]:2698

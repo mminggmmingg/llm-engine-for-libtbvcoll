@@ -840,12 +840,13 @@ pub fn analyze(a_recs: &[Rec], b_recs: &[Rec], c_recs: &[Rec], a_host: &str, b_h
         st.first_in_step = !n.proxy.values().any(|p| p.0 > s0 && p.0 < st.t);
     }
     if std::env::var("INFERWATCH_STALLS").is_ok() {
-        // debug: the stall records (us)
+        // debug: the stall records (us; t on A's clock, off = B clock - A clock there, so t + off is B's own clock)
         for st in stalls.iter() {
             let k = steps.partition_point(|s| s.start <= st.t) - 1;
             let since = (0..=k).rev().take_while(|&j| !steps[j].prefill).count();
-            eprintln!("stall w{} step {} since_prefill {} t {:.0} wait {:.0} peer_late {:.0} post {:.0} link {:.0} launch_late {:.0} peer_comp {:.0} our_comp {:.0}",
-                st.waiter, k, since, st.t, st.wait, st.peer_late, st.peer_post_delay, st.link, st.peer_launch_late, st.peer_compute, st.our_compute);
+            eprintln!("stall w{} step {} since_prefill {} t {:.0} wait {:.0} peer_late {:.0} post {:.0} link {:.0} launch_late {:.0} peer_comp {:.0} our_comp {:.0} off {:.0}",
+                st.waiter, k, since, st.t, st.wait, st.peer_late, st.peer_post_delay, st.link, st.peer_launch_late, st.peer_compute, st.our_compute,
+                interp(&offs, st.t));
         }
     }
 

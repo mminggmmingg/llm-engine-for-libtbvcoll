@@ -18,10 +18,13 @@ SRV_ENV=${SRV_ENV-GGML_CUDA_DISABLE_GRAPHS=1}
 # TBPIN=1(기본): 두 rpc-server 와 llama-server 를 Thunderbolt 인터럽트를 받는 CPU 밖에서 돌린다(tools/bench/tbcpus.sh, 노드마다 읽음).
 # 그 CPU 의 kworker 가 받은 메시지를 마무리하는데, 거기서 엔진의 바쁜 대기 스레드가 3 ms 단위로 CPU 를 나눠 쓰면 AR 이 ms 단위로 늦는다
 # (fixcost/lnk-1107, none +1.1%, 출력 그대로). A_WRAP / B_WRAP / CLI_WRAP 을 주면 그것을 쓴다. TBPIN=0 이면 끔
+# HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0: ROCm 런타임(ROCr)은 자기 스레드를 만들 때 affinity 를 모든 CPU(0-31)로 되돌린다. 그 스레드가
+# 받기 CPU 에 앉으면 tbv 의 높은 우선순위 받기 작업이 3–4 ms 줄을 섰다(fixcost/tx-1107: 링크 늦음 389 → 56번, 1 ms 넘는 기다림
+# 1.42 → 0.36 ms/단계). 0 이면 런타임 스레드도 taskset 범위를 물려받는다.
 PIN_A=""; PIN_B=""
 if [ "${TBPIN:-1}" != 0 ]; then
-  PIN_A="taskset -c $(bash "$D/tools/bench/tbcpus.sh")"
-  [ "$TOPO" = 2node ] && PIN_B="taskset -c $(ssh -o BatchMode=yes $B "bash -s" < "$D/tools/bench/tbcpus.sh")"
+  PIN_A="env HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0 taskset -c $(bash "$D/tools/bench/tbcpus.sh")"
+  [ "$TOPO" = 2node ] && PIN_B="env HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0 taskset -c $(ssh -o BatchMode=yes $B "bash -s" < "$D/tools/bench/tbcpus.sh")"
 fi
 # TBDEV=1(기본): tbv 가 받은 프레임을 높은 우선순위 작업에서 마무리하면(rx_wq_poll, tbv 브랜치 rx-highpri-poll) AR 링크를 그 노드에서
 # 클라이언트 연결이 쓰지 않는 RDMA 장치로(tools/bench/tbcommdev.sh, 노드마다 읽음 — 장치 이름은 재부팅 때 바뀔 수 있다). none +2.0%, MTP +2.1%.

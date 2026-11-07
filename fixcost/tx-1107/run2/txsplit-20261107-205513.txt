@@ -1,0 +1,64 @@
+A: vectors (irq:cpu:count) 51:21:0 52:22:0 53:5:128405 54:6:128608 67:23:0 68:24:0 69:30:215979 70:2:248260 71:3:16935 72:4:18358 | AR tx 53 rx 54
+B: vectors (irq:cpu:count) 52:21:0 53:22:0 54:5:128874 55:6:128738 68:23:0 69:24:0 70:30:249074 71:2:215775 72:3:19011 73:4:16855 | AR tx 54 rx 55
+link delays >= 1 ms inside the sampled window: 56
+  waiter A: frame landed late (sender / wire): 2
+  waiter A: landed on time, receiver late: 26
+  waiter B: frame landed late (sender / wire): 1
+  waiter B: landed on time, receiver late: 27
+waiter link_us tx_irq_us rx_irq_us | receiver runqueue waits >=200us in the window (comm[cpu]:us)
+B   4298      33     168 | kworker/6:1H-kblockd[6]:4282
+B   4267     156     135 | kworker/6:1H-kblockd[6]:4248
+B   4192     -81      52 | kworker/6:1H-kblockd[6]:4175
+B   4148      90      24 | kworker/6:1H-kblockd[6]:4126
+B   3792     408     150 | kworker/6:1H-kblockd[6]:3792 kworker/30:2-cgroup_free[30]:570
+A   3576      64    -148 | kworker/6:1H-events_highpri[6]:3539 ggml-rpc-server[-1]:493
+B   3537      89     403 | kworker/6:1H-kblockd[6]:3515
+B   3477    -170    -169 | kworker/6:1H-kblockd[6]:3720
+A   3385     177     -96 | kworker/6:1H-events_highpri[6]:3331
+B   3367      40     219 | kworker/6:1H-kblockd[6]:3338
+A   3334      18    3408 | kworker/6:1H-events_highpri[6]:3277 ggml-rpc-server[-1]:517
+B   3293     -66     145 | kworker/6:1H-kblockd[6]:3414 kworker/2:1H-events_highpri[2]:326
+A   3159    -211      -8 | kworker/6:1H-events_highpri[6]:3110
+B   3098     178     -35 | kworker/6:1H-kblockd[6]:3070 kworker/2:1H-events_highpri[2]:2974
+A   3017      46    -207 | kworker/6:1H-events_highpri[6]:2988
+B   2980    -123    -165 | kworker/6:1H-kblockd[6]:2948
+B   2975    -141    -179 | kworker/6:1H-kblockd[6]:2980
+B   2949     125    -199 | kworker/5:1-events[5]:3491 kworker/6:1H-kblockd[6]:2913
+A   2909     134     178 | kworker/6:1H-events_highpri[6]:2865
+A   2807    -206    -162 | kworker/6:1H-events_highpri[6]:2759
+A   2787     145      81 | kworker/6:1H-events_highpri[6]:2779
+B   2737    -214      72 | kworker/2:1H-events_highpri[2]:2953 kworker/6:1H-kblockd[6]:2694
+B   2697    -238      41 | kworker/5:1-events[5]:2649 kworker/6:1H-kblockd[6]:2646
+A   2598    -154    -119 | kworker/6:1H-events_highpri[6]:2987
+B   2569    -205      76 | kworker/6:1H-kblockd[6]:2542 kworker/2:1H-events_highpri[2]:1792
+B   2272    -223    -243 | kworker/6:1H-kblockd[6]:2252
+A   2272    -184    -128 | kworker/6:1H-events_highpri[6]:2244
+A   2233     203     -55 | kworker/6:1H-events_highpri[6]:2205
+A   2125    -165    1433 | kworker/6:1H-events_highpri[6]:2107
+A   2078      75     -60 | kworker/6:1H-events_highpri[6]:2028
+A   2060    -243     306 | kworker/6:1H-events_highpri[6]:2004
+B   1966     136    1892 | kworker/6:1H-kblockd[6]:1902 kworker/30:2-cgroup_free[30]:1216
+B   1932     129      64 | kworker/6:1H-kblockd[6]:1909
+A   1780     169      53 | kworker/6:1H-events_highpri[6]:1753
+B   1714     -20     150 | kworker/6:1H-kblockd[6]:1711
+A   1667     156     210 | kworker/6:1H-events_highpri[6]:1639
+A   1662    -177     201 | kworker/6:1H-events_highpri[6]:1610
+B   1624     216    -112 | kworker/6:1H-kblockd[6]:1581 kworker/2:1H-events_highpri[2]:1284
+A   1522     -94    -149 | kworker/6:1H-events_highpri[6]:1501 ggml-rpc-server[-1]:248
+A   1508      60     273 | kworker/6:1H-events_highpri[6]:1466
+B   1501     -89      85 | kworker/6:1H-kblockd[6]:1599
+A   1462    -114     -73 | kworker/6:1H-events_highpri[6]:1442
+B   1435      57     228 | kworker/6:1H-kblockd[6]:1398
+A   1426     467     228 | kworker/6:1H-events_highpri[6]:1346 kworker/2:1H-events_highpri[2]:313
+A   1410    -212     168 | kworker/6:1H-events_highpri[6]:1381
+B   1403       0     -39 | kworker/6:1H-kblockd[6]:1363
+A   1339    -169    -127 | kworker/6:1H-events_highpri[6]:1297
+B   1334    -201     -26 | kworker/6:1H-kblockd[6]:1272
+B   1316    -228     -17 | kworker/6:1H-kblockd[6]:1275
+A   1275     -48    -189 | kworker/6:1H-events_highpri[6]:1249
+A   1251       7    -124 | kworker/6:1H-events_highpri[6]:1214
+A   1218     106     156 | kworker/6:1H-events_highpri[6]:1172
+A   1203     -22     -97 | kworker/6:1H-events_highpri[6]:1166
+B   1108     246     -44 | kworker/6:1H-kblockd[6]:1298
+B   1024     -60     -47 | kworker/6:1H-kblockd[6]:975
+A   1024      64     112 | kworker/6:1H-events_highpri[6]:992

@@ -109,6 +109,9 @@
   받는 CPU 밖에서 돌린다(`taskset -c $(tools/bench/tbcpus.sh)`, 노드마다 시작할 때 읽음, 지금 두 노드 `0-1,7-30`). 그 CPU 의 시스템 작업 큐 kworker 가
   받은 프레임을 마무리하는데 엔진의 바쁜 대기 스레드가 같은 CPU 에 있으면 3 ms 조각으로 나눠 써 AR 이 늦는다. none +1.1%, MTP +2.1%, 출력 그대로.
   `TBPIN=0` 이면 끔, `A_WRAP`/`B_WRAP`/`CLI_WRAP`(명령 앞에 붙임)을 주면 그것을 쓴다. 회마다 쓴 목록은 실행 폴더의 `pin.txt`.
+  2026-11-07 저녁: 고정은 `env HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0 taskset -c <목록>` — ROCm 런타임이 자기 스레드의 affinity 를 모든 CPU 로
+  되돌려 받기 CPU 에 앉던 것을 막는다(링크 늦음 389 → 56번, RESULTS.md 2026-11-07 19:50 절). `tbcpus.sh` 는 기준 없이 할당된 TB 벡터의 CPU 를 모두 뺀다
+  (재부팅 직후엔 인터럽트 수가 적어 예전 기준 10만이 아무것도 빼지 못했다).
   `tools/bench/tbcpus.sh [최소 인터럽트 수, 기본 100000]`: 썬더볼트 벡터의 `effective_affinity_list` 를 뺀 CPU 목록.
   `tools/bench/node-ab.sh`: `AW_<cfg>`/`BW_<cfg>`(서버 앞 명령), `TBPIN_<cfg>=0`(그 구성만 고정 끔, 모든 구성 `TBPIN_ALL`).
   tbv 받기 마무리 패치(tbv 브랜치 `rx-highpri-poll`, 적재 전): 모듈 파라미터 `rx_wq_poll`(-1 auto · 0 기본 NHI 경로 · 1 `system_highpri_wq` · 2 tbv 큐).
@@ -119,4 +122,5 @@
 - 2026-11-07 오후(측정 도구): `tools/bench/node-ab.sh` 는 속도 회를 기록 링 끄고(`TRACE` 기본 0, 예전 1) 잰 뒤 `WATCH=1`(기본)이면 RUNS 의 spec:cfg 마다
   기록 켠 회를 하나 더 돌려 감시기 세션을 남기고 `tools/watch/stallsum.py` 비교표를 `$OUT/watch-summary-<시각>.md` 에 쓴다(영수증 사본 `watch-receipt-*.md`).
   `stallsum.py <이름>=<세션 폴더> ...` 는 따로도 쓴다(늦음 목록은 세션의 `stalls.txt` 로 한 번 만듦). bench 스크립트들은 이제 저장소 `tools/bench` 에서 돈다(예전 scratchpad 사본 `pf/`).
+  `SPEED=0` 이면 속도 회 없이 감시기 회만(11-07 저녁). 늦음 목록(`INFERWATCH_STALLS=1`)에 그 시각의 노드 사이 시계 차 `off`(B − A, µs)가 붙는다.
 

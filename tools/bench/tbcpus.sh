@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# CPUs that do not take Thunderbolt NHI interrupts, as a taskset list (e.g. "0,1,7-20"): tbcpus.sh [min interrupt count, default 100000]
+# CPUs that do not take Thunderbolt NHI interrupts, as a taskset list (e.g. "0,1,7-20"): tbcpus.sh [min interrupt count, default 0]
 # Each NHI vector's interrupts are finished by a per-CPU kworker on the system workqueue of the CPU that took them
 # (thunderbolt ring_work). A busy-polling engine thread on that CPU shares it with that kworker in 3 ms scheduler slices,
 # so a message that lands there can wait milliseconds (fixcost/lnk-1107). The kernel picks these CPUs at boot, so read them
-# here instead of hard-coding them. Vectors with fewer interrupts than the threshold (control rings) are ignored.
-min=${1:-100000}
+# here instead of hard-coding them. Every allocated vector counts by default: the counts start from 0 at each boot and
+# module reload, and a threshold (it was 100000) then missed the data rings (11-07 evening, after both nodes rebooted:
+# both printed 0-31, so TBPIN pinned nothing). Ten vectors leave 22 of 32 CPUs.
+min=${1:-0}
 skip=$(awk -v m="$min" '/thunderbolt/{s=0; for(i=2;i<NF;i++) if($i ~ /^[0-9]+$/) s+=$i; if(s>=m){sub(":","",$1); print $1}}' /proc/interrupts |
        while read -r irq; do cat /proc/irq/$irq/effective_affinity_list; done | tr ',' '\n' | sort -nu)
 python3 -I - "$(nproc --all)" $skip <<'EOF'
