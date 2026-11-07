@@ -112,6 +112,8 @@
   2026-11-07 저녁: 고정은 `env HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0 taskset -c <목록>` — ROCm 런타임이 자기 스레드의 affinity 를 모든 CPU 로
   되돌려 받기 CPU 에 앉던 것을 막는다(링크 늦음 389 → 56번, RESULTS.md 2026-11-07 19:50 절). `tbcpus.sh` 는 기준 없이 할당된 TB 벡터의 CPU 를 모두 뺀다
   (재부팅 직후엔 인터럽트 수가 적어 예전 기준 10만이 아무것도 빼지 못했다).
+  밤(B 미사용) 재측정에선 old/def 차이 없음 — 받기 CPU 에 런타임 스레드가 앉는 운 나쁜 회만 막는다(RESULTS.md 2026-11-07 23:17 절).
+  `tools/tbv_rxwq.sh on2` = tbv `rx_wq_poll=2`(받기 작업을 모듈의 WQ_UNBOUND|WQ_HIGHPRI 큐로 — 인터럽트 CPU 에 묶이지 않음), 미측정.
   `tools/bench/tbcpus.sh [최소 인터럽트 수, 기본 100000]`: 썬더볼트 벡터의 `effective_affinity_list` 를 뺀 CPU 목록.
   `tools/bench/node-ab.sh`: `AW_<cfg>`/`BW_<cfg>`(서버 앞 명령), `TBPIN_<cfg>=0`(그 구성만 고정 끔, 모든 구성 `TBPIN_ALL`).
   tbv 받기 마무리 패치(tbv 브랜치 `rx-highpri-poll`, 적재 전): 모듈 파라미터 `rx_wq_poll`(-1 auto · 0 기본 NHI 경로 · 1 `system_highpri_wq` · 2 tbv 큐).

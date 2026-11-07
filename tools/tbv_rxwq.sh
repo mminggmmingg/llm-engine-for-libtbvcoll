@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# tbv 받기 마무리를 높은 우선순위 작업 큐로(rx_wq_poll) — A 에서 실행, 두 노드를 함께: tools/tbv_rxwq.sh install|on|off|restore|status
+# tbv 받기 마무리를 높은 우선순위 작업 큐로(rx_wq_poll) — A 에서 실행, 두 노드를 함께: tools/tbv_rxwq.sh install|on|on2|off|restore|status
 #   install = 새 모듈(rx_wq_poll 이 있는 판)을 두 노드 /lib/modules/<커널>/updates 에 넣고 rx_wq_poll=1 로 다시 올림.
 #             넣기 전에 지금 모듈을 thunderbolt_ibverbs.ko.pre-rxwq.bak 로 복사해 둔다(이미 있으면 그대로). sha256 이 다르면 아무것도 안 함.
 #   on/off  = 설치된 새 모듈을 rx_wq_poll=1(CPU 별 system_highpri_wq) / 0(기본 NHI 경로, events kworker)로 다시 올림 — A/B 용
+#   on2     = rx_wq_poll=2(모듈의 WQ_UNBOUND|WQ_HIGHPRI 큐: 인터럽트 CPU 에 묶이지 않고 같은 L3 의 쉬는 CPU 에서 돎). 1 은 인터럽트 CPU 에서만
+#             돌아 그 CPU 를 잡은 다른 프로그램 뒤에 3 ms 줄을 설 수 있다(fixcost/night-1107)
 #   restore = .pre-rxwq.bak 을 updates 로 되돌려 놓고 다시 올림(옛 모듈)
 # 패치·근거: zbook-thunderbolt-RDMA/tbv 브랜치 rx-highpri-poll, 이 저장소 fixcost/lnk-1107/(RESULTS.md 2026-11-07 08:00 절).
 # 모듈은 B 의 ~/kbuild-1015 헤더 + ~/tbmod-1015-upfix/thunderbolt/Module.symvers 로 빌드(같은 환경의 원본 재빌드가 설치본과 기계어 같음).
@@ -25,9 +27,10 @@ case $mode in
     status)  show; exit 0 ;;
     install) v=1 ;;
     on)      v=1 ;;
+    on2)     v=2 ;;
     off)     v=0 ;;
     restore) v= ;;
-    *)       echo "usage: $0 install|on|off|restore|status"; exit 2 ;;
+    *)       echo "usage: $0 install|on|on2|off|restore|status"; exit 2 ;;
 esac
 
 if pgrep -x ggml-rpc-server > /dev/null || pgrep -x llama-server > /dev/null ||
