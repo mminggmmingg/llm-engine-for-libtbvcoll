@@ -1,0 +1,253 @@
+From 22e32aa5aa428973222bcb4dbf9e5251632fca47 Mon Sep 17 00:00:00 2001
+From: mminggmmingg <ear09park2772@gmail.com>
+Date: Sat, 7 Nov 2026 10:23:43 +0900
+Subject: [PATCH] path: finish received frames in a high-priority work, not the
+ system workqueue
+
+Without start_poll the NHI finishes a ring's completed frames in
+ring_work on the system workqueue (events, nice 0) of the CPU that took
+the interrupt.  A busy nice-0 thread on that CPU shares it in 3 ms
+scheduler slices, and another events work that holds the CPU (a 1 s
+periodic one running 9-13 ms was seen) blocks the pool meanwhile, so a
+received message can wait milliseconds.  On two ZBooks running a
+tensor-parallel LLM this was most of the >1 ms all-reduce delays
+(2.9 ms and 7-12 ms clusters).
+
+Give the RX ring a start_poll: the interrupt masks the ring and queues
+our work, which takes the frames with tb_ring_poll, calls the same frame
+callbacks and unmasks with tb_ring_poll_complete, then looks once more
+for a frame that completed before the unmask.  The single work item is
+the only completion source, so frame order is kept; rx_supp_poll is not
+used with it.  A budget of 256 frames requeues the work with the ring
+still masked.  The work is cancelled before tb_ring_stop, which cancels
+the frames left as before.
+
+rx_wq_poll: -1 auto (native peers -> 1, default), 0 the stock NHI path,
+1 per-CPU system_highpri_wq, 2 our WQ_UNBOUND|WQ_HIGHPRI workqueue.
+Read when a path starts.  debugfs peers shows rx_wq calls/completed.
+Apple peers keep the stock path.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ kernel/debugfs.c |   5 +++
+ kernel/path.c    | 102 ++++++++++++++++++++++++++++++++++++++++++++++-
+ kernel/tbv.h     |   6 +++
+ 3 files changed, 111 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/debugfs.c b/kernel/debugfs.c
+index cfcda3e..22ed65c 100644
+--- a/kernel/debugfs.c
++++ b/kernel/debugfs.c
+@@ -475,6 +475,11 @@ static int tbv_debugfs_peers_show(struct seq_file *s, void *unused)
+ 				   rail->path.rx_supp_poll_enabled,
+ 				   atomic64_read(&rail->path.rx_supp_poll_calls),
+ 				   atomic64_read(&rail->path.rx_supp_poll_completed));
++			seq_printf(s,
++				   "    rx_wq enabled=%u calls=%lld completed=%lld\n",
++				   rail->path.rx_wq_enabled,
++				   atomic64_read(&rail->path.rx_wq_calls),
++				   atomic64_read(&rail->path.rx_wq_completed));
+ 		}
+ 	}
+ 	mutex_unlock(&state->lock);
+diff --git a/kernel/path.c b/kernel/path.c
+index dd2b8eb..f16fb53 100644
+--- a/kernel/path.c
++++ b/kernel/path.c
+@@ -106,6 +106,23 @@ module_param(tx_progress_poll, int, 0644);
+ MODULE_PARM_DESC(tx_progress_poll,
+ 		 "TX 진행 폴링: -1 auto(native 만, 기본), 0 off, 1 on(1ms 주기), 2 HOT(delay-0 재무장). 다음 path 시작 때 적용.");
+ 
++/*
++ * 받은 프레임을 어디서 마무리하나(2026-11-07).
++ * 기본 NHI 경로(start_poll 없음)는 인터럽트를 받은 CPU 의 시스템 작업 큐(events, nice 0) kworker 가 ring_work 로
++ * 프레임 콜백을 부른다. 그 CPU 에서 바쁘게 도는 nice 0 스레드와는 3 ms 스케줄러 조각으로 CPU 를 나눠 쓰고,
++ * 같은 events 풀에 1 초마다 9–13 ms CPU 를 쓰는 다른 작업이 앉으면 그동안 받은 메시지가 기다린다
++ * (llm-engine-for-libtbvcoll fixcost/lnk-1107: 2노드 AR 의 2.9 ms·7–12 ms 늦음).
++ * 링에 start_poll 을 주면 인터럽트는 링을 가리고 이 모듈의 작업만 건다. 작업이 tb_ring_poll 로 프레임을 꺼내 같은
++ * 콜백을 부르고, 다 비면 tb_ring_poll_complete 로 인터럽트를 다시 연다(thunderbolt_net 의 NAPI 와 같은 꼴).
++ * 완료 소스는 이 작업 하나뿐이라(같은 work 는 겹쳐 돌지 않음) 프레임 순서는 그대로다. rx_supp_poll 과는 같이 쓰지 않는다.
++ */
++static int rx_wq_poll = -1;
++module_param(rx_wq_poll, int, 0644);
++MODULE_PARM_DESC(rx_wq_poll,
++		 "RX 프레임 마무리: -1 auto(native 면 1, 기본), 0 기본 NHI 경로(events kworker), 1 CPU 별 높은 우선순위 작업 큐(system_highpri_wq), 2 이 모듈의 작업 큐(WQ_UNBOUND|WQ_HIGHPRI). 다음 path 시작 때 적용.");
++
++#define TBV_RX_WQ_BUDGET 256
++
+ struct tbv_data_frame {
+ 	struct ring_frame frame;
+ 	struct tbv_path *path;
+@@ -279,6 +296,7 @@ static void tbv_path_tx_packet_release(struct tbv_tx_packet *packet, int status)
+ static void tbv_path_schedule_tx(struct tbv_path *path);
+ static void tbv_path_tx_poll_work(struct work_struct *work);
+ static void tbv_path_rx_supp_poll_work(struct work_struct *work);
++static void tbv_path_rx_wq_work(struct work_struct *work);
+ 
+ static bool tbv_path_progress_poll_enabled(const struct tbv_path *path)
+ {
+@@ -311,6 +329,29 @@ static bool tbv_path_rx_supp_poll_enabled(const struct tbv_path *path)
+ 	return false;	/* auto = 기존 보수적 동작(off) 유지 */
+ }
+ 
++/* RX 를 이 모듈의 작업에서 마무리할지(rx_wq_poll). native 한정 — Apple 경로는 바꾸지 않는다. */
++static struct workqueue_struct *tbv_path_rx_wq_select(struct tbv_path *path)
++{
++	struct tbv_state *state = tbv_path_state(path);
++	int mode = READ_ONCE(rx_wq_poll);
++
++	if (!path->rail || !path->rail->peer || mode == 0 ||
++	    path->rail->peer->backend != TBV_BACKEND_NATIVE)
++		return NULL;
++	if (mode == 2 && state && state->workqueue)
++		return state->workqueue;
++	return system_highpri_wq;
++}
++
++/* NHI 인터럽트(하드 IRQ, nhi->lock·ring->lock 잡힘)에서: 링 인터럽트는 이미 가려졌다. 작업만 건다. */
++static void tbv_path_rx_start_poll(void *data)
++{
++	struct tbv_path *path = data;
++
++	if (!READ_ONCE(path->rx_wq_stopping))
++		queue_work(path->rx_wq, &path->rx_wq_work);
++}
++
+ static bool tbv_path_rx_supp_poll_hot(void)
+ {
+ 	return READ_ONCE(rx_supp_poll) == 2;
+@@ -663,6 +704,7 @@ void tbv_path_init(struct tbv_path *path,
+ 	INIT_DELAYED_WORK(&path->tx_poll_work, tbv_path_tx_poll_work);
+ 	INIT_DELAYED_WORK(&path->rx_supp_poll_work,
+ 			  tbv_path_rx_supp_poll_work);
++	INIT_WORK(&path->rx_wq_work, tbv_path_rx_wq_work);
+ 	atomic_set(&path->tx_inflight, 0);
+ 	path->local_transmit_path = -1;
+ 	path->local_tx_hop = -1;
+@@ -686,6 +728,7 @@ void tbv_path_reset(struct tbv_path *path)
+ 	INIT_DELAYED_WORK(&path->tx_poll_work, tbv_path_tx_poll_work);
+ 	INIT_DELAYED_WORK(&path->rx_supp_poll_work,
+ 			  tbv_path_rx_supp_poll_work);
++	INIT_WORK(&path->rx_wq_work, tbv_path_rx_wq_work);
+ 	atomic_set(&path->tx_inflight, 0);
+ 	path->local_transmit_path = -1;
+ 	path->local_tx_hop = -1;
+@@ -802,6 +845,49 @@ static void tbv_path_rx_supp_poll_work(struct work_struct *work)
+ 				msecs_to_jiffies(TBV_RX_SUPP_POLL_DELAY_MS));
+ }
+ 
++static void tbv_path_rx_wq_work(struct work_struct *work)
++{
++	struct tbv_path *path = container_of(work, struct tbv_path,
++					     rx_wq_work);
++	struct tb_ring *ring = READ_ONCE(path->rx_ring);
++	struct ring_frame *frame;
++	u64 completed = 0;
++
++	if (!ring)
++		return;
++
++	atomic64_inc(&path->rx_wq_calls);
++	for (;;) {
++		while (completed < TBV_RX_WQ_BUDGET &&
++		       (frame = tb_ring_poll(ring))) {
++			if (frame->callback)
++				frame->callback(ring, frame, false);
++			completed++;
++		}
++		if (completed >= TBV_RX_WQ_BUDGET) {
++			/* 인터럽트는 가린 채로 두고, 이 CPU 의 다른 일 뒤에 다시 온다. */
++			if (!READ_ONCE(path->rx_wq_stopping))
++				queue_work(path->rx_wq, &path->rx_wq_work);
++			break;
++		}
++		if (READ_ONCE(path->rx_wq_stopping))
++			break;
++		tb_ring_poll_complete(ring);
++		/*
++		 * 마지막 poll 과 인터럽트를 연 사이에 끝난 프레임은 인터럽트를 올리지 않을 수 있어 한 번 더 본다.
++		 * 연 뒤에 꺼내도 된다: 그사이 인터럽트가 오면 링을 다시 가리고 이 작업을 한 번 더 걸 뿐이다.
++		 */
++		frame = tb_ring_poll(ring);
++		if (!frame)
++			break;
++		if (frame->callback)
++			frame->callback(ring, frame, false);
++		completed++;
++	}
++	if (completed)
++		atomic64_add(completed, &path->rx_wq_completed);
++}
++
+ static int tbv_path_post_rx_frame(struct tbv_data_frame *f);
+ 
+ static void tbv_path_rx_start_raw(struct tbv_path *path,
+@@ -1288,13 +1374,19 @@ int tbv_path_alloc_rings(struct tbv_path *path, struct tb_xdomain *xd,
+ 	 * completion single-sourced; TX polling is still used for timely send
+ 	 * completions.
+ 	 */
+-	path->rx_supp_poll_enabled = tbv_path_rx_supp_poll_enabled(path);
++	path->rx_wq = tbv_path_rx_wq_select(path);
++	path->rx_wq_enabled = path->rx_wq != NULL;
++	path->rx_wq_stopping = false;
++	path->rx_supp_poll_enabled = !path->rx_wq_enabled &&
++				     tbv_path_rx_supp_poll_enabled(path);
+ 	path->rx_ring = tb_ring_alloc_rx(xd->tb->nhi, rx_hop,
+ 					 path->cfg.rx_ring_size,
+ 					 path->cfg.rx_flags, e2e_tx_hop,
+ 					 path->cfg.sof_mask,
+ 					 path->cfg.eof_mask,
+-					 NULL, NULL);
++					 path->rx_wq_enabled ?
++						 tbv_path_rx_start_poll : NULL,
++					 path->rx_wq_enabled ? path : NULL);
+ 	if (!path->rx_ring) {
+ 		ret = -ENOMEM;
+ 		goto err_out_hop;
+@@ -2651,6 +2743,12 @@ void tbv_path_destroy(struct tbv_path *path, struct tb_xdomain *xd)
+ 			path->remote_transmit_path = -1;
+ 		}
+ 	}
++	/*
++	 * RX 작업을 링보다 먼저 멈춘다: 멈춘 뒤에는 인터럽트가 와도 작업을 걸지 않고 링을 다시 열지 않는다.
++	 * 남은 프레임은 tb_ring_stop 이 ring_work 로 취소한다.
++	 */
++	WRITE_ONCE(path->rx_wq_stopping, true);
++	cancel_work_sync(&path->rx_wq_work);
+ 	if (rings_started) {
+ 		if (path->rx_ring)
+ 			tb_ring_stop(path->rx_ring);
+diff --git a/kernel/tbv.h b/kernel/tbv.h
+index 1b8eb2d..957bdfe 100644
+--- a/kernel/tbv.h
++++ b/kernel/tbv.h
+@@ -190,6 +190,8 @@ struct tbv_path {
+ 	struct list_head tx_zcopy_inflight;
+ 	struct delayed_work tx_poll_work;
+ 	struct delayed_work rx_supp_poll_work;
++	struct work_struct rx_wq_work;
++	struct workqueue_struct *rx_wq;
+ 	atomic_t tx_inflight;
+ 	atomic64_t data_tx_enqueued;
+ 	atomic64_t data_tx_posted;
+@@ -209,6 +211,8 @@ struct tbv_path {
+ 	atomic64_t tx_poll_completed;
+ 	atomic64_t rx_supp_poll_calls;
+ 	atomic64_t rx_supp_poll_completed;
++	atomic64_t rx_wq_calls;
++	atomic64_t rx_wq_completed;
+ 	unsigned long rx_supp_poll_until;
+ 	u8 rx_raw_opcode;
+ 	u8 rx_raw_flags;
+@@ -223,6 +227,8 @@ struct tbv_path {
+ 	bool rx_raw_pending;
+ 	bool tx_poll_enabled;
+ 	bool rx_supp_poll_enabled;
++	bool rx_wq_enabled;
++	bool rx_wq_stopping;
+ 	bool tx_scheduling;
+ 	bool tx_raw_stream_active;
+ 	bool tx_raw_stream_end_seen;
+-- 
+2.53.0
+

@@ -2062,8 +2062,19 @@ CPU 20 의 `kworker/20:1` 이 두 노드 모두 1087/1088/1024 ms 마다 9–13 
 노드마다 시작할 때 읽는다. 회마다 쓴 목록은 `pin.txt`. `TBPIN=0` 이면 끔.
 
 **남은 것.** 고정 뒤에도 1 ms 넘는 기다림 ≈1.15 ms/단계(≈4%): 1 초 작업(7–12 ms)과 고정 밖 프로세스. 근본 해결은 받은 프레임 마무리를 시스템 작업 큐에서 빼는 것 —
-tbv 가 `start_poll` 을 주고 자기 `WQ_HIGHPRI` 큐에서 `tb_ring_poll`/`tb_ring_poll_complete` 로 처리(thunderbolt_net 의 NAPI 와 같은 꼴). 높은 우선순위 풀은
-events 풀과 따로라 1 초 작업에도, nice 0 회전 대기에도 밀리지 않는다. 모듈 적재에 sudo 가 필요하다(드라이버 패치는 tbv 저장소에 따로).
+tbv 가 `start_poll` 을 주고 높은 우선순위 작업에서 `tb_ring_poll`/`tb_ring_poll_complete` 로 처리(thunderbolt_net 의 NAPI 와 같은 꼴). 높은 우선순위 풀은
+events 풀과 따로라 1 초 작업에도, nice 0 회전 대기에도 밀리지 않는다.
+
+**드라이버 패치(준비만, 적재·측정 전).** tbv 브랜치 `rx-highpri-poll`(22e32aa, `fixcost/lnk-1107/tbv-rx-highpri-poll.patch`, +111줄):
+RX 링에 `start_poll` — 인터럽트는 링을 가리고 작업만 건다, 작업은 `tb_ring_poll` 로 프레임을 꺼내 같은 콜백을 부르고 `tb_ring_poll_complete` 로 다시 연 뒤
+그 사이 끝난 프레임을 한 번 더 본다(이 트리의 NHI 는 열 때 대기 비트를 지우지 않는다). 256 프레임마다 링을 가린 채 다시 걸고, 링을 멈추기 전에 작업을 끝낸다.
+`rx_wq_poll`: -1 auto(native 면 1, 기본) · 0 기본 NHI 경로 · 1 CPU 별 `system_highpri_wq` · 2 tbv 의 unbound highpri 큐. Apple 상대는 그대로.
+빌드는 B 의 `~/kbuild-1015` 헤더 + `~/tbmod-1015-upfix/thunderbolt/Module.symvers`(지금 올라온 thunderbolt.ko 73A1D3… 의 트리). 같은 환경에서 고치지 않은 HEAD 를
+다시 빌드하면 설치본(C8A6733…, sha c81f49da…)과 기계어(주소 제외)·CRC 가 같다. A 의 `/usr/src/linux-headers-7.0.0-1015-oem` 은 `callback_xd` 가 없는 원본
+thunderbolt.h 라 tbnet/xdomain 함수의 기계어가 달라진다 — 이 헤더로 빌드하면 안 된다(10-28 oops 와 같은 종류). 새 모듈 srcversion 979EBFFB…,
+sha256 f2adab45…, 새로 가져오는 심볼은 `system_highpri_wq` 하나, 바뀐 함수는 링 할당·정지·초기화·debugfs 와 새 두 함수(나머지는 구조체 오프셋만).
+올리기: `tools/tbv_rxwq.sh install`(두 노드 sudo, 옛 모듈은 `.pre-rxwq.bak` 으로 복사), A/B 는 `on`/`off`, 되돌리기 `restore`.
+확인할 것: perftest 두 케이블, 엔진 none·MTP 해시와 속도, 감시기 세션의 1 ms 넘는 늦음(특히 7–12 ms 가 없어지는지), debugfs `rx_wq` 호출 수.
 
 **앞 절 고침.** 05:00 절의 "선읽기 뒤 링크 늦음이 25% 늘어난 것은 GPU 의 DRAM 읽기가 USB4 DMA 와 부딪힌다는 추정" — 오늘 같은 설정 기본 5회만으로도 A→B 1 ms
 넘는 늦음이 365–513번으로 흔들려 그 차이는 잡음 안이고, 늦음은 위의 CPU 쪽 원인으로 설명된다. DMA 충돌 증거는 없다.

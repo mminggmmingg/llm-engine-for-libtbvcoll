@@ -111,3 +111,5 @@
   `TBPIN=0` 이면 끔, `A_WRAP`/`B_WRAP`/`CLI_WRAP`(명령 앞에 붙임)을 주면 그것을 쓴다. 회마다 쓴 목록은 실행 폴더의 `pin.txt`.
   `tools/bench/tbcpus.sh [최소 인터럽트 수, 기본 100000]`: 썬더볼트 벡터의 `effective_affinity_list` 를 뺀 CPU 목록.
   `tools/bench/node-ab.sh`: `AW_<cfg>`/`BW_<cfg>`(서버 앞 명령), `TBPIN_<cfg>=0`(그 구성만 고정 끔, 모든 구성 `TBPIN_ALL`).
+  tbv 받기 마무리 패치(tbv 브랜치 `rx-highpri-poll`, 적재 전): 모듈 파라미터 `rx_wq_poll`(-1 auto · 0 기본 NHI 경로 · 1 `system_highpri_wq` · 2 tbv 큐).
+  `tools/tbv_rxwq.sh install|on|off|restore|status`(A 에서, 두 노드 sudo) — 설치·A/B·되돌리기.
