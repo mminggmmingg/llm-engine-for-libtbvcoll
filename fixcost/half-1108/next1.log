@@ -1,0 +1,16 @@
+base h0 ub4 rc=0 1.27.326.854 I Final estimate: PPL = 2.0110 +/- 0.12407
+h0 ub1 vs h0 ub4 (noise ref): chunk PPL ln(PPL(Q)/PPL(base)) KL Divergence Δp RMS Same top p Mean PPL(Q) : 2.040870 ± 0.128849 Mean KLD: 0.013860 ± 0.001338 Maximum KLD: 0.443098 99.0% KLD: 0.217815 Same top p: 97.157 ± 0.521 % 
+h1 ub4 vs h0 ub4: chunk PPL ln(PPL(Q)/PPL(base)) KL Divergence Δp RMS Same top p Mean PPL(Q) : 2.010929 ± 0.123985 Mean KLD: 0.016838 ± 0.001748 Maximum KLD: 0.644252 99.0% KLD: 0.280644 Same top p: 96.373 ± 0.586 %  | A: 1 B: 1 zc A: 1
+h2 ub4 vs h0 ub4: chunk PPL ln(PPL(Q)/PPL(base)) KL Divergence Δp RMS Same top p Mean PPL(Q) : 2.013955 ± 0.124167 Mean KLD: 0.016559 ± 0.001948 Maximum KLD: 1.265670 99.0% KLD: 0.242692 Same top p: 97.059 ± 0.529 %  | A: 1 B: 1 zc A: 1
+mtp h0 bin=bin load A=0.57 B=0.56 rdma=1 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 55.62 tok/s (token-weighted) | srv-2node-mtp-bs-h0-1108-015908
+mtp bf bin=bin load A=0.56 B=0.24 rdma=1 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 55.13 tok/s (token-weighted) | srv-2node-mtp-bs-bf-1108-020329
+mtp h0 bin=bin load A=0.50 B=0.59 rdma=1 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 55.58 tok/s (token-weighted) | srv-2node-mtp-bs-h0-1108-020832
+mtp bf bin=bin load A=0.57 B=0.21 rdma=1 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 54.20 tok/s (token-weighted) | srv-2node-mtp-bs-bf-1108-021303
+mtp h0-w bin=bin load A=0.59 B=0.48 rdma=1 trace=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 55.15 tok/s (token-weighted) | srv-2node-mtp-bs-h0-w-1108-021720
+mtp bf-w bin=bin load A=0.57 B=0.27 rdma=1 trace=1 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 53.48 tok/s (token-weighted) | srv-2node-mtp-bs-bf-w-1108-022217
+# 추론 감시 비교 (2026-11-08 02:24:09, RUNS="mtp:h0 mtp:bf mtp:h0 mtp:bf")
+기록 링을 켠 회라 tok/s 는 속도 회보다 ≈6% 낮다. 세션 폴더: runs/watch/<세션>/(report.html, receipt.md, stalls.txt).
+| 설정 | 감시기 tok/s | ms/단계 | AR 지연 A→B 중앙 / p99 µs | B→A | 1 ms 넘는 기다림 ms/단계 | 그중 링크 / 상대 계산 (번) | 링크 늦음 1–2.5 / 2.5–3.5 / 3.5–7 / 7–12 / >12 ms (번) | 세션 |
+|---|---:|---:|---|---|---:|---|---|---|
+| mtp:h0 | 189.8 | 11.62 | 40.8 / 393.9 | 40.4 / 384.1 | 0.15 | 8 / 222 | 7 / 0 / 0 / 0 / 0 | 20261108-021725 |
+| mtp:bf | 190.2 | 11.58 | 26.3 / 373.8 | 25.5 / 281.9 | 0.09 | 1 / 153 | 1 / 0 / 0 / 0 / 0 | 20261108-022222 |
