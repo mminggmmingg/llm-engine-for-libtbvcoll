@@ -60,8 +60,8 @@
     `=2`(끝 무렵만 돎, `GGML_RPC_SYNC_SPIN_TAIL_US`)는 이득 없음.
     계측 `GGML_SCHED_TIMES=N`(클라이언트, N 번째 호출마다 부분그래프별 입력 복사 시간 stderr).
   - 2026-11-09 새벽: 커널 줄이기(값 같음) — GDN 묶은 norm 을 36층 모두에(겹치면 쓰는 블록이 그리드 전체를 기다림, 기본 켬; `GGML_CUDA_GDN_NORM_NO_WAIT=1` 예전),
-    AR 부분합 내보내기를 만드는 커널이 같이(`GGML_CUDA_COMM_OUT_FUSE`, 기본 켬, =0 끔; 붙드는 최대 토큰 `GGML_CUDA_COMM_OUT_MAX_TOKENS` 기본 1 —
-    4 는 MTP −2.4%; 블록당 행 `GGML_CUDA_COMM_OUT_NW` 기본 8; 검사 `GGML_CUDA_COMM_OUT_VERIFY=1`, 셈 `GGML_CUDA_COMM_OUT_STATS=1`),
+    AR 부분합 내보내기를 만드는 커널이 같이(`GGML_CUDA_COMM_OUT_FUSE`, 기본 켬, =0 끔; 붙드는 최대 토큰 `GGML_CUDA_COMM_OUT_MAX_TOKENS` 기본 4(MTP 검증까지) —
+    11-09 아침 붙드는 것을 ≤64 KB 출력(AR 부분합)으로 한정한 뒤 4 가 MTP +1.5%, 그 전엔 출력층까지 붙들어 −2.4%; =1 은 1토큰만; 블록당 행 `GGML_CUDA_COMM_OUT_NW` 기본 8; 검사 `GGML_CUDA_COMM_OUT_VERIFY=1`, 셈 `GGML_CUDA_COMM_OUT_STATS=1`),
     `GGML_CUDA_Q8_CACHE_PERSIST=1`(AR 경계 뒤 shared expert 입력 다시 양자화 없앰: none +0.45%, MTP 판정 중 — RESULTS.md 2026-11-08 23:40 절),
     `GGML_CUDA_FUSE_OVERLAP_LOG=1`(묶음이 겹침으로 거절될 때 이유를 stderr 로).
     `GGML_RPC_BATCH_SET_ONLY=1`(+`GGML_RPC_BATCH_MAX`): 입력 SET_TENSOR 끼리만 묶어 보냄 — 경계 ≈110 µs 당겨지지만 속도 그대로, 기본 꺼짐.
