@@ -203,3 +203,9 @@ python3 -I tools/bench/mtpcycle.py runs/watch/<세션>/client.ring
 # 그림
 python3 -I fixcost/bigpicture-1108/mkchart.py docs/inefficiency-1108/token-budget.svg
 ```
+
+## 덧붙임: 11-09 새벽 (밤 실험 뒤)
+
+- 커널 줄이기 두 가지를 기본으로 켰다: GDN 묶은 norm 을 36층 모두에(−29/토큰), AR 부분합 내보내기를 만드는 커널이 같이(−96/토큰).
+  커널 1308 → **1183**/토큰, A GPU 시간선 23.37 → 23.21 ms, none 41.72 → **42.12 tok/s**(같은 밤 번갈아 잰 값), MTP 56.5 그대로. 값 그대로.
+- 안 된 것: 4토큰(MTP 검증)까지 내보내기 묶음 −2.4%(원인 미확인), q8 캐시 유지 none +0.45% / MTP −0.5% → 끔. 자세히는 [RESULTS.md](../RESULTS.md) 2026-11-08 22:30 절부터.
