@@ -1,0 +1,28 @@
+[1/10] Provisioning UI assets
+CMake Warning at /data/parksThink/macos_reversing/codex/zbook-rdma/experiments/engine2n/llama.cpp/scripts/ui-assets.cmake:582 (message):
+  UI: provisioning failed; embedding stale assets from
+  /data/parksThink/macos_reversing/codex/zbook-rdma/experiments/engine2n/llama.cpp/build-rocm3/tools/ui/dist
+
+
+-- UI: assets unchanged, skipping embedding
+[2/6] Building CXX object ggml/src/ggml-rpc/CMakeFiles/ggml-rpc.dir/ggml-rpc.cpp.o
+/data/parksThink/macos_reversing/codex/zbook-rdma/experiments/engine2n/llama.cpp/ggml/src/ggml-rpc/ggml-rpc.cpp:1967:47: warning: cast from 'volatile unsigned int *' to 'unsigned int *' drops volatile qualifier [-Wcast-qual]
+ 1967 |                 __atomic_store_n((uint32_t *) flag, job, __ATOMIC_SEQ_CST);  // releases the queued copy + add
+      |                                               ^
+/data/parksThink/macos_reversing/codex/zbook-rdma/experiments/engine2n/llama.cpp/ggml/src/ggml-rpc/ggml-rpc.cpp:2072:70: warning: cast from 'volatile unsigned int *' to 'const unsigned int *' drops volatile qualifier [-Wcast-qual]
+ 2072 |                 while ((int32_t) (__atomic_load_n((const uint32_t *) dflag, __ATOMIC_ACQUIRE) - seq) < 0) {
+      |                                                                      ^
+/data/parksThink/macos_reversing/codex/zbook-rdma/experiments/engine2n/llama.cpp/ggml/src/ggml-rpc/ggml-rpc.cpp:2107:51: warning: cast from 'volatile unsigned int *' to 'unsigned int *' drops volatile qualifier [-Wcast-qual]
+ 2107 |                     __atomic_store_n((uint32_t *) rflag, seq, __ATOMIC_SEQ_CST);  // releases the queued copy + add
+      |                                                   ^
+/data/parksThink/macos_reversing/codex/zbook-rdma/experiments/engine2n/llama.cpp/ggml/src/ggml-rpc/ggml-rpc.cpp:3905:35: warning: cast from 'volatile unsigned int *' to 'unsigned int *' drops volatile qualifier [-Wcast-qual]
+ 3905 |     __atomic_store_n((uint32_t *) state.flag, state.seq, __ATOMIC_SEQ_CST);  // releases the queued copy + add
+      |                                   ^
+/data/parksThink/macos_reversing/codex/zbook-rdma/experiments/engine2n/llama.cpp/ggml/src/ggml-rpc/ggml-rpc.cpp:3930:39: warning: cast from 'volatile unsigned int *' to 'unsigned int *' drops volatile qualifier [-Wcast-qual]
+ 3930 |         __atomic_store_n((uint32_t *) comm_states[request.device].zc_rflag, 0xFFFFFFFFu, __ATOMIC_SEQ_CST);
+      |                                       ^
+5 warnings generated.
+[3/6] Linking CXX static library ggml/src/ggml-rpc/libggml-rpc.a
+[4/6] Linking CXX executable bin/ggml-rpc-server
+[5/6] Linking CXX executable bin/llama-bench
+[6/6] Linking CXX executable bin/llama-server

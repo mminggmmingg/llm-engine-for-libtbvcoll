@@ -1,0 +1,39 @@
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-gluhc-def-1108-124322
+window 1500 ms, tokens 49, per token 30.61 ms, kernel time/token 20.05 ms, kernels/token 1313
+    2517 us/tok  n/tok   36.0  avg    69.9 us  grid   262144 wg    32  mul_mat_vec_q<t6, 1, false, false, false>
+    2352 us/tok  n/tok   48.0  avg    49.0 us  grid   102400 wg  1024  mul_mat_vec_q_glu_q8<t23, 1>
+    2013 us/tok  n/tok   96.0  avg    21.0 us  grid    81920 wg  1024  k_hc_up_pre<true, 1, false>
+    1322 us/tok  n/tok   87.0  avg    15.2 us  grid     4096 wg  1024  rms_norm_f32<1024, 1, true, true, false, false, true, false, true>
+    1233 us/tok  n/tok   48.0  avg    25.7 us  grid   204800 wg    32  mul_mat_vec_q<t20, 1, false, false, false>
+    1218 us/tok  n/tok   96.0  avg    12.7 us  grid    10368 wg    32  mul_mat_vec_q<t14, 1, false, false, false>
+    1131 us/tok  n/tok    1.0  avg  1131.2 us  grid  3973120 wg    32  mul_mat_vec_q<t14, 1, false, false, false>
+    1093 us/tok  n/tok   48.0  avg    22.8 us  grid    81920 wg  1024  mul_mat_vec_q_shexp_tail<t6, 1>
+    1022 us/tok  n/tok   36.0  avg    28.4 us  grid    81920 wg    32  mul_mat_vec_q<t6, 1, false, false, false>
+     996 us/tok  n/tok   60.0  avg    16.6 us  grid   131072 wg   256  mul_mat_vec_f<__hip_bfloat16, float, 1, 256, false, false>
+     651 us/tok  n/tok   48.0  avg    13.6 us  grid    20480 wg  1024  mul_mat_vec_q_glu_q8<t6, 1>
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-gluhc-g4-1108-124458
+window 1500 ms, tokens 49, per token 30.61 ms, kernel time/token 20.07 ms, kernels/token 1313
+    2526 us/tok  n/tok   36.0  avg    70.2 us  grid   262144 wg    32  mul_mat_vec_q<t6, 1, false, false, false>
+    2352 us/tok  n/tok   48.0  avg    49.0 us  grid    25600 wg   256  mul_mat_vec_q_glu_q8<t23, 4>
+    2025 us/tok  n/tok   96.0  avg    21.1 us  grid    81920 wg  1024  k_hc_up_pre<true, 1, false>
+    1256 us/tok  n/tok   48.0  avg    26.2 us  grid   204800 wg    32  mul_mat_vec_q<t20, 1, false, false, false>
+    1241 us/tok  n/tok   87.0  avg    14.3 us  grid     4096 wg  1024  rms_norm_f32<1024, 1, true, true, false, false, true, false, true>
+    1236 us/tok  n/tok   96.0  avg    12.9 us  grid    10368 wg    32  mul_mat_vec_q<t14, 1, false, false, false>
+    1135 us/tok  n/tok    1.0  avg  1134.9 us  grid  3973120 wg    32  mul_mat_vec_q<t14, 1, false, false, false>
+    1027 us/tok  n/tok   36.0  avg    28.5 us  grid    81920 wg    32  mul_mat_vec_q<t6, 1, false, false, false>
+    1021 us/tok  n/tok   48.0  avg    21.3 us  grid    81920 wg  1024  mul_mat_vec_q_shexp_tail<t6, 1>
+    1007 us/tok  n/tok   60.0  avg    16.8 us  grid   131072 wg   256  mul_mat_vec_f<__hip_bfloat16, float, 1, 256, false, false>
+     657 us/tok  n/tok   48.0  avg    13.7 us  grid    20480 wg  1024  mul_mat_vec_q_glu_q8<t6, 1>
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-gluhc-ilv-1108-124635
+window 1500 ms, tokens 49, per token 30.61 ms, kernel time/token 20.30 ms, kernels/token 1313
+    2515 us/tok  n/tok   36.0  avg    69.9 us  grid   262144 wg    32  mul_mat_vec_q<t6, 1, false, false, false>
+    2361 us/tok  n/tok   48.0  avg    49.2 us  grid   102400 wg  1024  mul_mat_vec_q_glu_q8<t23, 1>
+    2202 us/tok  n/tok   96.0  avg    22.9 us  grid    81920 wg  1024  k_hc_up_pre<true, 1, true>
+    1244 us/tok  n/tok   96.0  avg    13.0 us  grid    10368 wg    32  mul_mat_vec_q<t14, 1, false, false, false>
+    1235 us/tok  n/tok   48.0  avg    25.7 us  grid   204800 wg    32  mul_mat_vec_q<t20, 1, false, false, false>
+    1214 us/tok  n/tok   87.0  avg    14.0 us  grid     4096 wg  1024  rms_norm_f32<1024, 1, true, true, false, false, true, false, true>
+    1167 us/tok  n/tok   48.0  avg    24.3 us  grid    81920 wg  1024  mul_mat_vec_q_shexp_tail<t6, 1>
+    1134 us/tok  n/tok    1.0  avg  1133.8 us  grid  3973120 wg    32  mul_mat_vec_q<t14, 1, false, false, false>
+    1029 us/tok  n/tok   36.0  avg    28.6 us  grid    81920 wg    32  mul_mat_vec_q<t6, 1, false, false, false>
+    1006 us/tok  n/tok   60.0  avg    16.8 us  grid   131072 wg   256  mul_mat_vec_f<__hip_bfloat16, float, 1, 256, false, false>
+     651 us/tok  n/tok   12.0  avg    54.2 us  grid   196608 wg    32  mul_mat_vec_q<t6, 1, false, false, false>

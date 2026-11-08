@@ -26,6 +26,8 @@
   - 컴파일 매크로 `MMVQ_RDNA2_IQ4NL_ROWS`(2026-11-08, 기본 4): gfx1151(RDNA2 표, 워프 1개) 1토큰 IQ4_NL 행렬곱(MoE down, K=320)을 블록당 4행으로 —
     행마다 같은 루프·워프 합이라 값이 같다. none +1.7%(RESULTS.md 2026-11-08 03:10 절). `MMVQ_RDNA2_Q5_0_ROWS`(기본 1 = 끔)는 같은 것을 Q5_0 에 —
     행 2 −0.7%, 행 4 −1.5% 라 끔(같은 날 05:48 절). 바꿔 보려면 `-DCMAKE_HIP_FLAGS=-DMMVQ_RDNA2_IQ4NL_ROWS=2` 처럼 다른 빌드 폴더에서.
+  - `GGML_CUDA_GLU_Q8_ROWS=2|4|8`(2026-11-08, 기본 1): MoE gate+up(`mul_mat_vec_q_glu_q8`) 워프당 행 R 개. 값 그대로, 커널 시간 그대로(49.0 µs) → 측정용.
+    `GGML_CUDA_HC_UP_ILV=1`(기본 꺼짐): `k_hc_up_pre` 의 hc 행 4개를 한 고리에서. 값 그대로, 21.0 → 22.9 µs 로 느려짐(RESULTS.md 2026-11-08 12:20 절)
   - `GGML_RPC_COMM_RAIL2=<RDMA 장치>` (+`GGML_RPC_COMM_RAIL2_MIN`): 두 번째 케이블로 큰 부분합을 반씩 교환. 지금 tbv 에서는 이득 없음, 기본 꺼짐
   - 불러올 때 가중치 합치기(qwen4exp, 기본 켬): `LLAMA_MERGE_WEIGHTS=<mask>` — 1 hc down+inject, 2 GDN qkv+gate, 4 GDN beta+alpha(기본 7, 0 은 끔).
     형식이 다르면 바이트가 큰 쪽 형식으로 다시 양자화(H5 의 hc inject Q8_0 → Q6_K), `LLAMA_MERGE_WIDE=1` 은 bpw 큰 쪽(hc down → Q8_0). TP 에서도 모두 합친다(`attn_qkv_gate`·`ssm_beta_alpha` 분할 규칙 추가, 2026-10-31)
@@ -52,6 +54,11 @@
     - 측정·디버그: `GGML_CUDA_PAD_KERNELS=<n>`(노드마다 빈 커널 n개, 커널 하나 비용 재기), `GGML_CUDA_Q8_VERIFY=1`(그래프 끔에서 q8_1 캐시 적중을 새 양자화와 비교, stderr)
   - 2026-11-03 저녁: 단계 시작 GPU 쉼 줄이기(값 같음, 2노드 decode +1.9%) — 클라이언트 작은 입력 비동기 `GGML_RPC_ASYNC_SET`(바이트, 0 = 끔), sched 입력 동기화 생략
     (`GGML_SCHED_INPUT_SYNC_ALWAYS=1` = 예전), 서버 작은 입력 비동기 `GGML_RPC_SERVER_ASYNC_SET`, 명령 묶어 보내기 `GGML_RPC_BATCH_MAX`(기본 끔).
+  - 2026-11-08 낮: 토큰 경계(값 같음) — 쌓인 일이 없으면 다른 부분그래프 출력 입력도 기다리지 않음(기본 켬, none +0.4%; `GGML_SCHED_OTHER_INPUT_SYNC=1` = 예전),
+    작은 RPC 명령 한 번에 쓰기(기본 켬, 본문 4096 B 이하; `GGML_RPC_ONE_WRITE=0` = 예전, A 로 가는 TCP 명령 13 → 5 µs).
+    클라이언트 기다림 돌기 `GGML_RPC_SYNC_SPIN` 기본 1(none +1.0%, MTP +1.7%; `=0` 예전처럼 잠, RESULTS.md 2026-11-08 14:20·17:28 절),
+    `=2`(끝 무렵만 돎, `GGML_RPC_SYNC_SPIN_TAIL_US`)는 이득 없음.
+    계측 `GGML_SCHED_TIMES=N`(클라이언트, N 번째 호출마다 부분그래프별 입력 복사 시간 stderr).
   - 추론 감시: 서버 `GGML_RPC_TRACE=/dev/shm/ggml-rpc-trace-{port}.bin`, 클라이언트 `GGML_RPC_TRACE_CLIENT=...`(run_tp.sh·srv-probe.sh 가 켬, `TRACE=0` 끔, 부담 ≈1.5%),
     `tools/watch/inferwatch.sh start` → 실행마다 `runs/watch/<시각>/report.html`·`receipt.md`. tbv 카운터를 리포트에 넣으려면 `inferwatch.sh tbv-copy`(sudo).
   - 2026-11-04 밤(자세히는 RESULTS.md "11-03 23:50 – 11-04"):
@@ -60,7 +67,7 @@
       이득이 없어 그대로 둠(RESULTS.md 11-07 08:00 절). 장치 이름은 재부팅 때 노드마다 바뀔 수 있다
     - `GGML_RPC_COMM_ZC=3`: 스트림 안 AR + 프록시 스레드(느림), `GGML_RPC_COMM_ZC3_AHEAD=K`(호스트가 앞서는 AR 수 제한)
     - `LLAMA_TP_OUTPUT_SPLIT=<f>`(output.weight 의 장치 0 몫), `LLAMA_KV_PAD=<n>`(n_kv 패딩, 256 이 아니면 출력이 바뀜 — 측정용),
-      `GGML_RPC_GRAPH_DEDUP=1`(서버에 이미 있는 내용의 그래프를 다시 보내지 않음, 기본 끔), `GGML_RPC_SYNC_SPIN=1`(클라이언트 대기를 돌며, 기본 끔)
+      `GGML_RPC_GRAPH_DEDUP=1`(서버에 이미 있는 내용의 그래프를 다시 보내지 않음, 기본 끔), `GGML_RPC_SYNC_SPIN=1`(클라이언트 대기를 돌며 — 11-04 에는 −0.3% 라 끔, 11-08 부터 기본 켬)
     - 진단: `GGML_RPC_GC_STATS=1`(서버 새 그래프 비용), `GGML_META_CACHE_STATS=1`(메타 분할 상태 캐시·다시 짓기), `GGML_RPC_DEDUP_TIME=1`(클라이언트 직렬화),
       클라이언트 DECODE 기록에 llama_decode 앞 단계 도장 4개, 서버 ZC=3 프록시 기록(PROXY)
     - 측정 도구: `tools/bench/prof2node.sh`(A 서버만 rocprofv3), `kgroup.py`(부분그래프 종류별 커널 시간·빈틈), node-ab.sh `BASE_<cfg>`·`CW_<cfg>`(클라이언트 앞 명령),

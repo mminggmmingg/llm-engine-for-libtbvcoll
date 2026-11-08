@@ -33,12 +33,12 @@ one_run() {  # $1 = spec:cfg, $2 = 기록 링 0|1 (비면 TR_<cfg>, 없으면 TR
   for try in 1 2 3; do
     bb=$(eval echo \${BASE_$cfg}); bb=${bb:-$BASE}                  # 기본 서버 환경 바꾸기: BASE_<cfg>(예: 그래프 켜기)
     out=$(SRV_ENV="$bb $SA" SRV_ENV_B="$bb $SB" TAG=bs-$cfg$3 bash srv-probe.sh 2node $spec 2>&1); d=$(echo "$out" | tail -1); n=$(basename $d)
-    [ "$(grep -c "RDMA activated" $d/rpc-a.log)" -ge 1 ] && break
+    [ "$(grep -cE "RDMA activated|allreduce link on .* [(]RDMA[)]" $d/rpc-a.log)" -ge 1 ] && break   # AR 링크 줄: GGML_RPC_LOCAL_TCP 이면 클라이언트 연결은 TCP
     echo "   ($n: rdma=0 — 다시 $try)"; sleep 10
   done
   for x in gm-a gm-b bench thr-a thr-b pin; do cp $d/$x.txt $OUT/$n-$x.txt 2>/dev/null; done
   scp -q parks-zbook@10.99.0.2:/home/parks-zbook/engine2n/bin/rpc-server.log $d/rpc-b.log; grep comm_prof $d/rpc-a.log > $OUT/$n-prof-a.txt; grep comm_prof $d/rpc-b.log > $OUT/$n-prof-b.txt
-  echo "$spec $cfg$3 bin=$(basename $BIN) load A=$a B=$b rdma=$(grep -c "RDMA activated" $d/rpc-a.log) trace=$TRACE zc=$(grep -o 'ZC=[0-9]' $d/rpc-a.log | head -1)/$(grep -o 'ZC=[0-9]' $d/rpc-b.log | head -1): $(echo "$out" | grep TOTAL) | $n"
+  echo "$spec $cfg$3 bin=$(basename $BIN) load A=$a B=$b rdma=$(grep -cE "RDMA activated|allreduce link on .* [(]RDMA[)]" $d/rpc-a.log) trace=$TRACE zc=$(grep -o 'ZC=[0-9]' $d/rpc-a.log | head -1)/$(grep -o 'ZC=[0-9]' $d/rpc-b.log | head -1): $(echo "$out" | grep TOTAL) | $n"
   for x in a b; do echo "   $x: $(python3 -I gmsum.py $d/gm-$x.txt | cut -d'|' -f1)"; done
   c=$(python3 -I profsum.py $OUT/$n-prof-a.txt 2>/dev/null | grep -o 'cycle *[0-9.]*'); [ -n "$c" ] && echo "   cyc: $c"
 }

@@ -428,10 +428,18 @@ index fb35be3..6850cc9 100644
 +    }
 +}
 diff --git a/ggml/src/ggml-backend.cpp b/ggml/src/ggml-backend.cpp
-index 22e5fd9..024c311 100644
+index 22e5fd9..28ae313 100644
 --- a/ggml/src/ggml-backend.cpp
 +++ b/ggml/src/ggml-backend.cpp
-@@ -957,6 +957,10 @@ struct ggml_backend_sched {
+@@ -20,6 +20,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <algorithm>
++#include <string>
+ #include <unordered_map>
+ #include <vector>
+ 
+@@ -957,6 +958,10 @@ struct ggml_backend_sched {
      int cur_copy;
      int next_copy;
      ggml_backend_event_t events[GGML_SCHED_MAX_BACKENDS][GGML_SCHED_MAX_COPIES];
@@ -442,7 +450,7 @@ index 22e5fd9..024c311 100644
      struct ggml_tensor ** graph_inputs;
      int n_graph_inputs;
      int graph_inputs_capacity;
-@@ -1828,10 +1832,16 @@ static void ggml_backend_sched_copy_input(ggml_backend_sched_t sched, struct ggm
+@@ -1828,20 +1833,38 @@ static void ggml_backend_sched_copy_input(ggml_backend_sched_t sched, struct ggm
  
      if (input->flags & GGML_TENSOR_FLAG_INPUT) {
          // inputs from the user must be copied immediately to prevent the user overwriting the data before the copy is done
@@ -463,23 +471,104 @@ index 22e5fd9..024c311 100644
          }
          ggml_backend_tensor_copy(input, input_cpy);
          return;
-@@ -1851,6 +1861,7 @@ static void ggml_backend_sched_copy_input(ggml_backend_sched_t sched, struct ggm
+     }
  
-     // try async copy, but if not possible, we can still use a sync copy without synchronizing the dst backend, since we handle the synchronization here with multiple copies and events
++    // engine2n: the same for the other inputs (outputs of an earlier split, e.g. the CPU split's embeddings): with nothing issued to
++    // the split backend since the scheduler last synchronized it, it cannot still be using input_cpy, so both waits below are
++    // skipped. At the start of a decode step these inputs alternate with user inputs and each wait (and the one it caused at the
++    // next user input) was a round trip through every RPC device's queue: 9 of the 18 copies took 23-47 us instead of 2-4 us.
++    // GGML_SCHED_INPUT_SYNC_ALWAYS=1 keeps every wait, GGML_SCHED_OTHER_INPUT_SYNC=1 only these (the behavior before 2026-11-08).
++    static const bool always_sync = getenv("GGML_SCHED_INPUT_SYNC_ALWAYS") != nullptr;
++    static const bool old_sync    = getenv("GGML_SCHED_OTHER_INPUT_SYNC") != nullptr && atoi(getenv("GGML_SCHED_OTHER_INPUT_SYNC")) != 0;
++    const bool pending = always_sync || old_sync || sched->work_pending[split_backend_id];
++
+     // wait for the split backend to finish using the input before overwriting it
+-    if (sched->events[split_backend_id][sched->cur_copy] != NULL) {
+-        ggml_backend_event_wait(split_backend, sched->events[split_backend_id][sched->cur_copy]);
+-    } else {
+-        ggml_backend_synchronize(split_backend);
++    if (pending) {
++        if (sched->events[split_backend_id][sched->cur_copy] != NULL) {
++            ggml_backend_event_wait(split_backend, sched->events[split_backend_id][sched->cur_copy]);
++        } else {
++            ggml_backend_synchronize(split_backend);
++            sched->work_pending[split_backend_id] = false;
++        }
+     }
+ 
+     if (sched->callback_copy != NULL && ggml_backend_sched_is_host_weight(input) &&
+@@ -1853,12 +1876,20 @@ static void ggml_backend_sched_copy_input(ggml_backend_sched_t sched, struct ggm
      // TODO: add public function to facilitate this, since applications do not have direct access to the backend interface
-+    sched->work_pending[split_backend_id] = true;
      if (!split_backend->iface.cpy_tensor_async || !split_backend->iface.cpy_tensor_async(input_backend, split_backend, input, input_cpy)) {
          ggml_backend_synchronize(input_backend);
-         if (sched->events[split_backend_id][sched->cur_copy] != NULL) {
-@@ -1896,6 +1907,7 @@ static enum ggml_status ggml_backend_sched_compute_splits(ggml_backend_sched_t s
+-        if (sched->events[split_backend_id][sched->cur_copy] != NULL) {
+-            ggml_backend_event_synchronize(sched->events[split_backend_id][sched->cur_copy]);
+-        } else {
+-            ggml_backend_synchronize(split_backend);
++        if (pending) {
++            if (sched->events[split_backend_id][sched->cur_copy] != NULL) {
++                ggml_backend_event_synchronize(sched->events[split_backend_id][sched->cur_copy]);
++            } else {
++                ggml_backend_synchronize(split_backend);
++                sched->work_pending[split_backend_id] = false;
++            }
+         }
++        // a synchronous copy leaves nothing on the split backend that reads the other inputs' copies (before: counted as work,
++        // so the next user input waited)
++        sched->work_pending[split_backend_id] = sched->work_pending[split_backend_id] || old_sync;
+         ggml_backend_tensor_copy(input, input_cpy);
++    } else {
++        sched->work_pending[split_backend_id] = true;
+     }
+ }
+ 
+@@ -1868,6 +1899,14 @@ static enum ggml_status ggml_backend_sched_compute_splits(ggml_backend_sched_t s
+ 
+     int prev_backend_id = -1;
+ 
++    // engine2n debug: GGML_SCHED_TIMES=N prints, every N-th call, each split's launch and the time of each of its input copies
++    // (stderr, us since the call)
++    static const int times_every = getenv("GGML_SCHED_TIMES") ? atoi(getenv("GGML_SCHED_TIMES")) : 0;
++    static int times_calls = 0;
++    const bool times = times_every > 0 && ++times_calls % times_every == 0;
++    int64_t times_t0 = times ? ggml_time_us() : 0;
++    std::string times_line;
++
+     for (int split_id = 0; split_id < sched->n_splits; split_id++) {
+         struct ggml_backend_sched_split * split = &splits[split_id];
+         int split_backend_id = split->backend_id;
+@@ -1887,7 +1926,14 @@ static enum ggml_status ggml_backend_sched_compute_splits(ggml_backend_sched_t s
+         // the weights in host memory are copied last, so that the copy callback can read the other inputs of the split
+         for (int input_id = 0; input_id < split->n_inputs; input_id++) {
+             if (!ggml_backend_sched_is_host_weight(split->inputs[input_id])) {
++                const int64_t ti = times_t0 != 0 && times_line.size() < 4000 ? ggml_time_us() : 0;
+                 ggml_backend_sched_copy_input(sched, split, split->inputs[input_id]);
++                if (ti) {
++                    char buf[160];
++                    snprintf(buf, sizeof(buf), " | s%d %s %zuB +%lld %lldus", split_id, split->inputs[input_id]->name,
++                        ggml_nbytes(split->inputs[input_id]), (long long) (ti - times_t0), (long long) (ggml_time_us() - ti));
++                    times_line += buf;
++                }
+             }
+         }
+         for (int input_id = 0; input_id < split->n_inputs; input_id++) {
+@@ -1896,8 +1942,15 @@ static enum ggml_status ggml_backend_sched_compute_splits(ggml_backend_sched_t s
              }
          }
  
 +        sched->work_pending[split_backend_id] = true;
          if (!sched->callback_eval) {
++            const int64_t tg = times && times_t0 != 0 ? ggml_time_us() : 0;
              enum ggml_status ec = ggml_backend_graph_compute_async(split_backend, &split->graph);
++            if (tg) {
++                fprintf(stderr, "sched_times: n_splits %d, launch split %d (%d nodes) +%lld %lldus%s\n", sched->n_splits,
++                    split_id, split->graph.n_nodes, (long long) (tg - times_t0), (long long) (ggml_time_us() - tg), times_line.c_str());
++                times_line.clear();
++            }
              if (ec != GGML_STATUS_SUCCESS) {
-@@ -2134,6 +2146,7 @@ void ggml_backend_sched_synchronize(ggml_backend_sched_t sched) {
+                 return ec;
+             }
+@@ -2134,6 +2187,7 @@ void ggml_backend_sched_synchronize(ggml_backend_sched_t sched) {
      GGML_ASSERT(sched);
      for (int i = 0; i < sched->n_backends; i++) {
          ggml_backend_synchronize(sched->backends[i]);
@@ -937,7 +1026,7 @@ index aa506a0..e0024c8 100644
 +void ggml_cuda_op_concat_state_tail_direct(ggml_backend_cuda_context & ctx, ggml_tensor * dst, const ggml_tensor * states,
 +        const ggml_tensor * ids, float * tail, int64_t k0, int64_t W);
 diff --git a/ggml/src/ggml-cuda/dsv4-hc.cu b/ggml/src/ggml-cuda/dsv4-hc.cu
-index 2d0b3cf..bb3e3ee 100644
+index 2d0b3cf..bdfb710 100644
 --- a/ggml/src/ggml-cuda/dsv4-hc.cu
 +++ b/ggml/src/ggml-cuda/dsv4-hc.cu
 @@ -1,5 +1,11 @@
@@ -1064,7 +1153,7 @@ index 2d0b3cf..bb3e3ee 100644
  }
  
  void ggml_cuda_op_dsv4_hc_post(ggml_backend_cuda_context & ctx, ggml_tensor * dst,
-@@ -331,3 +374,584 @@ void ggml_cuda_op_dsv4_hc_post(ggml_backend_cuda_context & ctx, ggml_tensor * ds
+@@ -331,3 +374,615 @@ void ggml_cuda_op_dsv4_hc_post(ggml_backend_cuda_context & ctx, ggml_tensor * ds
              nbd0 / sizeof(float), nbd1 / sizeof(float), nbd2 / sizeof(float),
              gate_in, gate_out);
  }
@@ -1110,7 +1199,9 @@ index 2d0b3cf..bb3e3ee 100644
 +    }
 +}
 +
-+template <bool do_q8, int T, bool PRE = false>
++// ILV (GGML_CUDA_HC_UP_ILV=1, k_hc_up_pre only): the DSV4_HC rows of a warp in one kbx loop instead of one loop per row, so their
++// loads are in flight together; each row still sums its products in the same order — same values
++template <bool do_q8, int T, bool PRE = false, bool ILV = false>
 +static __device__ __forceinline__ void hc_up_pre_block(const int bx, const int gx,
 +        const float * xs, const int64_t sxs1, float * silu, const int64_t ssi1, const int ne_s, const float s_scale, const float s_bias,
 +        const char * w_up, const int stride_row_x, float * gate, const int64_t sg1,
@@ -1152,6 +1243,32 @@ index 2d0b3cf..bb3e3ee 100644
 +    constexpr int blocks_per_iter = vdr*warp_size/qi;
 +    const int blocks_per_row_x = ne_s / qk;
 +    float g[T][DSV4_HC];
++    if constexpr (ILV) {
++        float tmp[DSV4_HC][T] = { { 0.0f } };
++        for (int kbx = lane / (qi/vdr); kbx < blocks_per_row_x; kbx += blocks_per_iter) {
++            const int kby = kbx * (qk/QK8_1);
++            const int kqs = vdr * (lane % (qi/vdr));
++#pragma unroll
++            for (int ih = 0; ih < DSV4_HC; ++ih) {
++                const int64_t row = i0*sw0 + ih*sw1;
++#pragma unroll
++                for (int t = 0; t < T; ++t) {
++                    tmp[ih][t] += vec_dot_q8_0_q8_1(w_up, &ys[t][kby], (int) row*stride_row_x + kbx, kqs);
++                }
++            }
++        }
++#pragma unroll
++        for (int ih = 0; ih < DSV4_HC; ++ih) {
++            const int64_t row = i0*sw0 + ih*sw1;
++#pragma unroll
++            for (int t = 0; t < T; ++t) {
++                g[t][ih] = warp_reduce_sum<warp_size>(tmp[ih][t]);
++                if (lane == 0) {
++                    gate[row + t*sg1] = g[t][ih];
++                }
++            }
++        }
++    } else {
 +#pragma unroll
 +    for (int ih = 0; ih < DSV4_HC; ++ih) {
 +        const int64_t row = i0*sw0 + ih*sw1;
@@ -1193,6 +1310,7 @@ index 2d0b3cf..bb3e3ee 100644
 +            }
 +        }
 +    }
++    }
 +
 +    // hc_pre on the gate values this warp just made (the same floats dsv4_hc_pre_f32 would read back)
 +#pragma unroll
@@ -1225,13 +1343,13 @@ index 2d0b3cf..bb3e3ee 100644
 +    }
 +}
 +
-+template <bool do_q8, int T>
++template <bool do_q8, int T, bool ILV = false>
 +static __global__ void __launch_bounds__(1024, 1) k_hc_up_pre(
 +        const float * xs, const int64_t sxs1, float * silu, const int64_t ssi1, const int ne_s, const float s_scale, const float s_bias,
 +        const char * w_up, const int stride_row_x, float * gate, const int64_t sg1,
 +        const float * x, float * dst, const int64_t sx0, const int64_t sx1, const int64_t sx2, const int64_t sd1,
 +        const int64_t sw0, const int64_t sw1, const float scale, block_q8_1 * q8) {
-+    hc_up_pre_block<do_q8, T>(blockIdx.x, gridDim.x, xs, sxs1, silu, ssi1, ne_s, s_scale, s_bias, w_up, stride_row_x, gate, sg1,
++    hc_up_pre_block<do_q8, T, false, ILV>(blockIdx.x, gridDim.x, xs, sxs1, silu, ssi1, ne_s, s_scale, s_bias, w_up, stride_row_x, gate, sg1,
 +        x, dst, sx0, sx1, sx2, sd1, sw0, sw1, scale, q8);
 +}
 +
@@ -1261,7 +1379,9 @@ index 2d0b3cf..bb3e3ee 100644
 +    const int64_t sw0 = gw->nb[0] / sizeof(float);
 +    const int64_t sw1 = gw->nb[1] / sizeof(float);
 +    const dim3 grid(n_embd / 32, 1, 1);
-+    auto kernel = q8 != nullptr ? k_hc_up_pre<true, T> : k_hc_up_pre<false, T>;
++    static const bool ilv = getenv("GGML_CUDA_HC_UP_ILV") && atoi(getenv("GGML_CUDA_HC_UP_ILV")) != 0;
++    auto kernel = ilv ? (q8 != nullptr ? k_hc_up_pre<true, T, true>  : k_hc_up_pre<false, T, true>)
++                      : (q8 != nullptr ? k_hc_up_pre<true, T, false> : k_hc_up_pre<false, T, false>);
 +    kernel<<<grid, 1024, 0, ctx.stream()>>>((const float *) xs->data, xs->nb[1] / sizeof(float), hc_up_silu_out(si, mm, pre), si->nb[1] / sizeof(float),
 +        (int) si->ne[0], s_scale, s_bias, (const char *) w->data, (int) (w->nb[1] / ggml_type_size(w->type)), (float *) mm->data,
 +        mm->nb[1] / sizeof(float), (const float *) x->data, (float *) pre->data, x->nb[0] / sizeof(float), x->nb[1] / sizeof(float),
@@ -5206,7 +5326,7 @@ index 72e961d..5e119a4 100644
          return (void *)ggml_backend_cuda_comm_allreduce_tensor;
      }
 diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
-index 930f1ad..85a5d6f 100644
+index 930f1ad..8c29bf8 100644
 --- a/ggml/src/ggml-cuda/mmvq.cu
 +++ b/ggml/src/ggml-cuda/mmvq.cu
 @@ -1,4 +1,6 @@
@@ -5241,7 +5361,7 @@ index 930f1ad..85a5d6f 100644
      if (table_id == MMVQ_PARAMETERS_GENERIC || table_id == MMVQ_PARAMETERS_GCN || table_id == MMVQ_PARAMETERS_TURING || table_id == MMVQ_PARAMETERS_GB10) {
          switch (ncols_dst) {
              case 1:
-@@ -1452,6 +1471,406 @@ static void mul_mat_vec_q_switch_type(
+@@ -1452,6 +1471,426 @@ static void mul_mat_vec_q_switch_type(
      }
  }
  
@@ -5365,8 +5485,10 @@ index 930f1ad..85a5d6f 100644
 +// sum and GLU epilogue mul_mat_vec_q uses on RDNA (one warp per row, nwarps 1, rows_per_block 1), and warp 0 writes the q8_1
 +// block of the 32 results with quantize_q8_1's code. Same values; the down matmul's quantize kernel goes away. Block 0 of each
 +// channel also zeroes the row padding blocks, as quantize_q8_1 writes them.
-+template <ggml_type type>
-+static __global__ void __launch_bounds__(1024, 1) mul_mat_vec_q_glu_q8(
++// R > 1 (GGML_CUDA_GLU_Q8_ROWS, MoE calls only): 32/R warps per block, warp w computes rows 32*blockIdx.x + w*R .. + R-1 in the
++// same loop (the activation loads are shared), each row with its own sums in the same order — same values.
++template <ggml_type type, int R>
++static __global__ void __launch_bounds__(1024 / R, 1) mul_mat_vec_q_glu_q8(
 +        const void * vx, const void * vgate, const void * vy, const int32_t * ids, float * dst, block_q8_1 * q8,
 +        const uint32_t ncols_x, const uint32_t nrows_x, const uint32_t nchannels_y, const uint32_t stride_row_x,
 +        const uint32_t stride_channel_x, const uint32_t stride_channel_y, const uint32_t stride_channel_dst,
@@ -5377,6 +5499,7 @@ index 930f1ad..85a5d6f 100644
 +    constexpr int warp_size = 32;
 +    constexpr int blocks_per_iter = vdr * warp_size / qi;
 +    constexpr vec_dot_q_cuda_t vec_dot_q_cuda = get_vec_dot_q_cuda(type);
++    static_assert(R >= 1 && R <= 16 && warp_size % R == 0, "glu q8: 1 <= R <= 16");
 +    __shared__ float vo[warp_size];
 +
 +    const int lane = threadIdx.x % warp_size;
@@ -5384,30 +5507,39 @@ index 930f1ad..85a5d6f 100644
 +    const uint32_t channel_dst = blockIdx.y;
 +    const uint32_t channel_x   = ids ? ids[channel_dst] : channel_dst;
 +    const uint32_t channel_y   = ids ? channel_dst % nchannels_y : channel_dst;
-+    const int row0 = blockIdx.x*warp_size + warp;
++    const int row0 = blockIdx.x*warp_size + warp*R;
 +    const int blocks_per_row_x = ncols_x / qk;
 +
-+    float tmp      = 0.0f;
-+    float tmp_gate = 0.0f;
++    float tmp[R]      = { 0.0f };
++    float tmp_gate[R] = { 0.0f };
 +    const block_q8_1 * y = ((const block_q8_1 *) vy) + channel_y*stride_channel_y;
 +    const int kbx_offset = channel_x*stride_channel_x + row0*stride_row_x;
 +    for (int kbx = lane / (qi/vdr); kbx < blocks_per_row_x; kbx += blocks_per_iter) {
 +        const int kby = kbx * (qk/QK8_1);
 +        const int kqs = vdr * (lane % (qi/vdr));
-+        tmp      += vec_dot_q_cuda(vx,    &y[kby], kbx_offset + kbx, kqs);
-+        tmp_gate += vec_dot_q_cuda(vgate, &y[kby], kbx_offset + kbx, kqs);
++#pragma unroll
++        for (int j = 0; j < R; ++j) {
++            tmp[j]      += vec_dot_q_cuda(vx,    &y[kby], kbx_offset + j*stride_row_x + kbx, kqs);
++            tmp_gate[j] += vec_dot_q_cuda(vgate, &y[kby], kbx_offset + j*stride_row_x + kbx, kqs);
++        }
 +    }
-+    tmp      = warp_reduce_sum<warp_size>(tmp);
-+    tmp_gate = warp_reduce_sum<warp_size>(tmp_gate);
++#pragma unroll
++    for (int j = 0; j < R; ++j) {
++        tmp[j]      = warp_reduce_sum<warp_size>(tmp[j]);
++        tmp_gate[j] = warp_reduce_sum<warp_size>(tmp_gate[j]);
++    }
 +
 +    if (lane == 0) {
-+        float result = tmp;
-+        result += 0.0f;  // the bias add of the fused epilogue (no bias)
-+        float gate_value = tmp_gate;
-+        gate_value += 0.0f;
-+        result *= ggml_cuda_op_silu_single(gate_value);
-+        dst[channel_dst*stride_channel_dst + row0] = result;
-+        vo[warp] = result;
++#pragma unroll
++        for (int j = 0; j < R; ++j) {
++            float result = tmp[j];
++            result += 0.0f;  // the bias add of the fused epilogue (no bias)
++            float gate_value = tmp_gate[j];
++            gate_value += 0.0f;
++            result *= ggml_cuda_op_silu_single(gate_value);
++            dst[channel_dst*stride_channel_dst + row0 + j] = result;
++            vo[warp*R + j] = result;
++        }
 +    }
 +    __syncthreads();
 +
@@ -5440,9 +5572,17 @@ index 930f1ad..85a5d6f 100644
 +        const int ncols_x, const int nrows_x, const int nchannels_y, const int nchannels_dst, const int stride_row_x,
 +        const int stride_channel_x, const int stride_channel_y, const int stride_channel_dst, const int q8_blocks_per_channel,
 +        cudaStream_t stream) {
++    static const int rows = getenv("GGML_CUDA_GLU_Q8_ROWS") ? atoi(getenv("GGML_CUDA_GLU_Q8_ROWS")) : 1;
 +    const dim3 grid(nrows_x / 32, nchannels_dst, 1);
-+    mul_mat_vec_q_glu_q8<type><<<grid, 1024, 0, stream>>>(vx, vgate, vy, ids, dst, (block_q8_1 *) q8, ncols_x, nrows_x,
-+        nchannels_y, stride_row_x, stride_channel_x, stride_channel_y, stride_channel_dst, q8_blocks_per_channel);
++#define GLU_Q8_LAUNCH(r) mul_mat_vec_q_glu_q8<type, r><<<grid, 1024 / r, 0, stream>>>(vx, vgate, vy, ids, dst, (block_q8_1 *) q8, \
++        ncols_x, nrows_x, nchannels_y, stride_row_x, stride_channel_x, stride_channel_y, stride_channel_dst, q8_blocks_per_channel)
++    switch (ids ? rows : 1) {
++        case 2:  GLU_Q8_LAUNCH(2); break;
++        case 4:  GLU_Q8_LAUNCH(4); break;
++        case 8:  GLU_Q8_LAUNCH(8); break;
++        default: GLU_Q8_LAUNCH(1); break;
++    }
++#undef GLU_Q8_LAUNCH
 +}
 +
 +// engine2n: shared expert down projection of T <= 4 tokens followed by the gate tail k_shexp_gate_dot_tail fuses (gate dot,
@@ -5648,7 +5788,7 @@ index 930f1ad..85a5d6f 100644
  void ggml_cuda_mul_mat_vec_q(
          ggml_backend_cuda_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1, const ggml_tensor * ids, ggml_tensor * dst,
          const ggml_cuda_mm_fusion_args_host * fusion) {
-@@ -1483,7 +1902,7 @@ void ggml_cuda_mul_mat_vec_q(
+@@ -1483,7 +1922,7 @@ void ggml_cuda_mul_mat_vec_q(
      if (fusion) {
          const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
          GGML_ASSERT( !ids || dst->ne[2] <= get_mmvq_mmid_max_batch(src0->type, cc));
@@ -5657,7 +5797,7 @@ index 930f1ad..85a5d6f 100644
          // Scale fusion is only allowed for NVFP4 currently as the cost of checking this at run-time in the prologue is
          // non-negligible for some models such as gpt-oss-20b
          GGML_ASSERT((fusion->x_scale == nullptr && fusion->gate_scale == nullptr) || src0->type == GGML_TYPE_NVFP4);
-@@ -1549,12 +1968,76 @@ void ggml_cuda_mul_mat_vec_q(
+@@ -1549,12 +1988,76 @@ void ggml_cuda_mul_mat_vec_q(
      }
  
      const int64_t ne10_padded = GGML_PAD(ne10, MATRIX_ROW_PADDING);
@@ -5737,7 +5877,7 @@ index 930f1ad..85a5d6f 100644
      }
  
      const int64_t s01 = src0->nb[1] / ts_src0;
-@@ -1579,8 +2062,60 @@ void ggml_cuda_mul_mat_vec_q(
+@@ -1579,8 +2082,60 @@ void ggml_cuda_mul_mat_vec_q(
  
      const int64_t ids_stride = ids ? ids->nb[1] / ggml_type_size(ids->type) : 0;
  
@@ -7429,7 +7569,7 @@ index c6ffdb9..6dff7c3 100644
 +        ggml_tensor * dst, void * q8);
 +
 diff --git a/ggml/src/ggml-rpc/ggml-rpc.cpp b/ggml/src/ggml-rpc/ggml-rpc.cpp
-index 8cedee7..37b17a5 100644
+index 8cedee7..696a92a 100644
 --- a/ggml/src/ggml-rpc/ggml-rpc.cpp
 +++ b/ggml/src/ggml-rpc/ggml-rpc.cpp
 @@ -6,6 +6,12 @@
@@ -7479,7 +7619,32 @@ index 8cedee7..37b17a5 100644
  struct rpc_msg_comm_init_req {
      uint32_t device;
      uint32_t rank;
-@@ -407,11 +426,167 @@ static bool send_rpc_cmd(socket_ptr sock, enum rpc_cmd cmd, const void * input,
+@@ -375,6 +394,24 @@ static bool parse_endpoint(const std::string & endpoint, std::string & host, int
+ // RPC request : | rpc_cmd (1 byte) | request_size (8 bytes) | request_data (request_size bytes) |
+ // No response
+ static bool send_rpc_cmd(socket_ptr sock, enum rpc_cmd cmd, const void * input, size_t input_size) {
++    // engine2n: a small command goes out in one write (TCP: one send() instead of three, so the server is woken once; the
++    // client's commands to the server on its own node are on TCP loopback, 12-20 us each vs 4-5 us over RDMA to the other node).
++    // Same bytes. GGML_RPC_ONE_WRITE=0 sends the three parts as before; GGML_RPC_ONE_WRITE=<bytes> sets the size limit (4096).
++    static const size_t one_write_max = [] {
++        const char * env = getenv("GGML_RPC_ONE_WRITE");
++        return env ? (size_t) atoll(env) : (size_t) 4096;
++    }();
++    if (input_size <= one_write_max && one_write_max > 0) {
++        thread_local std::vector<uint8_t> buf;
++        const uint64_t n = input_size;
++        buf.resize(1 + sizeof(n) + input_size);
++        buf[0] = (uint8_t) cmd;
++        memcpy(buf.data() + 1, &n, sizeof(n));
++        if (input_size > 0) {
++            memcpy(buf.data() + 1 + sizeof(n), input, input_size);
++        }
++        return sock->send_data(buf.data(), buf.size()) && sock->flush();
++    }
+     uint8_t cmd_byte = cmd;
+     if (!sock->send_data(&cmd_byte, sizeof(cmd_byte))) {
+         return false;
+@@ -407,11 +444,167 @@ static bool send_rpc_cmd(socket_ptr sock, enum rpc_cmd cmd, const void * input,
      return true;
  }
  
@@ -7647,7 +7812,7 @@ index 8cedee7..37b17a5 100644
  static inline void rpc_cpu_relax() {
  #if defined(__aarch64__) && (defined(__clang__) || defined(__GNUC__))
      __asm__ volatile("yield" ::: "memory");
-@@ -512,6 +687,12 @@ public:
+@@ -512,6 +705,12 @@ public:
      void busy_spin_acquire();
      void busy_spin_release();
      void graph_compute(uint32_t device, const ggml_cgraph * cgraph);
@@ -7660,7 +7825,7 @@ index 8cedee7..37b17a5 100644
  
      void start(const std::string & endpoint);
      void work();
-@@ -526,6 +707,7 @@ private:
+@@ -526,6 +725,7 @@ private:
          void                        * output;
          size_t                        output_size;
          std::promise<void>            completion;
@@ -7668,7 +7833,7 @@ index 8cedee7..37b17a5 100644
      };
      using rpc_msg_ptr   = std::shared_ptr<rpc_msg>;
      using rpc_msg_queue = message_queue<rpc_msg_ptr>;
-@@ -535,13 +717,45 @@ private:
+@@ -535,13 +735,86 @@ private:
      };
      std::mutex graph_mutex;
      std::unordered_map<uint32_t, std::unordered_set<uint64_t>> graph_uids;
@@ -7691,30 +7856,71 @@ index 8cedee7..37b17a5 100644
 +    uint32_t         trace_id = 0;  // GGML_RPC_TRACE_CLIENT: this endpoint's number in the client trace
  };
  
-+// engine2n: GGML_RPC_SYNC_SPIN=1 makes the client's blocking waits (synchronize, commands with a reply, events) spin
-+// instead of sleeping. Asleep for most of a decode step, the thread came back to a slow core: work right after the
-+// wait (sampling, the next step's inputs and graph issue) ran up to ~40x slower than on an idle machine.
++// engine2n: GGML_RPC_SYNC_SPIN=1 (default since 2026-11-08, 0 = sleep) makes the client's blocking waits (synchronize,
++// commands with a reply, events) spin instead of sleeping. Asleep for most of a decode step, the thread came back to a slow
++// core: work right after the wait (sampling, the next step's inputs and graph issue) ran up to ~40x slower than on an idle
++// machine. 2-node H5: none +1.0%, MTP +1.7% (A's GPU clock -1%: the CPU shares the socket power).
++// GGML_RPC_SYNC_SPIN=2 spins only around the expected end: up to 200 us (short waits), then, for a long wait (the decode step's
++// output read), sleeps until GGML_RPC_SYNC_SPIN_TAIL_US (default 1000) before the running average of the long waits and spins
++// the rest, so the core is awake when the reply comes without spinning the whole step (the CPU shares the socket power with the GPU).
 +template <typename F>
 +static void rpc_wait(F & f) {
-+    static const bool spin = [] {
++    static const int spin = [] {
 +        const char * env = getenv("GGML_RPC_SYNC_SPIN");
-+        return env != nullptr && atoi(env) != 0;
++        return env != nullptr ? atoi(env) : 1;
 +    }();
-+    if (!spin) {
++    auto spin_until_ready = [&f] {
++        while (f.wait_for(std::chrono::seconds(0)) != std::future_status::ready) {
++#if defined(__x86_64__) || defined(__i386__)
++            __builtin_ia32_pause();
++#endif
++        }
++    };
++    if (spin == 0) {
 +        f.wait();
 +        return;
 +    }
++    if (spin == 1) {
++        spin_until_ready();
++        return;
++    }
++    static const int64_t tail_us = [] {
++        const char * env = getenv("GGML_RPC_SYNC_SPIN_TAIL_US");
++        return env != nullptr ? (int64_t) atoll(env) : (int64_t) 1000;
++    }();
++    static std::atomic<int64_t> long_avg_us{0};  // running average of the waits longer than 2 ms
++    const int64_t t0 = ggml_time_us();
 +    while (f.wait_for(std::chrono::seconds(0)) != std::future_status::ready) {
++        const int64_t el = ggml_time_us() - t0;
++        if (el < 200) {
 +#if defined(__x86_64__) || defined(__i386__)
-+        __builtin_ia32_pause();
++            __builtin_ia32_pause();
 +#endif
++            continue;
++        }
++        const int64_t avg = long_avg_us.load(std::memory_order_relaxed);
++        const int64_t sleep_us = avg - tail_us - el;
++        if (sleep_us > 0 && f.wait_for(std::chrono::microseconds(sleep_us)) == std::future_status::ready) {
++            break;
++        }
++        if (avg == 0) {
++            f.wait();  // no average yet: sleep as before
++            break;
++        }
++        spin_until_ready();
++        break;
++    }
++    const int64_t d = ggml_time_us() - t0;
++    if (d > 2000) {
++        const int64_t avg = long_avg_us.load(std::memory_order_relaxed);
++        long_avg_us.store(avg == 0 ? d : (avg*7 + d)/8, std::memory_order_relaxed);
 +    }
 +}
 +
  static void rpc_dispatcher_trampoline(rpc_dispatcher * dispatcher)
  {
      dispatcher->work();
-@@ -556,7 +770,7 @@ void rpc_dispatcher::send(enum rpc_cmd cmd, std::shared_ptr<const void> input, s
+@@ -556,7 +829,7 @@ void rpc_dispatcher::send(enum rpc_cmd cmd, std::shared_ptr<const void> input, s
      msg->output_size = 0;
      GGML_ASSERT(queue.push(msg));
      auto future = msg->completion.get_future();
@@ -7723,7 +7929,7 @@ index 8cedee7..37b17a5 100644
  }
  
  void rpc_dispatcher::send_async(enum rpc_cmd cmd, std::shared_ptr<const void> input, size_t input_size) {
-@@ -578,7 +792,7 @@ void rpc_dispatcher::send(enum rpc_cmd cmd, std::shared_ptr<const void> input, s
+@@ -578,7 +851,7 @@ void rpc_dispatcher::send(enum rpc_cmd cmd, std::shared_ptr<const void> input, s
      msg->output_size = output_size;
      GGML_ASSERT(queue.push(msg));
      auto future = msg->completion.get_future();
@@ -7732,7 +7938,7 @@ index 8cedee7..37b17a5 100644
  }
  
  void rpc_dispatcher::send_async(enum rpc_cmd cmd, std::shared_ptr<const void> input, size_t input_size, void * output, size_t output_size) {
-@@ -610,7 +824,7 @@ void rpc_dispatcher::event_free(ggml_backend_event_t event) {
+@@ -610,7 +883,7 @@ void rpc_dispatcher::event_free(ggml_backend_event_t event) {
  
  void rpc_dispatcher::event_synchronize(ggml_backend_event_t event) {
      rpc_event * ev = (rpc_event *)event->context;
@@ -7741,7 +7947,7 @@ index 8cedee7..37b17a5 100644
  }
  
  void rpc_dispatcher::event_record(ggml_backend_event_t event) {
-@@ -626,7 +840,8 @@ void rpc_dispatcher::synchronize() {
+@@ -626,7 +899,8 @@ void rpc_dispatcher::synchronize() {
      auto msg = std::make_shared<rpc_msg>();
      msg->cmd = RPC_CMD_NONE;
      GGML_ASSERT(queue.push(msg));
@@ -7751,7 +7957,7 @@ index 8cedee7..37b17a5 100644
  }
  
  void rpc_dispatcher::busy_spin_acquire() {
-@@ -656,18 +871,42 @@ void rpc_dispatcher::start(const std::string & endpoint) {
+@@ -656,18 +930,42 @@ void rpc_dispatcher::start(const std::string & endpoint) {
          GGML_ABORT("RPC handshake failed for %s\n", endpoint.c_str());
      }
      LOG_DBG("[%s] connected to %s\n", __func__, endpoint.c_str());
@@ -7796,7 +8002,7 @@ index 8cedee7..37b17a5 100644
              if (!queue.try_pop(&msg_ptr)) {
                  rpc_cpu_relax();
                  continue;
-@@ -680,17 +919,65 @@ void rpc_dispatcher::work() {
+@@ -680,17 +978,65 @@ void rpc_dispatcher::work() {
                       rpc_log_format_size(msg_ptr->input_size).c_str(), rpc_log_format_size(msg_ptr->output_size).c_str());
              const bool trace = rpc_log_debug_level() >= 3;
              const auto t0 = std::chrono::steady_clock::now();
@@ -7864,7 +8070,7 @@ index 8cedee7..37b17a5 100644
          } else {
              LOG_DBG3("[%s] sync barrier\n", __func__);
          }
-@@ -731,6 +1018,7 @@ static void ggml_backend_rpc_buffer_free_buffer(ggml_backend_buffer_t buffer) {
+@@ -731,6 +1077,7 @@ static void ggml_backend_rpc_buffer_free_buffer(ggml_backend_buffer_t buffer) {
      auto request = std::make_shared<rpc_msg_free_buffer_req>();
      request->remote_ptr = ctx->remote_ptr;
      LOG_DBG2("[%s] remote_ptr: 0x%" PRIx64 "\n", __func__, request->remote_ptr);
@@ -7872,7 +8078,7 @@ index 8cedee7..37b17a5 100644
      ctx->dispatcher->send(RPC_CMD_FREE_BUFFER, request, sizeof(*request));
      delete ctx;
  }
-@@ -872,6 +1160,17 @@ static void ggml_backend_rpc_buffer_set_tensor(ggml_backend_buffer_t buffer, ggm
+@@ -872,6 +1219,17 @@ static void ggml_backend_rpc_buffer_set_tensor(ggml_backend_buffer_t buffer, ggm
      }
      size_t input_size;
      auto input = serialize_set_tensor(rpc_tensor, cache_flag, offset, data, size, input_size);
@@ -7890,7 +8096,7 @@ index 8cedee7..37b17a5 100644
      ctx->dispatcher->send(RPC_CMD_SET_TENSOR, input, input_size);
  }
  
-@@ -919,6 +1218,21 @@ static void ggml_backend_rpc_buffer_get_tensor_2d(ggml_backend_buffer_t buffer,
+@@ -919,6 +1277,21 @@ static void ggml_backend_rpc_buffer_get_tensor_2d(ggml_backend_buffer_t buffer,
      }
  }
  
@@ -7912,7 +8118,7 @@ index 8cedee7..37b17a5 100644
  static void ggml_backend_rpc_buffer_get_tensor(ggml_backend_buffer_t buffer, const ggml_tensor * tensor, void * data, size_t offset, size_t size) {
      ggml_backend_rpc_buffer_context * ctx = (ggml_backend_rpc_buffer_context *)buffer->context;
      LOG_DBG2("[%s] tensor: %s, offset: %zu, size: %s\n", __func__, rpc_log_format_tensor(tensor).c_str(), offset,
-@@ -1212,6 +1526,34 @@ static void add_tensor(ggml_tensor * tensor, const ggml_cgraph * cgraph, const r
+@@ -1212,6 +1585,34 @@ static void add_tensor(ggml_tensor * tensor, const ggml_cgraph * cgraph, const r
      tensors.push_back(result);
  }
  
@@ -7947,7 +8153,7 @@ index 8cedee7..37b17a5 100644
  static uint8_t * serialize_graph(uint32_t device, const ggml_cgraph * cgraph, const rpc_dispatcher * dispatcher, size_t * output_size) {
      uint32_t n_nodes = cgraph->n_nodes;
      std::vector<rpc_tensor> tensors;
-@@ -1246,26 +1588,123 @@ void rpc_dispatcher::graph_compute(uint32_t device, const ggml_cgraph * cgraph)
+@@ -1246,26 +1647,123 @@ void rpc_dispatcher::graph_compute(uint32_t device, const ggml_cgraph * cgraph)
      std::lock_guard<std::mutex> lock(graph_mutex);
      GGML_ASSERT(cgraph->n_nodes > 0);
      auto & device_graph_uids = graph_uids[device];
@@ -8078,7 +8284,7 @@ index 8cedee7..37b17a5 100644
          send_async(RPC_CMD_GRAPH_COMPUTE, input_ptr, input_size);
      }
  }
-@@ -1388,6 +1827,270 @@ void ggml_backend_rpc_get_device_memory(const char * endpoint, uint32_t device,
+@@ -1388,6 +1886,270 @@ void ggml_backend_rpc_get_device_memory(const char * endpoint, uint32_t device,
  
  // RPC server-side implementation
  
@@ -8349,7 +8555,7 @@ index 8cedee7..37b17a5 100644
  class rpc_server {
  public:
      rpc_server(std::vector<ggml_backend_t> all_backends, const char * cache_dir)
-@@ -1410,11 +2113,14 @@ public:
+@@ -1410,11 +2172,14 @@ public:
      bool set_tensor_hash(const rpc_msg_set_tensor_hash_req & request, rpc_msg_set_tensor_hash_rsp & response);
      bool get_tensor(const rpc_msg_get_tensor_req & request, std::vector<uint8_t> & response);
      bool get_tensor_2d(const rpc_msg_get_tensor_2d_req & request, std::vector<uint8_t> & response);
@@ -8364,7 +8570,7 @@ index 8cedee7..37b17a5 100644
      bool comm_free(const rpc_msg_comm_free_req & request);
      bool init_tensor(const rpc_msg_init_tensor_req & request);
      bool get_alloc_size(const rpc_msg_get_alloc_size_req & request, rpc_msg_get_alloc_size_rsp & response);
-@@ -1427,6 +2133,7 @@ public:
+@@ -1427,6 +2192,7 @@ public:
  
  private:
      void sync_all_backends();
@@ -8372,7 +8578,7 @@ index 8cedee7..37b17a5 100644
      bool get_cached_file(uint64_t hash, std::vector<uint8_t> & data);
      ggml_tensor * deserialize_tensor(struct ggml_context * ctx, const rpc_tensor * tensor);
      ggml_tensor * create_node(uint64_t id,
-@@ -1438,17 +2145,46 @@ private:
+@@ -1438,17 +2204,46 @@ private:
      // pairwise allreduce over a direct connection to the peer server
      struct comm_state {
          socket_ptr              peer;
@@ -8419,7 +8625,7 @@ index 8cedee7..37b17a5 100644
      // computed graphs cached per backend, keyed by uid
      std::vector<std::unordered_map<uint64_t, stored_graph>> stored_graphs;
      std::vector<comm_state> comm_states;
-@@ -1698,8 +2434,54 @@ ggml_tensor * rpc_server::deserialize_tensor(struct ggml_context * ctx, const rp
+@@ -1698,8 +2493,54 @@ ggml_tensor * rpc_server::deserialize_tensor(struct ggml_context * ctx, const rp
  }
  
  
@@ -8475,7 +8681,7 @@ index 8cedee7..37b17a5 100644
      // serialization format: | rpc_tensor | cache_flag (1 byte) | offset (8 bytes) | data (size bytes) |
      uint8_t  cache_flag;
      uint64_t offset;
-@@ -1752,6 +2534,10 @@ bool rpc_server::set_tensor(const std::vector<uint8_t> & input) {
+@@ -1752,6 +2593,10 @@ bool rpc_server::set_tensor(const std::vector<uint8_t> & input) {
          ofs.write((const char *)data, size);
          LOG_INFO("[%s] saved to '%s'\n", __func__, cache_file.string().c_str());
      }
@@ -8486,7 +8692,7 @@ index 8cedee7..37b17a5 100644
      ggml_backend_tensor_set(tensor, data, offset, size);
      return true;
  }
-@@ -1772,6 +2558,7 @@ bool rpc_server::set_tensor_2d(const std::vector<uint8_t> & input) {
+@@ -1772,6 +2617,7 @@ bool rpc_server::set_tensor_2d(const std::vector<uint8_t> & input) {
  
      const uint64_t data_size = input.size() - sizeof(rpc_tensor) - 4*sizeof(uint64_t);
      if (n_copies == 0 || size == 0 || size > data_size / n_copies || size * n_copies != data_size) {
@@ -8494,7 +8700,7 @@ index 8cedee7..37b17a5 100644
          return false;
      }
  
-@@ -2009,6 +2796,45 @@ bool rpc_server::get_tensor_2d(const rpc_msg_get_tensor_2d_req & request, std::v
+@@ -2009,6 +2855,45 @@ bool rpc_server::get_tensor_2d(const rpc_msg_get_tensor_2d_req & request, std::v
      return true;
  }
  
@@ -8540,7 +8746,7 @@ index 8cedee7..37b17a5 100644
  bool rpc_server::copy_tensor(const rpc_msg_copy_tensor_req & request, rpc_msg_copy_tensor_rsp & response) {
      sync_all_backends();
      struct ggml_init_params params {
-@@ -2107,6 +2933,7 @@ ggml_tensor * rpc_server::create_node(uint64_t id,
+@@ -2107,6 +2992,7 @@ ggml_tensor * rpc_server::create_node(uint64_t id,
  }
  
  bool rpc_server::graph_compute(const std::vector<uint8_t> & input) {
@@ -8548,7 +8754,7 @@ index 8cedee7..37b17a5 100644
      // serialization format:
      // | device (4 bytes) | uid (8 bytes) | n_nodes (4 bytes) | nodes (n_nodes * sizeof(uint64_t) | n_tensors (4 bytes) | tensors (n_tensors * sizeof(rpc_tensor)) |
      if (input.size() < 2*sizeof(uint32_t) + sizeof(uint64_t)) {
-@@ -2191,10 +3018,33 @@ bool rpc_server::graph_compute(const std::vector<uint8_t> & input) {
+@@ -2191,10 +3077,33 @@ bool rpc_server::graph_compute(const std::vector<uint8_t> & input) {
      }
      const std::chrono::duration<double, std::milli> deserialize_ms = std::chrono::steady_clock::now() - t_deserialize;
  
@@ -8582,7 +8788,7 @@ index 8cedee7..37b17a5 100644
      return true;
  }
  
-@@ -2236,6 +3086,17 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
+@@ -2236,6 +3145,17 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
      }
      uint8_t local_caps[RPC_CONN_CAPS_SIZE] = {};
      uint8_t remote_caps[RPC_CONN_CAPS_SIZE] = {};
@@ -8600,7 +8806,7 @@ index 8cedee7..37b17a5 100644
      if (request.rank == 0) {
          socket_ptr srv = socket_t::create_server("0.0.0.0", request.port);
          if (srv == nullptr) {
-@@ -2277,6 +3138,93 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
+@@ -2277,6 +3197,93 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
          }
          state.peer->update_caps(remote_caps);
      }
@@ -8694,7 +8900,7 @@ index 8cedee7..37b17a5 100644
      state.rank  = request.rank;
      state.world = request.world;
      LOG_INFO("[%s] device %u joined pairwise comm as rank %u\n", __func__, request.device, request.rank);
-@@ -2284,6 +3232,109 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
+@@ -2284,6 +3291,109 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
      return true;
  }
  
@@ -8804,7 +9010,7 @@ index 8cedee7..37b17a5 100644
  bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
      if (request.device >= backends.size()) {
          return false;
-@@ -2294,6 +3345,12 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2294,6 +3404,12 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
          return false;
      }
      ggml_backend_t backend = backends[request.device];
@@ -8817,7 +9023,7 @@ index 8cedee7..37b17a5 100644
  
      size_t ctx_size = 16*ggml_tensor_overhead() + 2*ggml_graph_overhead_custom(8, false);
      struct ggml_init_params params = {
-@@ -2316,16 +3373,43 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2316,16 +3432,43 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
      }
      // reduce large partials in bf16 to halve the wire bytes; small (decode-sized) ones
      // stay f32 since the extra casts and sync cost more than the bytes saved
@@ -8864,7 +9070,7 @@ index 8cedee7..37b17a5 100644
  
      auto new_scratch_tensor = [&](ggml_type type, size_t offset) {
          ggml_tensor * t = ggml_new_tensor_4d(ctx, type, t_dst->ne[0], t_dst->ne[1], t_dst->ne[2], t_dst->ne[3]);
-@@ -2352,41 +3436,377 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2352,41 +3495,377 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
          GGML_ASSERT(status == GGML_STATUS_SUCCESS && "Unsuccessful graph computations are not supported with RPC");
      };
  
@@ -9257,7 +9463,7 @@ index 8cedee7..37b17a5 100644
      }
  
      ggml_tensor * t_red = ggml_new_tensor_4d(ctx, t_dst->type, t_dst->ne[0], t_dst->ne[1], t_dst->ne[2], t_dst->ne[3]);
-@@ -2402,6 +3822,40 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2402,6 +3881,40 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
      } else {
          compute_nodes(t_red, nullptr);
      }
@@ -9298,7 +9504,7 @@ index 8cedee7..37b17a5 100644
      return true;
  }
  
-@@ -2409,6 +3863,15 @@ bool rpc_server::comm_free(const rpc_msg_comm_free_req & request) {
+@@ -2409,6 +3922,15 @@ bool rpc_server::comm_free(const rpc_msg_comm_free_req & request) {
      if (request.device >= backends.size()) {
          return false;
      }
@@ -9314,7 +9520,7 @@ index 8cedee7..37b17a5 100644
      comm_states[request.device] = comm_state();
      return true;
  }
-@@ -2474,10 +3937,34 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+@@ -2474,10 +3996,34 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
      // Activate transport upgrade using client's caps
      sock->update_caps(req.conn_caps);
      LOG_DBG("[%s] client connected, transport: %s\n", __func__, sock->transport_name());
@@ -9349,7 +9555,7 @@ index 8cedee7..37b17a5 100644
          if (cmd >= RPC_CMD_COUNT) {
              // fail fast if the command is invalid
              LOG_ERROR("Unknown command: %d\n", cmd);
-@@ -2613,6 +4100,7 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+@@ -2613,6 +4159,7 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
              case RPC_CMD_SET_TENSOR_2D: {
                  std::vector<uint8_t> input;
                  if (!recv_msg(sock, input)) {
@@ -9357,7 +9563,7 @@ index 8cedee7..37b17a5 100644
                      return;
                  }
                  if (!server.set_tensor_2d(input)) {
-@@ -2634,6 +4122,20 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+@@ -2634,6 +4181,20 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
                  }
                  break;
              }
@@ -9378,7 +9584,7 @@ index 8cedee7..37b17a5 100644
              case RPC_CMD_SET_TENSOR_HASH: {
                  rpc_msg_set_tensor_hash_req request;
                  if (!recv_msg(sock, &request, sizeof(request))) {
-@@ -2701,9 +4203,14 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+@@ -2701,9 +4262,14 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
                  if (!recv_msg(sock, &request, sizeof(request))) {
                      return;
                  }
@@ -9393,7 +9599,7 @@ index 8cedee7..37b17a5 100644
                  break;
              }
              case RPC_CMD_COMM_INIT: {
-@@ -2812,6 +4319,7 @@ void ggml_backend_rpc_start_server(const char * endpoint, const char * cache_dir
+@@ -2812,6 +4378,7 @@ void ggml_backend_rpc_start_server(const char * endpoint, const char * cache_dir
          LOG_ERROR("Failed to initialize RPC transport\n");
          return;
      }
@@ -9401,7 +9607,7 @@ index 8cedee7..37b17a5 100644
      auto server_socket = socket_t::create_server(host.c_str(), port);
      if (server_socket == nullptr) {
          LOG_ERROR("Failed to create server socket\n");
-@@ -3102,6 +4610,9 @@ static void * ggml_backend_rpc_get_proc_address(ggml_backend_reg_t reg, const ch
+@@ -3102,6 +4669,9 @@ static void * ggml_backend_rpc_get_proc_address(ggml_backend_reg_t reg, const ch
      if (std::strcmp(name, "ggml_backend_rpc_add_server") == 0) {
          return (void *)ggml_backend_rpc_add_server;
      }
@@ -9411,7 +9617,7 @@ index 8cedee7..37b17a5 100644
      if (std::strcmp(name, "ggml_backend_rpc_start_server") == 0) {
          return (void *)ggml_backend_rpc_start_server;
      }
-@@ -3114,6 +4625,9 @@ static void * ggml_backend_rpc_get_proc_address(ggml_backend_reg_t reg, const ch
+@@ -3114,6 +4684,9 @@ static void * ggml_backend_rpc_get_proc_address(ggml_backend_reg_t reg, const ch
      if (std::strcmp(name, "ggml_backend_comm_allreduce_tensor") == 0) {
          return (void *)ggml_backend_rpc_comm_allreduce_tensor;
      }
