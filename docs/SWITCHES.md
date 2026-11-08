@@ -59,6 +59,8 @@
     클라이언트 기다림 돌기 `GGML_RPC_SYNC_SPIN` 기본 1(none +1.0%, MTP +1.7%; `=0` 예전처럼 잠, RESULTS.md 2026-11-08 14:20·17:28 절),
     `=2`(끝 무렵만 돎, `GGML_RPC_SYNC_SPIN_TAIL_US`)는 이득 없음.
     계측 `GGML_SCHED_TIMES=N`(클라이언트, N 번째 호출마다 부분그래프별 입력 복사 시간 stderr).
+    `GGML_RPC_BATCH_SET_ONLY=1`(+`GGML_RPC_BATCH_MAX`): 입력 SET_TENSOR 끼리만 묶어 보냄 — 경계 ≈110 µs 당겨지지만 속도 그대로, 기본 꺼짐.
+    `GGML_RPC_BATCH_MAX` 만 켜면(그래프 명령까지 묶음) −5.7%: 서버가 커널을 깊게 앞서 넣어 GPU 계산 +0.8 ms. `GGML_RDMA_TX_SLOTS` 8·16 차이 없음(4 그대로).
   - 추론 감시: 서버 `GGML_RPC_TRACE=/dev/shm/ggml-rpc-trace-{port}.bin`, 클라이언트 `GGML_RPC_TRACE_CLIENT=...`(run_tp.sh·srv-probe.sh 가 켬, `TRACE=0` 끔, 부담 ≈1.5%),
     `tools/watch/inferwatch.sh start` → 실행마다 `runs/watch/<시각>/report.html`·`receipt.md`. tbv 카운터를 리포트에 넣으려면 `inferwatch.sh tbv-copy`(sudo).
   - 2026-11-04 밤(자세히는 RESULTS.md "11-03 23:50 – 11-04"):
