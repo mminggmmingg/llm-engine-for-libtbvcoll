@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 426" width="800" height="426" role="img" aria-labelledby="t d">
+<title id="t">토큰 하나의 시간 장부 (2노드 TP none, 2026-11-08)</title>
+<desc id="d">가중치 읽기 최소 시간 11.72 ms, 커널 사이 빈틈 3.95 ms, 행렬곱 대역폭 손실 3.71 ms, 행렬곱 밖 커널 2.84 ms, AR 기다림 1.15 ms, 토큰 경계 0.67 ms (합 24.04 ms)</desc>
+<style>.bg{fill:#fcfcfb}.t1{fill:#0b0b0b}.t2{fill:#52514e}.t3{fill:#6f6e69}.need{fill:#b4b2aa}.loss{fill:#2a78d6}.grid{stroke:#e4e3de;stroke-width:1}@media (prefers-color-scheme: dark){.bg{fill:#1a1a19}.t1{fill:#f0efec}.t2{fill:#c3c2b7}.t3{fill:#a3a29a}.need{fill:#5e5d58}.loss{fill:#3987e5}.grid{stroke:#33332f}}text{font-family:-apple-system,"Segoe UI","Noto Sans KR","Apple SD Gothic Neo",sans-serif}</style>
+<rect class="bg" x="0" y="0" width="800" height="426" rx="8"/>
+<text class="t1" x="24" y="36" font-size="19" font-weight="600">토큰 하나 24.04 ms 는 어디에 쓰이나</text>
+<text class="t2" x="24" y="60" font-size="13">2노드 TP, MTP 없음, 41.6 tok/s · A 노드 GPU 시간선(rocprofv3) + 감시기 · 회색 = 줄일 수 없는 몫, 파랑 = 비효율</text>
+<line class="grid" x1="300.0" y1="84" x2="300.0" y2="386"/>
+<text class="t3" x="300.0" y="404" font-size="11" text-anchor="middle">0 ms</text>
+<line class="grid" x1="364.0" y1="84" x2="364.0" y2="386"/>
+<text class="t3" x="364.0" y="404" font-size="11" text-anchor="middle">2 ms</text>
+<line class="grid" x1="428.0" y1="84" x2="428.0" y2="386"/>
+<text class="t3" x="428.0" y="404" font-size="11" text-anchor="middle">4 ms</text>
+<line class="grid" x1="492.0" y1="84" x2="492.0" y2="386"/>
+<text class="t3" x="492.0" y="404" font-size="11" text-anchor="middle">6 ms</text>
+<line class="grid" x1="556.0" y1="84" x2="556.0" y2="386"/>
+<text class="t3" x="556.0" y="404" font-size="11" text-anchor="middle">8 ms</text>
+<line class="grid" x1="620.0" y1="84" x2="620.0" y2="386"/>
+<text class="t3" x="620.0" y="404" font-size="11" text-anchor="middle">10 ms</text>
+<line class="grid" x1="684.0" y1="84" x2="684.0" y2="386"/>
+<text class="t3" x="684.0" y="404" font-size="11" text-anchor="middle">12 ms</text>
+<text class="t1" x="288" y="103" font-size="13.5" font-weight="600" text-anchor="end">가중치 읽기 최소 시간</text>
+<text class="t2" x="288" y="119" font-size="11" text-anchor="end">2.81 GB ÷ 239.7 GB/s — 줄일 수 없는 몫</text>
+<path class="need" d="M300,92 h371.0 a4,4 0 0 1 4,4 v18 a4,4 0 0 1 -4,4 h-371.0 z"><title>가중치 읽기 최소 시간: 11.72 ms/토큰 (49%)</title></path>
+<text class="t1" x="683.0" y="110" font-size="13">11.72 ms · 49%</text>
+<text class="t1" x="288" y="151" font-size="13.5" font-weight="600" text-anchor="end">커널 사이 빈틈</text>
+<text class="t2" x="288" y="167" font-size="11" text-anchor="end">1308개/토큰 × 평균 2.8 µs</text>
+<path class="loss" d="M300,140 h122.4 a4,4 0 0 1 4,4 v18 a4,4 0 0 1 -4,4 h-122.4 z"><title>커널 사이 빈틈: 3.95 ms/토큰 (16%)</title></path>
+<text class="t1" x="434.4" y="158" font-size="13">3.95 ms · 16%</text>
+<text class="t1" x="288" y="199" font-size="13.5" font-weight="600" text-anchor="end">행렬곱 대역폭 손실</text>
+<text class="t2" x="288" y="215" font-size="11" text-anchor="end">행렬곱 15.43 ms − 최소 11.72 ms</text>
+<path class="loss" d="M300,188 h114.7 a4,4 0 0 1 4,4 v18 a4,4 0 0 1 -4,4 h-114.7 z"><title>행렬곱 대역폭 손실: 3.71 ms/토큰 (15%)</title></path>
+<text class="t1" x="426.7" y="206" font-size="13">3.71 ms · 15%</text>
+<text class="t1" x="288" y="247" font-size="13.5" font-weight="600" text-anchor="end">행렬곱 밖 커널</text>
+<text class="t2" x="288" y="263" font-size="11" text-anchor="end">GDN·attention·라우팅·AR 더하기 등</text>
+<path class="loss" d="M300,236 h86.9 a4,4 0 0 1 4,4 v18 a4,4 0 0 1 -4,4 h-86.9 z"><title>행렬곱 밖 커널: 2.84 ms/토큰 (12%)</title></path>
+<text class="t1" x="398.9" y="254" font-size="13">2.84 ms · 12%</text>
+<text class="t1" x="288" y="295" font-size="13.5" font-weight="600" text-anchor="end">AR 기다림</text>
+<text class="t2" x="288" y="311" font-size="11" text-anchor="end">커널 안에서 상대 부분합을 기다림</text>
+<path class="loss" d="M300,284 h32.8 a4,4 0 0 1 4,4 v18 a4,4 0 0 1 -4,4 h-32.8 z"><title>AR 기다림: 1.15 ms/토큰 (5%)</title></path>
+<text class="t1" x="344.8" y="302" font-size="13">1.15 ms · 5%</text>
+<text class="t1" x="288" y="343" font-size="13.5" font-weight="600" text-anchor="end">토큰 경계</text>
+<text class="t2" x="288" y="359" font-size="11" text-anchor="end">출력 읽기·클라이언트 다음 단계 준비</text>
+<path class="loss" d="M300,332 h17.4 a4,4 0 0 1 4,4 v18 a4,4 0 0 1 -4,4 h-17.4 z"><title>토큰 경계: 0.67 ms/토큰 (3%)</title></path>
+<text class="t1" x="329.4" y="350" font-size="13">0.67 ms · 3%</text>
+</svg>

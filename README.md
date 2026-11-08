@@ -16,6 +16,8 @@ HP ZBook Ultra G1a(AMD Strix Halo, Radeon 8060S gfx1151, 메모리 128 GB) 두 �
 - 측정: llama-server, greedy(temperature 0), 프롬프트 6개(영어 글·코드·한국어·수학·JSON·요약) × 256 토큰, 서버가 잰 디코드 속도의 토큰 가중 평균.
 - **출력은 비트 그대로다.** 최적화마다 같은 프롬프트의 출력 해시가 바뀌지 않는지 확인했고, MTP 를 켜도 MTP 없는 greedy 와 출력이 같다.
 - **목표: 노드당 메모리 대역폭의 85% 이상.** 기준은 1노드 GPU 읽기 실측 239.7 GB/s(이론 256 GB/s) — H5 2노드 none 이면 ≈72 tok/s(≥204 GB/s).
+- **비효율 전수 조사(2026-11-08)**: 토큰 24.04 ms 중 가중치 읽기 최소 시간 11.72 ms, 나머지 12.3 ms 가 커널 사이 빈틈 3.95 · 행렬곱 대역폭 손실 3.71 ·
+  행렬곱 밖 커널 2.84 · AR 기다림 1.15 · 토큰 경계 0.67 ms — [docs/INEFFICIENCY_20261108.md](docs/INEFFICIENCY_20261108.md).
 - 다음 단계 설계: 구간별 큰 커널(AR 사이 부분그래프 하나 = 상주 블록 커널 하나, 동기화 0.3–0.7 µs, 가중치 앞서 읽기·MALL) — [docs/DESIGN_megakernel.md](docs/DESIGN_megakernel.md).
 - 날마다 노드 상태에 따라 ±2% 흔들린다. 같은 날 번갈아 잰 끔/켬 비교는 [RESULTS.md](RESULTS.md) 의 각 절에 있다.
 
