@@ -1084,22 +1084,25 @@ index aa506a0..e0024c8 100644
 +void ggml_cuda_op_concat_state_tail_direct(ggml_backend_cuda_context & ctx, ggml_tensor * dst, const ggml_tensor * states,
 +        const ggml_tensor * ids, float * tail, int64_t k0, int64_t W);
 diff --git a/ggml/src/ggml-cuda/dsv4-hc.cu b/ggml/src/ggml-cuda/dsv4-hc.cu
-index 2d0b3cf..bdfb710 100644
+index 2d0b3cf..8639eb5 100644
 --- a/ggml/src/ggml-cuda/dsv4-hc.cu
 +++ b/ggml/src/ggml-cuda/dsv4-hc.cu
-@@ -1,5 +1,11 @@
+@@ -1,5 +1,14 @@
  #include "common.cuh"
  #include "dsv4-hc.cuh"
 +#include "unary.cuh"
 +#include "vecdotq.cuh"
 +#include "convert.cuh"
++#include "topk-moe.cuh"
 +
 +#include <algorithm>
 +#include <vector>
++#include <string>
++#include <functional>
  
  
  static constexpr int DSV4_HC = 4;
-@@ -100,7 +106,35 @@ static __global__ void dsv4_hc_comb_f32(
+@@ -100,7 +109,35 @@ static __global__ void dsv4_hc_comb_f32(
      }
  }
  
@@ -1136,7 +1139,7 @@ index 2d0b3cf..bdfb710 100644
  static __global__ void dsv4_hc_pre_f32(
          const float * x,
          const float * weights,
-@@ -116,7 +150,8 @@ static __global__ void dsv4_hc_pre_f32(
+@@ -116,7 +153,8 @@ static __global__ void dsv4_hc_pre_f32(
          int64_t sw2,
          int64_t sd0,
          int64_t sd1,
@@ -1146,7 +1149,7 @@ index 2d0b3cf..bdfb710 100644
      ggml_cuda_pdl_lc();
      const int64_t ir = (int64_t) blockIdx.x * blockDim.x + threadIdx.x;
      const int64_t nr = n_embd * n_tokens;
-@@ -130,19 +165,23 @@ static __global__ void dsv4_hc_pre_f32(
+@@ -130,19 +168,23 @@ static __global__ void dsv4_hc_pre_f32(
      const int64_t i0 = ir % n_embd;
      const int64_t it = ir / n_embd;
  
@@ -1181,7 +1184,7 @@ index 2d0b3cf..bdfb710 100644
  }
  
  // gated: post = gate_scale_out*sigmoid(gate_scale_in*post), the fused SCALE -> SIGMOID -> SCALE chain of qwen4exp
-@@ -245,7 +284,7 @@ void ggml_cuda_op_dsv4_hc_comb(ggml_backend_cuda_context & ctx, ggml_tensor * ds
+@@ -245,7 +287,7 @@ void ggml_cuda_op_dsv4_hc_comb(ggml_backend_cuda_context & ctx, ggml_tensor * ds
              eps, n_iter);
  }
  
@@ -1190,7 +1193,7 @@ index 2d0b3cf..bdfb710 100644
      const ggml_tensor * x       = dst->src[0];
      const ggml_tensor * weights = dst->src[1];
  
-@@ -270,14 +309,18 @@ void ggml_cuda_op_dsv4_hc_pre(ggml_backend_cuda_context & ctx, ggml_tensor * dst
+@@ -270,14 +312,18 @@ void ggml_cuda_op_dsv4_hc_pre(ggml_backend_cuda_context & ctx, ggml_tensor * dst
      const dim3 grid_dims((nr + block_size - 1) / block_size, 1, 1);
      const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(grid_dims, block_dims, 0, ctx.stream());
  
@@ -1211,7 +1214,7 @@ index 2d0b3cf..bdfb710 100644
  }
  
  void ggml_cuda_op_dsv4_hc_post(ggml_backend_cuda_context & ctx, ggml_tensor * dst,
-@@ -331,3 +374,615 @@ void ggml_cuda_op_dsv4_hc_post(ggml_backend_cuda_context & ctx, ggml_tensor * ds
+@@ -331,3 +377,796 @@ void ggml_cuda_op_dsv4_hc_post(ggml_backend_cuda_context & ctx, ggml_tensor * ds
              nbd0 / sizeof(float), nbd1 / sizeof(float), nbd2 / sizeof(float),
              gate_in, gate_out);
  }
@@ -1535,12 +1538,148 @@ index 2d0b3cf..bdfb710 100644
 +    const nv_bfloat16 * w_r; const float * y_r; float * dst_r; int nrows_r; int ncols2_r; int64_t stride_row_r;
 +    // grid barrier; prefetch of the stage 2 and 3 weights into L2/MALL during stage 1 (pf0 null: off); never: 0 (keeps the loads)
 +    unsigned * ctr; unsigned base; const char * pf0; size_t pf0_bytes; const char * pf1; size_t pf1_bytes; int never;
-+    // GGML_CUDA_SEG_TIMES: 6 stamps per block (start, barrier 1 arrive/leave, barrier 2 arrive/leave, end); null: off
++    // GGML_CUDA_SEG_TIMES: 2 + 2 x barriers stamps per block (start, each barrier's arrive/leave, end); null: off
 +    uint64_t * times;
 +    // ahead (GGML_CUDA_SEG_AHEAD bits): 1 router weights ahead and its input read once, 2 the first two hc up pieces' weights during
 +    // stage 1, 4 hc down rows spread over all blocks, 8 (debug) the second hc up piece loaded when stage 2 starts
 +    int mode;
++    // stages 4-7 (tail, GGML_CUDA_SEG_MOE=2, docs/DESIGN_megakernel.md 8.3 step 2a): the rest of the one-token MoE segment
++    ggml_cuda_seg_moe_tail t;
++    ggml_cuda_comm_out out;  // out.dst null: no copy-out
 +};
++
++// stages 4-7 of the one-token MoE segment (GGML_CUDA_SEG_MOE=2), each with the arithmetic of the kernel it replaces, so the values
++// stay the same (GGML_CUDA_SEG_VERIFY): 4 top-k (topk_moe_softmax_cuda<512>, one warp), 5 expert gate+up with SWIGLU and the
++// q8_1 copy (mul_mat_vec_q_glu_q8<IQ4_XS, 1>, one 1024-thread block per 32 rows of one expert slot), 6 expert down
++// (mul_mat_vec_q<IQ4_NL, 1> on RDNA: one warp per MMVQ_RDNA2_IQ4NL_ROWS rows), 7 weighted sum over the experts
++// (moe_weighted_reduction_f32[_out], with the allreduce copy-out when a.out.dst is set). A grid barrier before each stage.
++static __device__ __forceinline__ void seg_moe_tail_stages(const seg_moe_head_args & a, unsigned & target, uint64_t * tm,
++        const int lane, const int warp, const int gw, const int ngw) {
++    const ggml_cuda_seg_moe_tail & t = a.t;
++    seg_grid_barrier(a.ctr, target, tm != nullptr ? tm + 5 : nullptr);
++
++    // stage 4: top-k of the router logits by warp 0 of the last block
++    if (blockIdx.x == gridDim.x - 1 && warp == 0) {
++        float wt[topk_moe_experts_per_thread(512)];
++        topk_moe_softmax_load<512>(t.logits, wt, lane);
++        topk_moe_softmax_pick<512>(wt, t.weights, t.ids, t.n_used, t.clamp, t.scale, t.with_norm, lane);
++    }
++    seg_grid_barrier(a.ctr, target, tm != nullptr ? tm + 7 : nullptr);
++
++    // stage 5: expert gate+up, virtual block (bx, ch) as mul_mat_vec_q_glu_q8's block (blockIdx.x, blockIdx.y)
++    {
++        constexpr int qi  = QI4_XS;
++        constexpr int vdr = VDR_IQ4_XS_Q8_1_MMVQ;
++        constexpr int blocks_per_iter = vdr*32/qi;
++        __shared__ float vo[32];
++        for (int vb = blockIdx.x; vb < t.g_nbx*t.n_used; vb += gridDim.x) {
++            const int bx = vb % t.g_nbx;
++            const int ch = vb / t.g_nbx;
++            const uint32_t channel_x = t.ids[ch];
++            const uint32_t channel_y = ch % t.g_nch_y;
++            const int row0 = bx*32 + warp;
++            float tmp = 0.0f;
++            float tmp_gate = 0.0f;
++            const block_q8_1 * y = a.q8 + channel_y*t.g_stride_ch_y;
++            const int kbx_offset = channel_x*t.g_stride_ch + row0*t.g_stride_row;
++            for (int kbx = lane / (qi/vdr); kbx < t.g_nblk; kbx += blocks_per_iter) {
++                const int kby = kbx * (QK_K/QK8_1);
++                const int kqs = vdr * (lane % (qi/vdr));
++                tmp      += vec_dot_iq4_xs_q8_1(t.g_up,   &y[kby], kbx_offset + kbx, kqs);
++                tmp_gate += vec_dot_iq4_xs_q8_1(t.g_gate, &y[kby], kbx_offset + kbx, kqs);
++            }
++            tmp      = warp_reduce_sum<32>(tmp);
++            tmp_gate = warp_reduce_sum<32>(tmp_gate);
++            if (lane == 0) {
++                float result = tmp;
++                result += 0.0f;  // the bias add of the fused epilogue (no bias)
++                float gate_value = tmp_gate;
++                gate_value += 0.0f;
++                result *= ggml_cuda_op_silu_single(gate_value);
++                t.g_dst[ch*t.g_stride_ch_dst + row0] = result;
++                vo[warp] = result;
++            }
++            __syncthreads();
++            block_q8_1 * q = t.g_q8 + (size_t) ch*t.g_q8_bpc;
++            if (warp == 0) {
++                const float w = vo[lane];
++                float amax = fabsf(w);
++                float vsum = w;
++                amax = warp_reduce_max<QK8_1>(amax);
++                vsum = warp_reduce_sum<QK8_1>(vsum);
++                const float  d = amax / 127.0f;
++                const int8_t qv = amax == 0.0f ? 0 : roundf(w / d);
++                q[bx].qs[lane] = qv;
++                if (lane == 0) {
++                    q[bx].ds = make_half2(d, vsum);
++                }
++            } else if (bx == 0) {
++                const int used = t.g_nrows / QK8_1;
++                int * pad = (int *) (q + used);
++                const int n = (t.g_q8_bpc - used) * (int) (sizeof(block_q8_1) / sizeof(int));
++                for (int k = threadIdx.x - 32; k < n; k += blockDim.x - 32) {
++                    pad[k] = 0;
++                }
++            }
++            __syncthreads();
++        }
++    }
++    seg_grid_barrier(a.ctr, target, tm != nullptr ? tm + 9 : nullptr);
++
++    // stage 6: expert down, virtual warp (bx, ch) as mul_mat_vec_q's one-warp block (blockIdx.x, blockIdx.y)
++    {
++        constexpr int R   = MMVQ_RDNA2_IQ4NL_ROWS;
++        constexpr int qi  = QI4_NL;
++        constexpr int vdr = VDR_IQ4_NL_Q8_1_MMVQ;
++        constexpr int blocks_per_iter = vdr*32/qi;
++        for (int vw = gw; vw < t.d_nbx*t.n_used; vw += ngw) {
++            const int bx = vw % t.d_nbx;
++            const int ch = vw / t.d_nbx;
++            const uint32_t channel_x = t.ids[ch];
++            const uint32_t channel_y = ch % t.d_nch_y;
++            const int row0 = R*bx;
++            float tmp[R] = { 0.0f };
++            const block_q8_1 * y = t.g_q8 + channel_y*t.d_stride_ch_y;
++            const int kbx_offset = channel_x*t.d_stride_ch + row0*t.d_stride_row;
++            for (int kbx = lane / (qi/vdr); kbx < t.d_nblk; kbx += blocks_per_iter) {
++                const int kby = kbx * (QK4_NL/QK8_1);
++                const int kqs = vdr * (lane % (qi/vdr));
++#pragma unroll
++                for (int i = 0; i < R; ++i) {
++                    tmp[i] += vec_dot_iq4_nl_q8_1(t.d_w, &y[kby], kbx_offset + i*t.d_stride_row + kbx, kqs);
++                }
++            }
++            float * dst = t.d_dst + ch*t.d_stride_ch_dst + row0;
++#pragma unroll
++            for (int i = 0; i < R; ++i) {
++                tmp[i] = warp_reduce_sum<32>(tmp[i]);
++                if (lane == i && (R == 1 || uint32_t(row0 + i) < t.d_stride_col_dst)) {
++                    dst[i] = tmp[i];
++                }
++            }
++        }
++    }
++    seg_grid_barrier(a.ctr, target, tm != nullptr ? tm + 11 : nullptr);
++
++    // stage 7: the weighted sum of the expert outputs (one token), and the copy-out
++    const bool has_out = a.out.dst != nullptr;
++    const uint64_t t0 = has_out ? ggml_cuda_comm_out_t0(a.out) : 0;
++    for (int col = blockIdx.x*blockDim.x + threadIdx.x; col < t.n_embd; col += gridDim.x*blockDim.x) {
++        const float first_scale = t.w_scale != nullptr ? t.w_scale[0] : 1.0f;
++        float       sum         = (t.w_experts[col] * first_scale) * t.w_weights[0];
++        for (int expert = 1; expert < t.n_used; ++expert) {
++            const float scale = t.w_scale != nullptr ? t.w_scale[expert] : 1.0f;
++            sum += (t.w_experts[expert * t.n_embd + col] * scale) * t.w_weights[expert];
++        }
++        t.w_dst[col] = sum;
++        if (has_out) {
++            a.out.dst[col] = sum;
++        }
++    }
++    if (has_out) {
++        ggml_cuda_comm_out_release(a.out, t0);
++    }
++}
 +
 +// the router weights one 256-thread sub-block's thread reads for one row (SEG_RCOL x 2 bf16 at col2 = tid, tid + 256, ...)
 +#define SEG_RCOL 5
@@ -1549,15 +1688,17 @@ index 2d0b3cf..bdfb710 100644
 +// before barrier 2 and the next row's while one is computed, the router input (the same for every row) read once; 2: the block's
 +// first two hc up pieces during stage 1 (most warps have no hc down row); 4: hc down row r on block r % gridDim.x. The loads move,
 +// the products and sums stay as they were (bit for bit, checked with GGML_CUDA_SEG_VERIFY and the output hashes).
-+template <bool do_q8, bool ahead>
++// tail: also stages 4-7 (seg_moe_tail_stages)
++template <bool do_q8, bool ahead, bool tail>
 +static __global__ void __launch_bounds__(1024, 1) k_seg_moe_head(const seg_moe_head_args a) {
++    constexpr int NS = tail ? 14 : 6;  // GGML_CUDA_SEG_TIMES stamps per block
 +    const int lane = threadIdx.x % 32;
 +    const int warp = threadIdx.x / 32;
 +    const int gw   = blockIdx.x*32 + warp;
 +    const int ngw  = gridDim.x*32;
 +    unsigned target = a.base;
 +    int sink = 0;
-+    uint64_t * tm = a.times != nullptr ? a.times + blockIdx.x*6 : nullptr;
++    uint64_t * tm = a.times != nullptr ? a.times + blockIdx.x*NS : nullptr;
 +    if (tm != nullptr && threadIdx.x == 0) {
 +        tm[0] = seg_clock();
 +    }
@@ -1700,34 +1841,44 @@ index 2d0b3cf..bdfb710 100644
 +    if (a.never && sink == 12345) {
 +        a.dst_r[0] = 0.0f;
 +    }
++    if constexpr (tail) {
++        seg_moe_tail_stages(a, target, tm, lane, warp, gw, ngw);
++    }
 +    if (tm != nullptr) {
 +        __syncthreads();
 +        if (threadIdx.x == 0) {
-+            tm[5] = seg_clock();
++            tm[NS - 1] = seg_clock();
 +        }
 +    }
 +}
 +
-+bool ggml_cuda_seg_moe_head(ggml_backend_cuda_context & ctx, const ggml_tensor * dn, const void * y_dn, const ggml_tensor * sc,
-+        const ggml_tensor * si, const ggml_tensor * mm, ggml_tensor * pre, void * q8, const ggml_tensor * rt) {
++std::function<void(const ggml_cuda_comm_out *)> ggml_cuda_seg_moe_make(ggml_backend_cuda_context & ctx, const ggml_tensor * dn,
++        const void * y_dn, const ggml_tensor * sc, const ggml_tensor * si, const ggml_tensor * mm, ggml_tensor * pre, void * q8,
++        const ggml_tensor * rt, const ggml_cuda_seg_moe_tail * tail) {
 +    const int dev = ctx.device;
 +    ggml_cuda_set_device(dev);
-+    // GGML_CUDA_SEG_AHEAD=<bits> (default 0, as in 1a): load weights ahead (see k_seg_moe_head; none paid off, 11-07)
++    // GGML_CUDA_SEG_AHEAD=<bits> (default 0, as in 1a): load weights ahead (see k_seg_moe_head; none paid off, 11-07); not with the tail
 +    static const int ahead_env = [] { const char * e = getenv("GGML_CUDA_SEG_AHEAD"); return e ? atoi(e) : 0; }();
-+    const bool ahead = ahead_env != 0 && rt->src[0]->ne[0] / 2 <= SEG_RCOL*256 && si->ne[0] <= 512;
-+    auto kernel = q8 != nullptr ? (ahead ? k_seg_moe_head<true, true> : k_seg_moe_head<true, false>)
-+                                : (ahead ? k_seg_moe_head<false, true> : k_seg_moe_head<false, false>);
++    const bool has_tail = tail != nullptr;
++    if (has_tail && q8 == nullptr) {
++        return nullptr;  // the expert gate+up stage reads hc_pre's q8_1 copy
++    }
++    const bool ahead = !has_tail && ahead_env != 0 && rt->src[0]->ne[0] / 2 <= SEG_RCOL*256 && si->ne[0] <= 512;
++    auto kernel = has_tail ? k_seg_moe_head<true, false, true>
++                : q8 != nullptr ? (ahead ? k_seg_moe_head<true, true, false> : k_seg_moe_head<true, false, false>)
++                                : (ahead ? k_seg_moe_head<false, true, false> : k_seg_moe_head<false, false, false>);
 +    // a persistent grid of as many 1024-thread blocks as stay resident
-+    static int occ[2][2] = { { -1, -1 }, { -1, -1 } };
-+    int & o = occ[q8 != nullptr][ahead];
++    static int occ[2][2][2] = { { { -1, -1 }, { -1, -1 } }, { { -1, -1 }, { -1, -1 } } };
++    int & o = occ[has_tail][q8 != nullptr][ahead];
 +    if (o < 0) {
 +        if (cudaOccupancyMaxActiveBlocksPerMultiprocessor(&o, kernel, 1024, 0) != cudaSuccess) {
 +            o = 0;
 +        }
-+        GGML_LOG_INFO("%s: %s: %d blocks of 1024 per CU, %d CUs\n", __func__, ahead ? "ahead" : "plain", o, ggml_cuda_info().devices[dev].nsm);
++        GGML_LOG_INFO("%s: %s: %d blocks of 1024 per CU, %d CUs\n", __func__, has_tail ? "tail" : ahead ? "ahead" : "plain", o,
++            ggml_cuda_info().devices[dev].nsm);
 +    }
 +    if (o <= 0) {
-+        return false;
++        return nullptr;
 +    }
 +    const int nblocks = o * ggml_cuda_info().devices[dev].nsm;
 +    if (ctx.seg_ctr == nullptr) {
@@ -1757,81 +1908,114 @@ index 2d0b3cf..bdfb710 100644
 +    a.q8 = (block_q8_1 *) q8; a.n_up = (int) (x->ne[0] / 32);
 +    a.w_r = (const nv_bfloat16 *) rt->src[0]->data; a.y_r = (const float *) rt->src[1]->data; a.dst_r = (float *) rt->data;
 +    a.nrows_r = (int) rt->src[0]->ne[1]; a.ncols2_r = (int) (rt->src[0]->ne[0] / 2); a.stride_row_r = rt->src[0]->nb[1] / sizeof(nv_bfloat16);
-+    a.ctr = ctx.seg_ctr; a.base = ctx.seg_base;
-+    // GGML_CUDA_SEG_TIMES=<n>: stage times of the persistent kernel, averaged over n calls (debug: synchronizes after every call)
-+    static const int times_n = [] { const char * e = getenv("GGML_CUDA_SEG_TIMES"); return e ? atoi(e) : 0; }();
-+    static uint64_t * times_d = nullptr;
-+    if (times_n > 0) {
-+        if (times_d == nullptr) {
-+            CUDA_CHECK(cudaMalloc(&times_d, 6*sizeof(uint64_t)*nblocks));
-+        }
-+        a.times = times_d;
-+    }
-+    if (prefetch && !ahead) {
++    a.ctr = ctx.seg_ctr;
++    if (prefetch && !ahead && !has_tail) {
 +        a.pf0 = (const char *) w->data; a.pf0_bytes = ggml_nbytes(w);
 +        a.pf1 = (const char *) rt->src[0]->data; a.pf1_bytes = ggml_nbytes(rt->src[0]);
 +    }
 +    a.never = 0;
 +    a.mode = ahead_env;
-+    // an ordinary launch of a grid that fits at once (the stream's earlier kernels are done when it starts, another process can
-+    // only delay blocks). GGML_CUDA_SEG_COOP=1: cooperative launch, which guarantees residency but cost 2.5% of decode (11-06)
++    if (has_tail) {
++        a.t = *tail;
++    }
++    const int nbar = has_tail ? 6 : 2;
++    // GGML_CUDA_SEG_COOP=1: cooperative launch, which guarantees residency but cost 2.5% of decode (11-06); not with the tail
 +    static const bool coop = [] { const char * e = getenv("GGML_CUDA_SEG_COOP"); return e && atoi(e) != 0; }();
-+    if (coop) {
-+        void * args[] = { &a };
-+        if (cudaLaunchCooperativeKernel((const void *) kernel, dim3(nblocks), dim3(1024), args, 0, ctx.stream()) != cudaSuccess) {
-+            (void) cudaGetLastError();
-+            return false;
++    const bool use_coop = coop && !has_tail;
++    ggml_backend_cuda_context * c = &ctx;
++
++    // launched now or by the next backend call (held back for the copy-out); the barrier base is taken at launch
++    return [c, a, kernel, nblocks, nbar, use_coop, ahead, has_tail, dev](const ggml_cuda_comm_out * out) mutable {
++        a.base = c->seg_base;
++        if (out != nullptr) {
++            GGML_ASSERT(has_tail);
++            a.out = *out;
 +        }
-+    } else {
-+        kernel<<<nblocks, 1024, 0, ctx.stream()>>>(a);
-+        if (cudaGetLastError() != cudaSuccess) {
-+            return false;
-+        }
-+    }
-+    ctx.seg_base += 2u * (unsigned) nblocks;  // two barriers
-+    if (times_n > 0) {
-+        // per call: stage 1 = first start .. last arrival at barrier 1, barrier = last arrival .. last release, and so on
-+        std::vector<uint64_t> t(6*nblocks);
-+        CUDA_CHECK(cudaMemcpyAsync(t.data(), times_d, t.size()*sizeof(uint64_t), cudaMemcpyDeviceToHost, ctx.stream()));
-+        CUDA_CHECK(cudaStreamSynchronize(ctx.stream()));
-+        static double acc[7] = { 0 };
-+        static int ncalls = 0;
-+        uint64_t mn0 = UINT64_MAX, mx[6] = { 0 };
-+        for (int b = 0; b < nblocks; b++) {
-+            mn0 = std::min(mn0, t[6*b]);
-+            for (int k = 0; k < 6; k++) {
-+                mx[k] = std::max(mx[k], t[6*b + k]);
++        // GGML_CUDA_SEG_TIMES=<n>: stage times of the persistent kernel, averaged over n calls (debug: synchronizes after every call)
++        static const int times_n = [] { const char * e = getenv("GGML_CUDA_SEG_TIMES"); return e ? atoi(e) : 0; }();
++        const int ns = 2 + 2*nbar;
++        static uint64_t * times_d = nullptr;
++        static size_t times_n_alloc = 0;
++        if (times_n > 0) {
++            if (times_n_alloc < (size_t) ns*nblocks) {
++                CUDA_CHECK(cudaMalloc(&times_d, ns*sizeof(uint64_t)*nblocks));  // debug only: an older smaller one is left
++                times_n_alloc = (size_t) ns*nblocks;
 +            }
++            a.times = times_d;
 +        }
-+        const double d[7] = { (double) (mx[0] - mn0), (double) (mx[1] - mn0), (double) (mx[2] - mx[1]), (double) (mx[3] - mx[2]),
-+                              (double) (mx[4] - mx[3]), (double) (mx[5] - mx[4]), (double) (mx[5] - mn0) };
-+        for (int k = 0; k < 7; k++) {
-+            acc[k] += d[k];
++        // an ordinary launch of a grid that fits at once (the stream's earlier kernels are done when it starts, another process can
++        // only delay blocks)
++        if (use_coop) {
++            void * args[] = { &a };
++            CUDA_CHECK(cudaLaunchCooperativeKernel((const void *) kernel, dim3(nblocks), dim3(1024), args, 0, c->stream()));
++        } else {
++            kernel<<<nblocks, 1024, 0, c->stream()>>>(a);
++            CUDA_CHECK(cudaGetLastError());
 +        }
-+        if (++ncalls == times_n) {
-+            int khz = 0;
++        c->seg_base += (unsigned) (nbar*nblocks);
++        if (times_n > 0) {
++            // per call: stage 1 = first start .. last arrival at barrier 1, barrier = last arrival .. last release, and so on
++            std::vector<uint64_t> tt((size_t) ns*nblocks);
++            CUDA_CHECK(cudaMemcpyAsync(tt.data(), times_d, tt.size()*sizeof(uint64_t), cudaMemcpyDeviceToHost, c->stream()));
++            CUDA_CHECK(cudaStreamSynchronize(c->stream()));
++            static double acc[2][16] = { { 0 } };
++            static int ncalls[2] = { 0, 0 };
++            double * ac = acc[has_tail];
++            uint64_t mn0 = UINT64_MAX, mx[14] = { 0 };
++            for (int b = 0; b < nblocks; b++) {
++                mn0 = std::min(mn0, tt[(size_t) ns*b]);
++                for (int k = 0; k < ns; k++) {
++                    mx[k] = std::max(mx[k], tt[(size_t) ns*b + k]);
++                }
++            }
++            // d: start spread, then stage, barrier, stage, ..., stage, total
++            ac[0] += (double) (mx[0] - mn0);
++            ac[1] += (double) (mx[1] - mn0);
++            for (int k = 2; k < ns; k++) {
++                ac[k] += (double) (mx[k] - mx[k - 1]);
++            }
++            ac[ns] += (double) (mx[ns - 1] - mn0);
++            if (++ncalls[has_tail] == times_n) {
++                int khz = 0;
 +#if defined(GGML_USE_HIP)
-+            (void) hipDeviceGetAttribute(&khz, hipDeviceAttributeWallClockRate, dev);
++                (void) hipDeviceGetAttribute(&khz, hipDeviceAttributeWallClockRate, dev);
 +#else
-+            (void) cudaDeviceGetAttribute(&khz, cudaDevAttrClockRate, dev);
++                (void) cudaDeviceGetAttribute(&khz, cudaDevAttrClockRate, dev);
 +#endif
-+            const double us = 1e3 / (khz > 0 ? khz : 100000) / ncalls;
-+            GGML_LOG_INFO("seg moe times (%s, %d blocks, mean of %d, us): start spread %.2f | stage 1 %.2f | barrier %.2f | stage 2 %.2f |"
-+                " barrier %.2f | stage 3 %.2f | total %.2f\n", ahead ? "ahead" : "plain", nblocks, ncalls,
-+                acc[0]*us, acc[1]*us, acc[2]*us, acc[3]*us, acc[4]*us, acc[5]*us, acc[6]*us);
-+            ncalls = 0;
-+            for (int k = 0; k < 7; k++) {
-+                acc[k] = 0;
++                const double us = 1e3 / (khz > 0 ? khz : 100000) / ncalls[has_tail];
++                std::string line;
++                char buf[64];
++                snprintf(buf, sizeof(buf), "start spread %.2f", ac[0]*us);
++                line += buf;
++                for (int k = 1; k < ns; k++) {
++                    snprintf(buf, sizeof(buf), " | %s %d %.2f", k % 2 ? "stage" : "barrier", (k + 1) / 2, ac[k]*us);
++                    line += buf;
++                }
++                GGML_LOG_INFO("seg moe times (%s, %d blocks, mean of %d, us): %s | total %.2f\n", has_tail ? "tail" : ahead ? "ahead" : "plain",
++                    nblocks, ncalls[has_tail], line.c_str(), ac[ns]*us);
++                ncalls[has_tail] = 0;
++                for (int k = 0; k < 16; k++) {
++                    ac[k] = 0;
++                }
 +            }
 +        }
++    };
++}
++
++bool ggml_cuda_seg_moe_head(ggml_backend_cuda_context & ctx, const ggml_tensor * dn, const void * y_dn, const ggml_tensor * sc,
++        const ggml_tensor * si, const ggml_tensor * mm, ggml_tensor * pre, void * q8, const ggml_tensor * rt) {
++    auto f = ggml_cuda_seg_moe_make(ctx, dn, y_dn, sc, si, mm, pre, q8, rt, nullptr);
++    if (!f) {
++        return false;
 +    }
++    f(nullptr);
 +    return true;
 +}
 diff --git a/ggml/src/ggml-cuda/dsv4-hc.cuh b/ggml/src/ggml-cuda/dsv4-hc.cuh
-index 1885e76..3d2a0a5 100644
+index 1885e76..3a10b45 100644
 --- a/ggml/src/ggml-cuda/dsv4-hc.cuh
 +++ b/ggml/src/ggml-cuda/dsv4-hc.cuh
-@@ -2,7 +2,16 @@
+@@ -2,7 +2,46 @@
  #include "ggml.h"
  
  void ggml_cuda_op_dsv4_hc_comb(ggml_backend_cuda_context & ctx, ggml_tensor * dst);
@@ -1849,6 +2033,36 @@ index 1885e76..3d2a0a5 100644
 +// Same values as the separate kernels. False if it could not launch (nothing was queued then).
 +bool ggml_cuda_seg_moe_head(ggml_backend_cuda_context & ctx, const ggml_tensor * dn, const void * y_dn, const ggml_tensor * sc,
 +        const ggml_tensor * si, const ggml_tensor * mm, ggml_tensor * pre, void * q8, const ggml_tensor * rt);
++
++// engine2n: the rest of the one-token MoE segment for the same kernel (GGML_CUDA_SEG_MOE=2, docs/DESIGN_megakernel.md 8.3 step 2a):
++// top-k -> expert gate+up (IQ4_XS, SWIGLU, q8_1 copy) -> expert down (IQ4_NL) -> weighted sum (+ allreduce copy-out). Device
++// pointers and element strides only, so the launch may wait for the next backend call (the graph's tensors may be gone by then).
++// rows per warp of the one-token IQ4_NL matmul on RDNA, as mmvq.cu defines it (the down stage repeats that kernel)
++#ifndef MMVQ_RDNA2_IQ4NL_ROWS
++#define MMVQ_RDNA2_IQ4NL_ROWS 4
++#endif
++struct ggml_cuda_seg_moe_tail {
++    // stage 4: top-k (topk_moe_softmax_cuda<512>)
++    const float * logits = nullptr; float * weights = nullptr; int32_t * ids = nullptr; int n_used = 0;
++    float clamp = 0.0f; float scale = 1.0f; bool with_norm = false;
++    // stage 5: expert gate+up (mul_mat_vec_q_glu_q8<IQ4_XS, 1>), input hc_pre's q8_1 copy
++    const void * g_up = nullptr; const void * g_gate = nullptr; float * g_dst = nullptr; block_q8_1 * g_q8 = nullptr;
++    int g_nbx = 0; int g_nrows = 0; int g_nblk = 0; int g_stride_row = 0; int g_stride_ch = 0; int g_nch_y = 1; int g_stride_ch_y = 0;
++    int g_stride_ch_dst = 0; int g_q8_bpc = 0;
++    // stage 6: expert down (mul_mat_vec_q<IQ4_NL, 1>), input g_q8
++    const void * d_w = nullptr; float * d_dst = nullptr;
++    int d_nbx = 0; int d_nblk = 0; int d_stride_row = 0; int d_stride_ch = 0; int d_nch_y = 1; int d_stride_ch_y = 0; int d_stride_ch_dst = 0;
++    uint32_t d_stride_col_dst = 0;
++    // stage 7: weighted sum (moe_weighted_reduction_f32), one token
++    const float * w_experts = nullptr; const float * w_scale = nullptr; const float * w_weights = nullptr; float * w_dst = nullptr;
++    int n_embd = 0;
++};
++
++// the persistent kernel for ggml_cuda_seg_moe_head (tail null) or the whole segment (tail set), as a launch to run now or later
++// with the copy-out (tail only); empty if it cannot launch on this device
++std::function<void(const ggml_cuda_comm_out *)> ggml_cuda_seg_moe_make(ggml_backend_cuda_context & ctx, const ggml_tensor * dn,
++        const void * y_dn, const ggml_tensor * sc, const ggml_tensor * si, const ggml_tensor * mm, ggml_tensor * pre, void * q8,
++        const ggml_tensor * rt, const ggml_cuda_seg_moe_tail * tail);
 diff --git a/ggml/src/ggml-cuda/gated_delta_net.cu b/ggml/src/ggml-cuda/gated_delta_net.cu
 index ae2374c..b1dfdac 100644
 --- a/ggml/src/ggml-cuda/gated_delta_net.cu
@@ -2115,7 +2329,7 @@ index f9bf437..e3cdca1 100644
 -                                              ggml_cuda_gated_delta_net_fused_cache cache);
 +                                              ggml_cuda_gated_delta_net_fused_cache cache, const ggml_cuda_gdn_norm * norm = nullptr);
 diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
-index 72e961d..22b7d06 100644
+index 72e961d..5165249 100644
 --- a/ggml/src/ggml-cuda/ggml-cuda.cu
 +++ b/ggml/src/ggml-cuda/ggml-cuda.cu
 @@ -62,6 +62,7 @@
@@ -2703,7 +2917,7 @@ index 72e961d..22b7d06 100644
  // match ssm_scan + the strided cpy that scatters its state snapshots into the cache, so the kernel writes them and skips the cpy
  static int ggml_cuda_try_ssm_scan_cache_fusion(
          const ggml_cgraph * cgraph, int node_idx, ggml_cuda_ssm_scan_fused_cache & fused_state_cpy) {
-@@ -3848,110 +4243,1915 @@ static bool ggml_cuda_can_fuse(const struct ggml_cgraph *                cgraph,
+@@ -3848,110 +4243,2152 @@ static bool ggml_cuda_can_fuse(const struct ggml_cgraph *                cgraph,
      return false;
  }
  
@@ -4329,13 +4543,160 @@ index 72e961d..22b7d06 100644
 +    return nullptr;
 +}
 +
++// engine2n: GGML_CUDA_SEG_MOE=2 — the rest of the one-token MoE subgraph after the router, for the same persistent kernel
++// (dsv4-hc.cu seg_moe_tail_stages): the plain softmax top-k group as ggml_cuda_try_fuse fuses it (SOFT_MAX RESHAPE ARGSORT VIEW
++// GET_ROWS RESHAPE SUM_ROWS CLAMP DIV RESHAPE, 512 experts) -> expert gate, up (IQ4_XS) -> SWIGLU (the q8_1 copy path,
++// ggml_cuda_glu_q8_slot) -> expert down (IQ4_NL) -> the weighted sum, which must end the graph. Fills t (the GLU's q8_1 slot is
++// reserved here) and tn (for the verify rerun); returns the last node it covers, or 0.
++struct ggml_cuda_seg_moe_tail_nodes {
++    const ggml_tensor * softmax = nullptr;
++    ggml_tensor *       weights = nullptr;
++    ggml_tensor *       ids     = nullptr;
++    const ggml_tensor * clamp   = nullptr;
++    const ggml_tensor * gate    = nullptr;
++    ggml_tensor *       up      = nullptr;
++    ggml_tensor *       glu     = nullptr;
++    ggml_tensor *       down    = nullptr;
++    ggml_cuda_moe_weighted_reduction_match wr;
++};
++
++static int ggml_cuda_seg_moe_match_tail(ggml_backend_cuda_context & ctx, ggml_cgraph * cgraph, const int r, const ggml_tensor * pre,
++        ggml_cuda_seg_moe_tail & t, ggml_cuda_seg_moe_tail_nodes & tn) {
++    static const bool glu_q8_off = getenv("GGML_CUDA_NO_GLU_Q8") != nullptr;
++    static const int  glu_rows   = getenv("GGML_CUDA_GLU_Q8_ROWS") ? atoi(getenv("GGML_CUDA_GLU_Q8_ROWS")) : 1;
++    static const bool lean_off   = getenv("GGML_CUDA_NO_TOPK_LEAN") != nullptr;
++    if (glu_q8_off || glu_rows > 1 || lean_off || !ctx.q8_1_cache.live) {
++        return 0;
++    }
++    const int n = cgraph->n_nodes;
++    ggml_tensor ** nodes = cgraph->nodes;
++    const ggml_tensor * rt = nodes[r];
++    auto skip_views = [&](int k) {
++        while (k < n && ggml_cuda_is_view_or_noop(nodes[k])) {
++            k++;
++        }
++        return k;
++    };
++
++    // top-k
++    const int k = skip_views(r + 1);
++    if (k + 10 > n || nodes[k]->op != GGML_OP_SOFT_MAX || nodes[k]->src[0] != rt) {
++        return 0;
++    }
++    ggml_cuda_topk_moe_args args;
++    if (!ggml_cuda_topk_moe_fusion(cgraph, k, args) || !args.softmax || args.sigmoid || args.sqrt_softplus || args.delayed_softmax ||
++            args.prob_bias || !args.norm || args.n_groups != 0) {
++        return 0;
++    }
++    static const ggml_op topk_ops[] = { GGML_OP_SOFT_MAX, GGML_OP_RESHAPE, GGML_OP_ARGSORT, GGML_OP_VIEW, GGML_OP_GET_ROWS,
++        GGML_OP_RESHAPE, GGML_OP_SUM_ROWS, GGML_OP_CLAMP, GGML_OP_DIV, GGML_OP_RESHAPE };
++    const int n_topk = (int) (sizeof(topk_ops) / sizeof(topk_ops[0]));
++    int topk_out[2] = { k + 3, k + n_topk - 1 };
++    tn.softmax = nodes[k];
++    tn.ids     = nodes[topk_out[0]];
++    tn.weights = nodes[topk_out[1]];
++    tn.clamp   = nodes[k + 7];
++    if (!ggml_can_fuse_subgraph(cgraph, k, n_topk, topk_ops, topk_out, 2) ||
++            (k + n_topk < n && nodes[k + n_topk]->op == GGML_OP_SCALE && nodes[k + n_topk]->src[0] == tn.weights) ||
++            !ggml_cuda_should_use_topk_moe(tn.softmax, rt, tn.weights, tn.ids) ||
++            !ggml_cuda_check_fusion_memory_ranges(cgraph, k, n_topk, topk_out, 2, /*is_topk_moe=*/true) ||
++            rt->ne[0] != 512 || rt->ne[1] != 1 || tn.ids->nb[1] / ggml_type_size(tn.ids->type) != 512 || tn.weights->ne[1] > 32 ||
++            tn.ids->data != nodes[k + 2]->data) {
++        return 0;
++    }
++    const int n_used = (int) tn.weights->ne[1];
++
++    // expert gate, up -> SWIGLU (either order of gate and up, as ggml_cuda_try_fuse takes them)
++    const int g = skip_views(k + n_topk);
++    if (g + 3 > n || !ggml_cuda_can_fuse(cgraph, g, { GGML_OP_MUL_MAT_ID, GGML_OP_MUL_MAT_ID, GGML_OP_GLU }, {})) {
++        return 0;
++    }
++    tn.glu  = nodes[g + 2];
++    tn.gate = tn.glu->src[0];
++    tn.up   = tn.glu->src[1];
++    if (!((tn.gate == nodes[g] && tn.up == nodes[g + 1]) || (tn.gate == nodes[g + 1] && tn.up == nodes[g]))) {
++        return 0;
++    }
++    const ggml_tensor * wu = tn.up->src[0];
++    const ggml_tensor * wg = tn.gate->src[0];
++    const ggml_tensor * yu = tn.up->src[1];
++    const int cc = ggml_cuda_info().devices[ctx.device].cc;
++    if (wu->type != GGML_TYPE_IQ4_XS || wg->type != GGML_TYPE_IQ4_XS || !ggml_are_same_stride(wg, wu) || !ggml_are_same_shape(wg, wu) ||
++            !ggml_cuda_mmvq_warp_row_supported(wu->type, cc) || !ggml_cuda_should_fuse_mul_mat_vec_q(tn.up) ||
++            ggml_get_glu_op(tn.glu) != GGML_GLU_OP_SWIGLU || tn.glu->src[1] == nullptr ||
++            tn.up->src[2] != tn.ids || tn.gate->src[2] != tn.ids || tn.gate->src[1] != yu ||
++            yu->data != pre->data || ggml_nbytes(yu) != ggml_nbytes(pre) || yu->type != GGML_TYPE_F32 || yu->ne[2] != 1 || yu->ne[3] != 1 ||
++            tn.up->ne[1] != n_used || tn.up->ne[2] != 1 || tn.up->ne[3] != 1 || wu->ne[3] != 1 ||
++            wu->ne[0] != yu->ne[0] || wu->ne[0] % QK_K != 0 || wu->ne[1] % 32 != 0 || wu->nb[0] != ggml_type_size(wu->type) ||
++            tn.glu->type != GGML_TYPE_F32 || !ggml_is_contiguous(tn.glu) || !ggml_are_same_shape(tn.glu, tn.up) || ggml_nrows(yu) != 1) {
++        return 0;
++    }
++
++    // expert down
++    const int dk = skip_views(g + 3);
++    if (dk >= n || nodes[dk]->op != GGML_OP_MUL_MAT_ID) {
++        return 0;
++    }
++    tn.down = nodes[dk];
++    const ggml_tensor * wd = tn.down->src[0];
++    const ggml_tensor * yd = tn.down->src[1];
++    if (wd->type != GGML_TYPE_IQ4_NL || tn.down->src[2] != tn.ids || yd->type != GGML_TYPE_F32 || yd->data != tn.glu->data ||
++            !ggml_is_contiguous(yd) || yd->ne[0] != tn.glu->ne[0] || ggml_nrows(yd) != ggml_nrows(tn.glu) || yd->ne[1] != n_used ||
++            !ggml_cuda_mmvq_warp_row_supported(wd->type, cc) || (tn.down->flags & GGML_TENSOR_FLAG_COMPUTE) == 0 ||
++            wd->ne[0] != yd->ne[0] || wd->ne[0] % QK4_NL != 0 || wd->ne[1] % MMVQ_RDNA2_IQ4NL_ROWS != 0 || wd->ne[3] != 1 ||
++            wd->nb[0] != ggml_type_size(wd->type) || tn.down->type != GGML_TYPE_F32 || !ggml_is_contiguous(tn.down) ||
++            tn.down->ne[1] != n_used || tn.down->ne[2] != 1 || tn.down->ne[3] != 1 ||
++            GGML_PAD(yd->ne[0], MATRIX_ROW_PADDING)/QK8_1*(int64_t) sizeof(block_q8_1)*ggml_nrows(yd) > (int64_t) ctx.q8_1_cache.slot_size) {
++        return 0;
++    }
++
++    // weighted sum, ending the graph
++    const int w = skip_views(dk + 1);
++    if (w >= n || !ggml_cuda_match_moe_weighted_reduction(cgraph, w, tn.wr)) {
++        return 0;
++    }
++    const int last = w + tn.wr.node_count - 1;
++    if (!ggml_cuda_check_fusion_memory_ranges(cgraph, w, tn.wr.node_count, &last, 1) || tn.wr.experts->data != tn.down->data ||
++            tn.wr.weights->data != tn.weights->data || tn.wr.experts->ne[1] != n_used || tn.wr.experts->ne[2]*tn.wr.experts->ne[3] != 1 ||
++            !ggml_is_contiguous(tn.wr.dst) || tn.wr.dst->ne[0] != tn.down->ne[0] || skip_views(last + 1) != n) {
++        return 0;
++    }
++    // inputs a stage reads while other blocks write that stage's outputs
++    if (ggml_cuda_tensors_overlap(tn.down, tn.ids) || ggml_cuda_tensors_overlap(tn.glu, tn.ids) ||
++            ggml_cuda_tensors_overlap(tn.wr.dst, tn.down) || ggml_cuda_tensors_overlap(tn.wr.dst, tn.weights) ||
++            (tn.wr.expert_scale != nullptr && ggml_cuda_tensors_overlap(tn.wr.dst, tn.wr.expert_scale))) {
++        return 0;
++    }
++
++    t = {};
++    t.logits = (const float *) rt->data; t.weights = (float *) tn.weights->data; t.ids = (int32_t *) tn.ids->data; t.n_used = n_used;
++    t.with_norm = true; t.clamp = ggml_get_op_params_f32(tn.clamp, 0); t.scale = 1.0f;
++    const int64_t gblocks = GGML_PAD(tn.glu->ne[0], MATRIX_ROW_PADDING) / QK8_1;
++    t.g_up = wu->data; t.g_gate = wg->data; t.g_dst = (float *) tn.glu->data;
++    t.g_nrows = (int) wu->ne[1]; t.g_nbx = t.g_nrows / 32; t.g_nblk = (int) (wu->ne[0] / QK_K);
++    t.g_stride_row = (int) (wu->nb[1] / ggml_type_size(wu->type)); t.g_stride_ch = (int) (wu->nb[2] / ggml_type_size(wu->type));
++    t.g_nch_y = (int) yu->ne[1]; t.g_stride_ch_y = (int) (GGML_PAD(yu->ne[0], MATRIX_ROW_PADDING) / QK8_1);
++    t.g_stride_ch_dst = (int) (tn.glu->nb[1] / sizeof(float)); t.g_q8_bpc = (int) gblocks;
++    t.d_w = wd->data; t.d_dst = (float *) tn.down->data;
++    t.d_nbx = (int) (wd->ne[1] / MMVQ_RDNA2_IQ4NL_ROWS); t.d_nblk = (int) (wd->ne[0] / QK4_NL);
++    t.d_stride_row = (int) (wd->nb[1] / ggml_type_size(wd->type)); t.d_stride_ch = (int) (wd->nb[2] / ggml_type_size(wd->type));
++    t.d_nch_y = (int) yd->ne[1]; t.d_stride_ch_y = (int) gblocks;
++    t.d_stride_ch_dst = (int) (tn.down->nb[1] / sizeof(float)); t.d_stride_col_dst = (uint32_t) (tn.down->nb[2] / sizeof(float));
++    t.w_experts = (const float *) tn.wr.experts->data; t.w_scale = tn.wr.expert_scale ? (const float *) tn.wr.expert_scale->data : nullptr;
++    t.w_weights = (const float *) tn.wr.weights->data; t.w_dst = (float *) tn.wr.dst->data; t.n_embd = (int) tn.wr.experts->ne[0];
++    // the GLU's q8_1 copy, read by the down stage: the next cache slot, as ggml_cuda_glu_q8_slot reserves it (marked used after the group)
++    t.g_q8 = (block_q8_1 *) ggml_cuda_q8_1_cache_reserve(ctx, yd);
++    return last;
++}
++
 +// engine2n: GGML_CUDA_SEG_MOE=1 — the MoE segment's head, MUL_MAT(hc down, Q6_K, one token, over the hc norm's cached q8_1)
 +// [-> views] -> the hc block (ggml_cuda_hc_up_pre_match) [-> views] -> MUL_MAT(router, BF16), as one persistent kernel
 +// (dsv4-hc.cu k_seg_moe_head, same values; docs/DESIGN_megakernel.md step 1). Returns the nodes it covers past i, or 0.
 +// GGML_CUDA_SEG_VERIFY=1 (debug) also runs the ordinary nodes and compares bit for bit.
 +static int ggml_cuda_try_seg_moe_head(ggml_backend_cuda_context & ctx, ggml_cgraph * cgraph, int i) {
-+    static const bool on = [] { const char * e = getenv("GGML_CUDA_SEG_MOE"); return e && atoi(e) != 0; }();
-+    if (!on || !ctx.q8_1_cache.live) {
++    // 1: the head (1a), 2: the whole segment when it matches (2a), else the head
++    static const int mode = [] { const char * e = getenv("GGML_CUDA_SEG_MOE"); return e ? atoi(e) : 0; }();
++    if (mode == 0 || !ctx.q8_1_cache.live) {
 +        return 0;
 +    }
 +    ggml_tensor * dn = cgraph->nodes[i];
@@ -4394,6 +4755,96 @@ index 72e961d..22b7d06 100644
 +        y_saved.alloc(ggml_nbytes(y));
 +        CUDA_CHECK(cudaMemcpyAsync(y_saved.get(), y->data, ggml_nbytes(y), cudaMemcpyDeviceToDevice, ctx.stream()));
 +    }
++
++    // 2a: the whole segment in one kernel, held back for the copy-out when it ends the graph
++    ggml_cuda_seg_moe_tail tail;
++    ggml_cuda_seg_moe_tail_nodes tn;
++    const int last = mode == 2 && q8 != nullptr ? ggml_cuda_seg_moe_match_tail(ctx, cgraph, r, pre, tail, tn) : 0;
++    if (last > 0) {
++        auto f = ggml_cuda_seg_moe_make(ctx, dn, y_dn, sc, si, mm, pre, q8, rt, &tail);
++        if (!f) {
++            ctx.q8_1_cache.pending = -1;  // neither q8_1 copy gets written
++            return 0;
++        }
++        for (int k = i; k <= last; k++) {
++            ggml_cuda_comm_flush_if_touches(ctx, cgraph->nodes[k]);
++        }
++        if (!verify) {
++            if (ggml_cuda_comm_can_hold(ctx, cgraph, last)) {
++                ggml_cuda_comm_hold(ctx, tail.w_dst, tail.n_embd, std::move(f));
++            } else {
++                f(nullptr);
++            }
++            return last - i;
++        }
++        // verify: run it now, then the ordinary kernels from the saved hc norm, and compare where each output ends up
++        f(nullptr);
++        const size_t nq_pre = (size_t) (pre->ne[0]/QK8_1)*sizeof(block_q8_1);
++        const size_t nq_glu = (size_t) tail.n_used*tail.g_q8_bpc*sizeof(block_q8_1);
++        struct vout { const char * name; const void * p; size_t bytes; };  // [3] hc_pre q8: its reference is taken right after the ordinary hc_pre
++        const vout outs[] = {
++            { "hc down", dn->data, ggml_nbytes(dn) }, { "hc up", mm->data, ggml_nbytes(mm) }, { "hc_pre", pre->data, ggml_nbytes(pre) },
++            { "hc_pre q8", q8, nq_pre }, { "router", rt->data, ggml_nbytes(rt) }, { "topk weights", tn.weights->data, ggml_nbytes(tn.weights) },
++            { "topk ids", tn.ids->data, ggml_nbytes(tn.ids) }, { "expert glu", tn.glu->data, ggml_nbytes(tn.glu) },
++            { "expert glu q8", tail.g_q8, nq_glu }, { "expert down", tn.down->data, ggml_nbytes(tn.down) },
++            { "weighted", tn.wr.dst->data, ggml_nbytes(tn.wr.dst) },
++        };
++        const int nout = (int) (sizeof(outs) / sizeof(outs[0]));
++        std::vector<std::vector<char>> got(nout), ref(nout);
++        for (int o = 0; o < nout; o++) {
++            got[o].resize(outs[o].bytes);
++            ref[o].resize(outs[o].bytes);
++            CUDA_CHECK(cudaMemcpyAsync(got[o].data(), outs[o].p, outs[o].bytes, cudaMemcpyDeviceToHost, ctx.stream()));
++        }
++        CUDA_CHECK(cudaMemcpyAsync(y->data, y_saved.get(), ggml_nbytes(y), cudaMemcpyDeviceToDevice, ctx.stream()));
++        for (int k = i; k <= r; k++) {
++            if (!ggml_cuda_is_view_or_noop(cgraph->nodes[k])) {
++                ggml_cuda_compute_forward(ctx, cgraph->nodes[k]);
++            }
++            if (k == j) {
++                ggml_cuda_op_dsv4_hc_pre(ctx, pre, q8);  // its q8_1 copy, before the router may write over the hc norm it reads
++                // taken now: the reference matmuls below quantize their inputs into the next cache slots, which may come round to it
++                CUDA_CHECK(cudaMemcpyAsync(ref[3].data(), q8, nq_pre, cudaMemcpyDeviceToHost, ctx.stream()));
++            }
++        }
++        ggml_cuda_topk_moe_args targs;
++        ggml_cuda_topk_moe_fusion(cgraph, (int) (std::find(cgraph->nodes, cgraph->nodes + cgraph->n_nodes, tn.softmax) - cgraph->nodes), targs);
++        ggml_cuda_op_topk_moe(ctx, rt, tn.weights, tn.ids, tn.clamp, nullptr, nullptr, targs);
++        ggml_cuda_mm_fusion_args_host fusion{};
++        fusion.gate                  = tn.gate->src[0];
++        fusion.glu_op                = ggml_get_glu_op(tn.glu);
++        fusion.glu_limit             = ggml_get_op_params_f32(tn.glu, 3);
++        fusion.q8_out                = tail.g_q8;
++        fusion.q8_blocks_per_channel = tail.g_q8_bpc;
++        ggml_cuda_mul_mat_vec_q(ctx, tn.up->src[0], tn.up->src[1], tn.up->src[2], tn.glu, &fusion);
++        ggml_cuda_mul_mat_vec_q(ctx, tn.down->src[0], tn.down->src[1], tn.down->src[2], tn.down, nullptr);
++        ggml_cuda_op_moe_weighted_reduction(ctx, tn.wr.experts, tn.wr.expert_scale, tn.wr.weights, tn.wr.dst);
++        for (int o = 0; o < nout; o++) {
++            if (o != 3) {
++                CUDA_CHECK(cudaMemcpyAsync(ref[o].data(), outs[o].p, outs[o].bytes, cudaMemcpyDeviceToHost, ctx.stream()));
++            }
++        }
++        CUDA_CHECK(cudaStreamSynchronize(ctx.stream()));
++        static int nprint = 0;
++        bool bad = false;
++        for (int o = 0; o < nout; o++) {
++            bad |= memcmp(got[o].data(), ref[o].data(), outs[o].bytes) != 0;
++        }
++        if (bad || nprint < 8) {
++            nprint++;
++            std::string line;
++            for (int o = 0; o < nout; o++) {
++                int64_t nbad = 0;
++                for (size_t e = 0; e + 4 <= outs[o].bytes; e += 4) {
++                    nbad += memcmp(got[o].data() + e, ref[o].data() + e, 4) != 0;
++                }
++                line += std::string(o ? ", " : "") + outs[o].name + (nbad ? " DIFFER " + std::to_string(nbad) + "/" + std::to_string(outs[o].bytes/4) : " same");
++            }
++            fprintf(stderr, "seg moe tail verify: %s: %s\n", tn.wr.dst->name, line.c_str());
++        }
++        return last - i;
++    }
++
 +    if (!ggml_cuda_seg_moe_head(ctx, dn, y_dn, sc, si, mm, pre, q8, rt)) {
 +        return 0;
 +    }
@@ -4708,7 +5159,7 @@ index 72e961d..22b7d06 100644
                  }
                  ops.insert(ops.end(), { GGML_OP_ARGSORT, GGML_OP_VIEW, GGML_OP_GET_ROWS });
                  out_nodes[0] = i + ops.size() - 2;
-@@ -4422,6 +6622,7 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+@@ -4422,6 +6859,7 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
                  fusion_data.gate      = gate->src[0];
                  fusion_data.glu_op    = ggml_get_glu_op(glu);
                  fusion_data.glu_limit = ggml_get_op_params_f32(glu, 3);
@@ -4716,7 +5167,7 @@ index 72e961d..22b7d06 100644
  
                  ggml_cuda_mul_mat_vec_q(*cuda_ctx, src0, src1, ids, glu, &fusion_data);
                  fused_mul_mat_vec = true;
-@@ -4599,6 +6800,13 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+@@ -4599,6 +7037,13 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
          return fused_node_count - 1;
      }
  
@@ -4730,7 +5181,7 @@ index 72e961d..22b7d06 100644
      if (ggml_cuda_can_fuse(cgraph, i, { GGML_OP_RMS_NORM, GGML_OP_MUL, GGML_OP_ROPE, GGML_OP_VIEW, GGML_OP_SET_ROWS }, {})) {
          ggml_cuda_op_rms_norm_mul_rope_fused(*cuda_ctx, node, cgraph->nodes[i + 1], cgraph->nodes[i + 2], cgraph->nodes[i + 4]);
          return 4;
-@@ -4615,11 +6823,19 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+@@ -4615,11 +7060,19 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
      }
  
      if (ggml_cuda_can_fuse(cgraph, i, { GGML_OP_RMS_NORM, GGML_OP_MUL }, {})) {
@@ -4751,7 +5202,7 @@ index 72e961d..22b7d06 100644
          ggml_cuda_op_rms_norm_scale_fused(*cuda_ctx, node, cgraph->nodes[i + 1]);
          return 1;
      }
-@@ -4629,6 +6845,12 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+@@ -4629,6 +7082,12 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
          return 2;
      }
  
@@ -4764,7 +5215,7 @@ index 72e961d..22b7d06 100644
      if (ggml_cuda_can_fuse(cgraph, i, { GGML_OP_SSM_CONV, GGML_OP_UNARY }, { GGML_UNARY_OP_SILU })) {
          ggml_cuda_op_ssm_conv(*cuda_ctx, node, /*bias_add_node=*/ nullptr, cgraph->nodes[i + 1]);
          return 1;
-@@ -4647,6 +6869,11 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+@@ -4647,6 +7106,11 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
      }
  
      if (ggml_cuda_can_fuse(cgraph, i, { GGML_OP_SCALE, GGML_OP_UNARY, GGML_OP_SCALE, GGML_OP_DSV4_HC_POST }, { GGML_UNARY_OP_SIGMOID })) {
@@ -4776,7 +5227,7 @@ index 72e961d..22b7d06 100644
          ggml_cuda_op_dsv4_hc_post(*cuda_ctx, cgraph->nodes[i + 3], node, cgraph->nodes[i + 2]);
          return 3;
      }
-@@ -4659,8 +6886,87 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+@@ -4659,8 +7123,87 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
      return 0;
  }
  
@@ -4864,7 +5315,7 @@ index 72e961d..22b7d06 100644
  
      // flag used to determine whether it is an integrated_gpu
      const bool integrated            = ggml_cuda_info().devices[cuda_ctx->device].integrated;
-@@ -4764,6 +7070,41 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
+@@ -4764,6 +7307,41 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
                  stream_ctx.concurrent_events.clear();
              }
  
@@ -4906,7 +5357,7 @@ index 72e961d..22b7d06 100644
              for (int i = 0; i < cgraph->n_nodes; i++) {
                  ggml_tensor * node = cgraph->nodes[i];
  #ifdef USE_CUDA_GRAPH
-@@ -4815,9 +7156,144 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
+@@ -4815,9 +7393,144 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
                      continue;
                  }
  
@@ -5051,7 +5502,7 @@ index 72e961d..22b7d06 100644
  #ifdef GGML_CUDA_DEBUG
                      const int last_fused = i + nodes_to_skip;
                      GGML_LOG_INFO("nodes_fused: %d, first: %s (%s), last: %s (%s)\n",
-@@ -4844,16 +7320,37 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
+@@ -4844,16 +7557,37 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
                  GGML_UNUSED(integrated);
  #endif  // NDEBUG
  
@@ -5090,7 +5541,7 @@ index 72e961d..22b7d06 100644
          }
  
  #ifdef USE_CUDA_GRAPH
-@@ -4878,8 +7375,12 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
+@@ -4878,8 +7612,12 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
  
      if (use_cuda_graph && !cuda_graph_update_required) {
          // the chunks were launched during capture, otherwise launch them here
@@ -5105,7 +5556,7 @@ index 72e961d..22b7d06 100644
          }
  #else
          GGML_UNUSED(graph_key);
-@@ -4908,8 +7409,21 @@ static bool ggml_cuda_graph_set_enabled(ggml_backend_cuda_context * cuda_ctx, co
+@@ -4908,8 +7646,21 @@ static bool ggml_cuda_graph_set_enabled(ggml_backend_cuda_context * cuda_ctx, co
  static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend, ggml_cgraph * cgraph) {
      ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *) backend->context;
  
@@ -5127,7 +5578,7 @@ index 72e961d..22b7d06 100644
      bool use_cuda_graph             = false;
      bool cuda_graph_update_required = false;
      const void * graph_key = nullptr;
-@@ -4970,6 +7484,7 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend,
+@@ -4970,6 +7721,7 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend,
  
  static void ggml_backend_cuda_event_record(ggml_backend_t backend, ggml_backend_event_t event) {
      ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *)backend->context;
@@ -5135,7 +5586,7 @@ index 72e961d..22b7d06 100644
  
      CUDA_CHECK(cudaEventRecord((cudaEvent_t)event->context, cuda_ctx->stream()));
  }
-@@ -6282,14 +8797,412 @@ static ggml_backend_feature * ggml_backend_cuda_get_features(ggml_backend_reg_t
+@@ -6282,14 +9034,412 @@ static ggml_backend_feature * ggml_backend_cuda_get_features(ggml_backend_reg_t
      GGML_UNUSED(reg);
  }
  
@@ -7609,10 +8060,62 @@ index 8514ca8..faf3fe9 100644
 +        int nrows_a, int nrows_b, ggml_tensor * dst_a, ggml_tensor * dst_b, float eps, float scale_out,
 +        const ssm_conv_direct_in * direct = nullptr);
 diff --git a/ggml/src/ggml-cuda/topk-moe.cu b/ggml/src/ggml-cuda/topk-moe.cu
-index a93d3a9..28ecf3c 100644
+index a93d3a9..05b2cd5 100644
 --- a/ggml/src/ggml-cuda/topk-moe.cu
 +++ b/ggml/src/ggml-cuda/topk-moe.cu
-@@ -264,9 +264,9 @@ __global__ void topk_moe_cuda(const float *         logits,
+@@ -15,51 +15,6 @@ struct topk_moe_config {
+     int  n_group_used;
+ };
+ 
+-// Warp-local softmax used for both the pre-top-k logits and the post-top-k delayed path.
+-template <int experts_per_thread, bool use_limit>
+-__device__ void softmax_warp_inplace(float (&vals)[experts_per_thread], const int limit, const int lane) {
+-    float max_val = -INFINITY;
+-
+-#pragma unroll
+-    for (int i = 0; i < experts_per_thread; i++) {
+-        const int  idx    = lane + i * WARP_SIZE;
+-        const bool active = !use_limit || (idx < limit);
+-        if (active) {
+-            max_val = max(max_val, vals[i]);
+-        }
+-    }
+-
+-    max_val = warp_reduce_max(max_val);
+-
+-    float sum = 0.f;
+-
+-#pragma unroll
+-    for (int i = 0; i < experts_per_thread; i++) {
+-        const int  idx    = lane + i * WARP_SIZE;
+-        const bool active = !use_limit || (idx < limit);
+-        if (active) {
+-            const float val = expf(vals[i] - max_val);
+-            vals[i]         = val;
+-            sum += val;
+-        } else {
+-            vals[i] = 0.f;
+-        }
+-    }
+-
+-    sum = warp_reduce_sum(sum);
+-
+-    const float inv_sum = 1.0f / sum;
+-
+-#pragma unroll
+-    for (int i = 0; i < experts_per_thread; i++) {
+-        const int  idx    = lane + i * WARP_SIZE;
+-        const bool active = !use_limit || (idx < limit);
+-        if (active) {
+-            vals[i] *= inv_sum;
+-        }
+-    }
+-}
+-
+ template <int experts_per_thread, bool use_limit>
+ __device__ void sigmoid_warp_inplace(float (&vals)[experts_per_thread], const int limit, const int lane) {
+ #pragma unroll
+@@ -264,9 +219,9 @@ __global__ void topk_moe_cuda(const float *         logits,
  
  #pragma unroll
              for (int mask = WARP_SIZE / 2; mask > 0; mask /= 2) {
@@ -7625,7 +8128,7 @@ index a93d3a9..28ecf3c 100644
                  if (val_s > max_val_s || (val_s == max_val_s && expert < max_expert)) {
                      max_val    = val;
                      max_val_s  = val_s;
-@@ -289,8 +289,8 @@ __global__ void topk_moe_cuda(const float *         logits,
+@@ -289,8 +244,8 @@ __global__ void topk_moe_cuda(const float *         logits,
  
  #pragma unroll
              for (int mask = WARP_SIZE / 2; mask > 0; mask /= 2) {
@@ -7636,13 +8139,14 @@ index a93d3a9..28ecf3c 100644
                  if (val > max_val || (val == max_val && expert < max_expert)) {
                      max_val    = val;
                      max_expert = expert;
-@@ -337,6 +337,109 @@ __global__ void topk_moe_cuda(const float *         logits,
+@@ -337,6 +292,38 @@ __global__ void topk_moe_cuda(const float *         logits,
      }
  }
  
 +// engine2n: topk_moe_cuda for the plain case (softmax first, no bias, no expert groups, not delayed): the same loads,
 +// comparisons and sums in the same order, so the same ids and weights, without the general kernel's runtime branches,
 +// which on gfx1151 cost ~1.7x (14.6k vs 8.7k cycles for 512 experts, top 10). GGML_CUDA_NO_TOPK_LEAN=1 turns it off.
++// The body is topk_moe_softmax_load + topk_moe_softmax_pick (topk-moe.cuh), which the MoE segment kernel also runs.
 +template <int n_experts>
 +__launch_bounds__(TOPK_MOE_ROWS_PER_BLOCK * WARP_SIZE, 1)
 +__global__ void topk_moe_softmax_cuda(const float * logits,
@@ -7662,19 +8166,110 @@ index a93d3a9..28ecf3c 100644
 +    weights += n_expert_used * row;
 +    ids += n_experts * row;
 +
-+    constexpr int experts_per_thread = (n_experts > WARP_SIZE) ? n_experts / WARP_SIZE : 1;
-+
-+    float wt[experts_per_thread];
-+#pragma unroll
-+    for (int i = 0; i < n_experts; i += WARP_SIZE) {
-+        const int expert  = i + threadIdx.x;
-+        wt[i / WARP_SIZE] = (n_experts % WARP_SIZE == 0 || expert < n_experts) ? logits[expert] : -INFINITY;
-+    }
++    float wt[topk_moe_experts_per_thread(n_experts)];
++    topk_moe_softmax_load<n_experts>(logits, wt, threadIdx.x);
 +
 +    // Weights and IDs can alias logits, so wait until every row in the block reads its logits.
 +    __syncthreads();
 +
-+    softmax_warp_inplace<experts_per_thread, false>(wt, n_experts, threadIdx.x);
++    topk_moe_softmax_pick<n_experts>(wt, weights, ids, n_expert_used, clamp_val, scale_val, with_norm, threadIdx.x);
++}
++
+ template<bool has_bias>
+ static void launch_topk_moe_cuda(ggml_backend_cuda_context & ctx,
+                                  const float *               logits,
+@@ -361,6 +348,14 @@ static void launch_topk_moe_cuda(ggml_backend_cuda_context & ctx,
+     GGML_ASSERT(config.n_groups == 0 && "expert groups fusion is not supported on this HIP version");
+ #endif
+ 
++    static const bool lean_off = getenv("GGML_CUDA_NO_TOPK_LEAN") != nullptr;
++    if (!has_bias && !lean_off && n_expert == 512 && !config.use_sigmoid && !config.use_sqrt_softplus && !config.delayed_softmax &&
++            config.n_groups == 0) {
++        ggml_cuda_kernel_launch(topk_moe_softmax_cuda<512>, launch_params,
++            logits, weights, ids, n_rows, n_expert_used, clamp_val, scale_val, config.with_norm);
++        return;
++    }
++
+     switch (n_expert) {
+         case 1:
+             ggml_cuda_kernel_launch(topk_moe_cuda<1, has_bias>, launch_params,
+diff --git a/ggml/src/ggml-cuda/topk-moe.cuh b/ggml/src/ggml-cuda/topk-moe.cuh
+index 3637500..c2e03c8 100644
+--- a/ggml/src/ggml-cuda/topk-moe.cuh
++++ b/ggml/src/ggml-cuda/topk-moe.cuh
+@@ -6,6 +6,143 @@
+ // Rows that one CUDA block handles.
+ #define TOPK_MOE_ROWS_PER_BLOCK 8
+ 
++// Warp-local softmax used for both the pre-top-k logits and the post-top-k delayed path.
++template <int experts_per_thread, bool use_limit>
++__device__ void softmax_warp_inplace(float (&vals)[experts_per_thread], const int limit, const int lane) {
++    float max_val = -INFINITY;
++
++#pragma unroll
++    for (int i = 0; i < experts_per_thread; i++) {
++        const int  idx    = lane + i * WARP_SIZE;
++        const bool active = !use_limit || (idx < limit);
++        if (active) {
++            max_val = max(max_val, vals[i]);
++        }
++    }
++
++    max_val = warp_reduce_max(max_val);
++
++    float sum = 0.f;
++
++#pragma unroll
++    for (int i = 0; i < experts_per_thread; i++) {
++        const int  idx    = lane + i * WARP_SIZE;
++        const bool active = !use_limit || (idx < limit);
++        if (active) {
++            const float val = expf(vals[i] - max_val);
++            vals[i]         = val;
++            sum += val;
++        } else {
++            vals[i] = 0.f;
++        }
++    }
++
++    sum = warp_reduce_sum(sum);
++
++    const float inv_sum = 1.0f / sum;
++
++#pragma unroll
++    for (int i = 0; i < experts_per_thread; i++) {
++        const int  idx    = lane + i * WARP_SIZE;
++        const bool active = !use_limit || (idx < limit);
++        if (active) {
++            vals[i] *= inv_sum;
++        }
++    }
++}
++
++static constexpr __host__ __device__ int topk_moe_experts_per_thread(int n_experts) {
++    return (n_experts > WARP_SIZE) ? n_experts / WARP_SIZE : 1;
++}
++
++// engine2n: the plain softmax top-k of one row by one warp (topk_moe_softmax_cuda, and stage 4 of the MoE segment kernel in
++// dsv4-hc.cu): lane `lane` loads experts lane, lane + 32, ... of the row
++template <int n_experts>
++static __device__ __forceinline__ void topk_moe_softmax_load(const float * logits, float (&wt)[topk_moe_experts_per_thread(n_experts)],
++                                                             const int lane) {
++#pragma unroll
++    for (int i = 0; i < n_experts; i += WARP_SIZE) {
++        const int expert  = i + lane;
++        wt[i / WARP_SIZE] = (n_experts % WARP_SIZE == 0 || expert < n_experts) ? logits[expert] : -INFINITY;
++    }
++}
++
++// then softmax, the top n_expert_used (ids, weights), optional normalization and scale
++template <int n_experts>
++static __device__ __forceinline__ void topk_moe_softmax_pick(float (&wt)[topk_moe_experts_per_thread(n_experts)], float * weights,
++                                                             int32_t * ids, const int n_expert_used, const float clamp_val,
++                                                             const float scale_val, const bool with_norm, const int lane) {
++    constexpr int experts_per_thread = topk_moe_experts_per_thread(n_experts);
++
++    softmax_warp_inplace<experts_per_thread, false>(wt, n_experts, lane);
 +
 +#pragma unroll
 +    for (int i = 0; i < experts_per_thread; i++) {
@@ -7692,10 +8287,10 @@ index a93d3a9..28ecf3c 100644
 +
 +    for (int k = 0; k < n_expert_used; k++) {
 +        float max_val    = wt[0];
-+        int   max_expert = threadIdx.x;
++        int   max_expert = lane;
 +#pragma unroll
 +        for (int i = 1; i < experts_per_thread; i++) {
-+            const int expert = threadIdx.x + i * WARP_SIZE;
++            const int expert = lane + i * WARP_SIZE;
 +            if ((n_experts % WARP_SIZE == 0 || expert < n_experts) && wt[i] > max_val) {
 +                max_val    = wt[i];
 +                max_expert = expert;
@@ -7710,13 +8305,13 @@ index a93d3a9..28ecf3c 100644
 +                max_expert = expert;
 +            }
 +        }
-+        if ((max_expert & (WARP_SIZE - 1)) == threadIdx.x) {
++        if ((max_expert & (WARP_SIZE - 1)) == lane) {
 +            wt[max_expert / WARP_SIZE] = -INFINITY;
 +        }
-+        if ((k & (WARP_SIZE - 1)) == threadIdx.x) {
++        if ((k & (WARP_SIZE - 1)) == lane) {
 +            output_weights[k / WARP_SIZE] = max_val;
 +        }
-+        if ((max_expert & (WARP_SIZE - 1)) == threadIdx.x) {
++        if ((max_expert & (WARP_SIZE - 1)) == lane) {
 +            ids[k] = max_expert;
 +            if (with_norm) {
 +                wt_sum += max_val;
@@ -7736,31 +8331,16 @@ index a93d3a9..28ecf3c 100644
 +
 +#pragma unroll
 +    for (int i = 0; i < experts_per_thread; i++) {
-+        const int idx = i * WARP_SIZE + threadIdx.x;
++        const int idx = i * WARP_SIZE + lane;
 +        if (idx < n_expert_used) {
 +            weights[idx] = output_weights[i] * scale_val;
 +        }
 +    }
 +}
 +
- template<bool has_bias>
- static void launch_topk_moe_cuda(ggml_backend_cuda_context & ctx,
-                                  const float *               logits,
-@@ -361,6 +464,14 @@ static void launch_topk_moe_cuda(ggml_backend_cuda_context & ctx,
-     GGML_ASSERT(config.n_groups == 0 && "expert groups fusion is not supported on this HIP version");
- #endif
- 
-+    static const bool lean_off = getenv("GGML_CUDA_NO_TOPK_LEAN") != nullptr;
-+    if (!has_bias && !lean_off && n_expert == 512 && !config.use_sigmoid && !config.use_sqrt_softplus && !config.delayed_softmax &&
-+            config.n_groups == 0) {
-+        ggml_cuda_kernel_launch(topk_moe_softmax_cuda<512>, launch_params,
-+            logits, weights, ids, n_rows, n_expert_used, clamp_val, scale_val, config.with_norm);
-+        return;
-+    }
-+
-     switch (n_expert) {
-         case 1:
-             ggml_cuda_kernel_launch(topk_moe_cuda<1, has_bias>, launch_params,
+ struct ggml_cuda_topk_moe_args {
+     bool sigmoid{};
+     bool sqrt_softplus{};
 diff --git a/ggml/src/ggml-cuda/unary.cu b/ggml/src/ggml-cuda/unary.cu
 index b3b6aa4..52f7afd 100644
 --- a/ggml/src/ggml-cuda/unary.cu

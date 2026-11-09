@@ -1,0 +1,17 @@
+none tv bin=bin load A=0.58 B=0.52 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 18.52 tok/s (token-weighted) | srv-2node-none-bs-tv-1109-195456
+   a: n=778 gfx 2471/2819/2878 상한 2664/2876/2900 활동 72/87/89 소켓W 69/70/70 gfxW 23/32/35 코어W 7/10/20 코어상한 1940/2612/4491 fclk 1601/1608/1662 uclk 1000/1000/1000 dramR 46008/57899/60952 dramW 2352/2497/3656 
+   b: n=781 gfx 2074/2168/2841 상한 2040/2194/2900 활동 73/88/91 소켓W 63/66/70 gfxW 14/16/32 코어W 10/21/24 코어상한 4265/5038/5109 fclk 1600/1607/1648 uclk 1000/1000/1000 dramR 45824/56763/59896 dramW 2820/2907/3437 
+verify a: 67256 lines, DIFFER 67256; ggml_cuda_seg_moe_make: tail: 2 blocks of 1024 per CU, 20 CUs
+seg moe tail verify: ffn_moe_out-47: hc down same, hc up same, hc_pre same, hc_pre q8 DIFFER 720/720, router same, topk weights same, topk ids same, expert glu same, expert glu q8 same, expert down same, weighted same
+seg moe tail verify: ffn_moe_out-47: hc down same, hc up same, hc_pre same, hc_pre q8 DIFFER 720/720, router same, topk weights same, topk ids same, expert glu same, expert glu q8 same, expert down same, weighted same
+seg moe tail verify: ffn_moe_out-47: hc down same, hc up same, hc_pre same, hc_pre q8 DIFFER 720/720, router same, topk weights same, topk ids same, expert glu same, expert glu q8 same, expert down same, weighted same
+seg moe tail verify: ffn_moe_out-47: hc down same, hc up same, hc_pre same, hc_pre q8 DIFFER 720/720, router same, topk weights same, topk ids same, expert glu same, expert glu q8 same, expert down same, weighted same
+seg moe tail verify: ffn_moe_out-47: hc down same, hc up same, hc_pre same, hc_pre q8 DIFFER 720/720, router same, topk weights same, topk ids same, expert glu same, expert glu q8 same, expert down same, weighted same
+verify b: 67256 lines, DIFFER 67256; ggml_cuda_seg_moe_make: tail: 2 blocks of 1024 per CU, 20 CUs
+seg moe tail verify: ffn_moe_out-47: hc down same, hc up same, hc_pre same, hc_pre q8 DIFFER 720/720, router same, topk weights same, topk ids same, expert glu same, expert glu q8 same, expert down same, weighted same
+seg moe tail verify: ffn_moe_out-47: hc down same, hc up same, hc_pre same, hc_pre q8 DIFFER 720/720, router same, topk weights same, topk ids same, expert glu same, expert glu q8 same, expert down same, weighted same
+seg moe tail verify: ffn_moe_out-47: hc down same, hc up same, hc_pre same, hc_pre q8 DIFFER 720/720, router same, topk weights same, topk ids same, expert glu same, expert glu q8 same, expert down same, weighted same
+seg moe tail verify: ffn_moe_out-47: hc down same, hc up same, hc_pre same, hc_pre q8 DIFFER 720/720, router same, topk weights same, topk ids same, expert glu same, expert glu q8 same, expert down same, weighted same
+seg moe tail verify: ffn_moe_out-47: hc down same, hc up same, hc_pre same, hc_pre q8 DIFFER 720/720, router same, topk weights same, topk ids same, expert glu same, expert glu q8 same, expert down same, weighted same
+srv-2node-none-bs-tv-1109-195456-bench.txt: 6/6 same
+verify failed or no match: stop

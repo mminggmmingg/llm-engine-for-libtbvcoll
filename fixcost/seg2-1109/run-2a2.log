@@ -1,0 +1,45 @@
+== build 21:02:05
+== verify 21:02:10
+none tv bin=bin load A=0.57 B=0.53 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 17.95 tok/s (token-weighted) | srv-2node-none-bs-tv-1109-210419
+   a: n=779 gfx 2473/2863/2898 상한 2615/2900/2900 활동 72/86/87 소켓W 68/70/70 gfxW 22/29/32 코어W 9/12/21 코어상한 2754/3263/4515 fclk 1602/1612/1674 uclk 1000/1000/1000 dramR 44952/54477/55465 dramW 2305/2390/3706 
+   b: n=782 gfx 2196/2241/2267 상한 2188/2252/2303 활동 74/90/91 소켓W 63/65/66 gfxW 16/17/18 코어W 19/20/21 코어상한 4993/5056/5097 fclk 1600/1604/1647 uclk 1000/1000/1000 dramR 45447/55522/56548 dramW 2802/2869/3482 
+verify a: 8 lines, DIFFER 0
+seg moe tail verify: ffn_moe_out-47: hc down same, hc up same, hc_pre same, hc_pre q8 same, router same, topk weights same, topk ids same, expert glu same, expert glu q8 same, expert down same, weighted same
+verify b: 8 lines, DIFFER 0
+seg moe tail verify: ffn_moe_out-47: hc down same, hc up same, hc_pre same, hc_pre q8 same, router same, topk weights same, topk ids same, expert glu same, expert glu q8 same, expert down same, weighted same
+srv-2node-none-bs-tv-1109-210419-bench.txt: 6/6 same
+== profiles 21:06:59
+t2: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-t2-1109-210659
+decode 토큰 60개, 토큰당 22.73 ms(A 서버 GPU 시간선), 커널 871개/토큰
+
+
+## 그 밖 구간: 2340번 나옴 (39.0/토큰), 커널 5개, 앞 AR 끝 → 다음 AR 끝 187.2 µs = 커널 173.0 + 빈틈 14.0
+| # | 커널 | grid | 블록 | µs | 앞 빈틈 µs |
+|---:|---|---:|---:|---:|---:|
+def: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-def-1109-210812
+decode 토큰 60개, 토큰당 23.08 ms(A 서버 GPU 시간선), 커널 1183개/토큰
+
+
+## MoE 구간: 2295번 나옴 (38.2/토큰), 커널 11개, 앞 AR 끝 → 다음 AR 끝 195.5 µs = 커널 164.7 + 빈틈 30.7
+| # | 커널 | grid | 블록 | µs | 앞 빈틈 µs |
+|---:|---|---:|---:|---:|---:|
+== stage times 21:09:27
+none tt bin=bin load A=0.56 B=0.29 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 39.48 tok/s (token-weighted) | srv-2node-none-bs-tt-1109-211146
+   a: n=406 gfx 2258/2591/2705 상한 2212/2723/2811 활동 70/90/96 소켓W 67/70/70 gfxW 20/27/29 코어W 6/9/21 코어상한 1909/1934/4736 fclk 1606/1628/1688 uclk 1000/1000/1000 dramR 14850/45969/53858 dramW 3723/3840/4971 
+   b: n=405 gfx 2442/2638/2709 상한 2551/2709/2818 활동 68/89/95 소켓W 65/69/70 gfxW 25/30/32 코어W 3/6/14 코어상한 1605/1964/4952 fclk 1604/1620/1661 uclk 1000/1000/1000 dramR 15327/47411/55495 dramW 4149/4299/4652 
+a:
+seg moe times (tail, 40 blocks, mean of 480, us): start spread 0.24 | stage 1 7.87 | barrier 1 0.53 | stage 2 11.97 | barrier 2 1.26 | stage 3 13.84 | barrier 3 0.83 | stage 4 7.80 | barrier 4 0.49 | stage 5 48.50 | barrier 5 0.86 | stage 6 25.97 | barrier 6 0.51 | stage 7 5.01 | total 125.45
+seg moe times (tail, 40 blocks, mean of 480, us): start spread 0.25 | stage 1 7.89 | barrier 1 0.53 | stage 2 12.46 | barrier 2 1.27 | stage 3 14.65 | barrier 3 0.84 | stage 4 7.83 | barrier 4 0.50 | stage 5 48.66 | barrier 5 0.87 | stage 6 26.11 | barrier 6 0.52 | stage 7 5.15 | total 127.27
+seg moe times (plain, 40 blocks, mean of 480, us): start spread 0.36 | stage 1 14.48 | barrier 1 0.53 | stage 2 20.11 | barrier 2 1.25 | stage 3 5.35 | total 41.71
+b:
+seg moe times (tail, 40 blocks, mean of 480, us): start spread 0.33 | stage 1 9.60 | barrier 1 0.53 | stage 2 17.76 | barrier 2 1.27 | stage 3 16.04 | barrier 3 0.84 | stage 4 7.87 | barrier 4 0.50 | stage 5 49.09 | barrier 5 0.87 | stage 6 26.27 | barrier 6 0.52 | stage 7 5.05 | total 136.21
+seg moe times (tail, 40 blocks, mean of 480, us): start spread 0.25 | stage 1 8.89 | barrier 1 0.53 | stage 2 16.86 | barrier 2 1.28 | stage 3 16.20 | barrier 3 0.84 | stage 4 7.84 | barrier 4 0.50 | stage 5 49.09 | barrier 5 0.87 | stage 6 26.37 | barrier 6 0.52 | stage 7 5.09 | total 134.90
+seg moe times (plain, 40 blocks, mean of 480, us): start spread 0.38 | stage 1 14.99 | barrier 1 0.53 | stage 2 20.17 | barrier 2 1.26 | stage 3 5.35 | total 42.31
+== bursts 21:13:45
+none t2 bin=bin load A=0.54 B=0.57 rdma=2 trace=0 zc=ZC=3/ZC=3:  | srv-2node-none-bs-t2-1109-211559
+mtp t2 bin=bin load A=0.57 B=0.43 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 31.73 tok/s (token-weighted) | srv-2node-mtp-bs-t2-1109-211947
+none t2 bin=bin load A=0.57 B=0.46 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 22.90 tok/s (token-weighted) | srv-2node-none-bs-t2-1109-212417
+srv-2node-none-bs-t2-1109-212417-bench.txt: 6/6 same
+srv-2node-mtp-bs-t2-1109-211947-bench.txt: 6/6 same
+srv-2node-none-bs-t2-1109-211559-bench.txt: 1/1 same
+== done 21:26:49
