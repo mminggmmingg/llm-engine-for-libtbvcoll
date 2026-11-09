@@ -1,0 +1,11 @@
+MoE 구간 커널(A 서버, 1토큰, prof2node-co-nw8-1109-023326): 블록 스레드 / VGPR / SGPR / LDS 바이트 / scratch
+mul_mat_vec_q<t14, 1, false, false, false>                   grid   10368 wg   32 vgpr  32 sgpr 128 lds     0 scratch 0
+k_hc_up_pre<true, 1, false>                                  grid   81920 wg 1024 vgpr  40 sgpr 128 lds  1024 scratch 0
+mul_mat_vec_f<__hip_bfloat16, float, 1, 256, false, false>   grid  131072 wg  256 vgpr  16 sgpr 128 lds     0 scratch 0
+topk_moe_softmax_cuda<512>                                   grid     256 wg   32 vgpr  72 sgpr 128 lds     0 scratch 0
+mul_mat_vec_q_glu_q8<t23, 1>                                 grid  102400 wg 1024 vgpr  72 sgpr 128 lds   512 scratch 0
+mul_mat_vec_q<t20, 1, false, false, false>                   grid  204800 wg   32 vgpr  64 sgpr 128 lds     0 scratch 0
+moe_weighted_reduction_f32_out                               grid    2560 wg  256 vgpr  16 sgpr 128 lds     0 scratch 0
+quantize_q8_1                                                grid    2560 wg  256 vgpr  16 sgpr 128 lds     0 scratch 0
+mul_mat_vec_q_glu_q8<t6, 1>                                  grid   20480 wg 1024 vgpr  64 sgpr 128 lds   512 scratch 0
+mul_mat_vec_q_shexp_tail<t6, 1>                              grid   81920 wg 1024 vgpr  40 sgpr 128 lds   512 scratch 0
