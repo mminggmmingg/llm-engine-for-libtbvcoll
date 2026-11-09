@@ -1,0 +1,18 @@
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-pp4def-1109-232909: tokens 41.0 kernels/token 1928 kernel us/token 32375
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-pp4dd-1109-232752: tokens 41.0 kernels/token 1928 kernel us/token 41807
+  47.0 ->    0.0 /tok    6253.6 ->      0.0 us/tok  mul_mat_vec_q_moe< g5120x40 w32
+  47.0 ->    0.0 /tok    4776.2 ->      0.0 us/tok  mul_mat_vec_q_moe< g40960x40 w32
+  36.0 ->   36.0 /tok    2503.7 ->   2099.7 us/tok  mul_mat_vec_q< g262144x1 w32
+  97.0 ->   97.0 /tok    2032.8 ->   1820.8 us/tok  mul_mat_vec_q< g327680x1 w32
+  12.0 ->   12.0 /tok     641.9 ->    509.6 us/tok  mul_mat_vec_q< g196608x1 w32
+  47.0 ->   47.0 /tok     918.4 ->    800.7 us/tok  mul_mat_vec_f<__hip_bfloat16, float, 4, 256, false, false> g131072x1 w256
+  96.0 ->   96.0 /tok    1188.5 ->   1092.3 us/tok  mul_mat_vec_q< g10368x1 w32
+  48.0 ->   48.0 /tok    1813.7 ->   1754.1 us/tok  mul_mat_vec_q_comm_out< g81920x1 w256
+  94.0 ->   94.0 /tok     791.7 ->    755.1 us/tok  mul_mat_vec_q< g20480x1 w32
+  36.0 ->   36.0 /tok     436.3 ->    415.5 us/tok  scale_f32<float> g393216x1 w256
+  12.0 ->   12.0 /tok     107.4 ->     87.5 us/tok  mul_mat_f<__hip_bfloat162, 32, 4, 7, false> g128x7 w32
+  36.0 ->   36.0 /tok     338.4 ->    319.2 us/tok  gated_delta_net_cuda<128, false, false, 4, false> g768x4 w32
+  94.0 ->   94.0 /tok    2528.6 ->   3290.8 us/tok  rms_norm_f32<1024, 1, true, true, false, false, true, false, g4096x4 w1024
+  48.0 ->   48.0 /tok    2673.9 ->   3961.0 us/tok  mul_mat_vec_q_shexp_tail< g81920x1 w1024
+   0.0 ->   47.0 /tok       0.0 ->   6714.3 us/tok  mul_mat_vec_q_moe_dedup< g5120x40 w32
+   0.0 ->   47.0 /tok       0.0 ->  12937.3 us/tok  mul_mat_vec_q_moe_dedup< g40960x40 w32

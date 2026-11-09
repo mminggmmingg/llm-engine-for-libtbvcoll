@@ -1,0 +1,14 @@
+mtp ov bin=bin load A=0.57 B=0.31 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 54.85 tok/s (token-weighted) | srv-2node-mtp-bs-ov-1109-223724
+   a: n=310 gfx 2095/2375/2534 상한 1945/2566/2755 활동 65/86/93 소켓W 67/70/70 gfxW 20/28/31 코어W 7/11/24 코어상한 1909/1934/4866 fclk 1614/1642/1708 uclk 1000/1000/1000 dramR 8766/26264/56445 dramW 7009/7407/7772 
+   b: n=304 gfx 2216/2272/2305 상한 2324/2496/2869 활동 58/76/82 소켓W 64/69/70 gfxW 24/29/30 코어W 4/7/16 코어상한 1580/1943/4998 fclk 1619/1649/1754 uclk 1000/1000/1000 dramR 4452/12050/58714 dramW 5663/6810/7226 
+a:
+moe overlap: 4 tokens: 16000 calls, 26.23 distinct experts of 40 picks (65.6%)
+moe overlap: 4 tokens: 18000 calls, 26.23 distinct experts of 40 picks (65.6%)
+moe overlap: 4 tokens: 20000 calls, 26.52 distinct experts of 40 picks (66.3%)
+moe overlap: 4 tokens: 22000 calls, 26.61 distinct experts of 40 picks (66.5%)
+b:
+moe overlap: 4 tokens: 16000 calls, 26.23 distinct experts of 40 picks (65.6%)
+moe overlap: 4 tokens: 18000 calls, 26.23 distinct experts of 40 picks (65.6%)
+moe overlap: 4 tokens: 20000 calls, 26.52 distinct experts of 40 picks (66.3%)
+moe overlap: 4 tokens: 22000 calls, 26.61 distinct experts of 40 picks (66.5%)
+srv-2node-mtp-bs-ov-1109-223724-bench.txt: 6/6 same

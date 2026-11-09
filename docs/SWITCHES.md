@@ -148,4 +148,7 @@
   기록 켠 회를 하나 더 돌려 감시기 세션을 남기고 `tools/watch/stallsum.py` 비교표를 `$OUT/watch-summary-<시각>.md` 에 쓴다(영수증 사본 `watch-receipt-*.md`).
   `stallsum.py <이름>=<세션 폴더> ...` 는 따로도 쓴다(늦음 목록은 세션의 `stalls.txt` 로 한 번 만듦). bench 스크립트들은 이제 저장소 `tools/bench` 에서 돈다(예전 scratchpad 사본 `pf/`).
   `SPEED=0` 이면 속도 회 없이 감시기 회만(11-07 저녁). 늦음 목록(`INFERWATCH_STALLS=1`)에 그 시각의 노드 사이 시계 차 `off`(B − A, µs)가 붙는다.
+- 2026-11-09 밤(MTP 검증 4토큰): `GGML_CUDA_MOE_DEDUP=1`(기본 꺼짐) — 2–4토큰 MUL_MAT_ID 에서 같은 전문가를 고른 토큰들을 한 번의 가중치 읽기로
+  (`mul_mat_vec_q_moe_dedup`, 값 같음) — **MTP −23% 라 끔**(블록마다 전문가 목록을 다시 계산하는 몫, RESULTS.md 2026-11-09 22:20 절).
+  `GGML_CUDA_MOE_DEDUP_VERIFY=1`(기존 커널과 비트 비교), `GGML_CUDA_MOE_OVERLAP_STATS=<n>`(디버그: 4토큰이 고른 전문가 중 서로 다른 것의 비율, 동기화).
 
