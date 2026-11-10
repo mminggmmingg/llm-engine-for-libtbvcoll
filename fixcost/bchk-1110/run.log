@@ -1,0 +1,25 @@
+none def bin=bin load A=0.56 B=0.02 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 42.14 tok/s (token-weighted) | srv-2node-none-bs-def-1111-000039
+   a: n=385 gfx 2199/2587/2718 상한 2178/2744/2837 활동 69/90/96 소켓W 68/70/70 gfxW 19/26/29 코어W 5/9/22 코어상한 1581/1927/4871 fclk 1611/1642/1708 uclk 1000/1000/1000 dramR 16486/52570/61299 dramW 3903/4052/5116 
+   b: n=385 gfx 2465/2666/2753 상한 2567/2753/2860 활동 68/90/96 소켓W 64/69/70 gfxW 24/30/32 코어W 3/5/14 코어상한 1556/1604/5020 fclk 1604/1620/1656 uclk 999/1000/1000 dramR 16718/53575/62370 dramW 4030/4188/4385 
+none def-w bin=bin load A=0.59 B=0.35 rdma=2 trace=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 41.71 tok/s (token-weighted) | srv-2node-none-bs-def-w-1111-000624
+   a: n=389 gfx 2244/2597/2720 상한 2055/2752/2815 활동 70/91/97 소켓W 68/70/70 gfxW 20/27/30 코어W 5/9/22 코어상한 1586/1927/4856 fclk 1610/1636/1708 uclk 1000/1000/1000 dramR 15886/51216/60211 dramW 4107/4232/5327 
+   b: n=389 gfx 2467/2649/2733 상한 2580/2738/2826 활동 67/90/97 소켓W 64/69/70 gfxW 25/30/32 코어W 3/5/14 코어상한 1581/1938/4991 fclk 1606/1623/1663 uclk 1000/1000/1000 dramR 16029/52428/61303 dramW 4126/4284/4536 
+# 추론 감시 비교 (2026-11-11 00:08:27, RUNS="none:def")
+
+기록 링을 켠 회라 tok/s 는 속도 회보다 ≈6% 낮다. 세션 폴더: runs/watch/<세션>/(report.html, receipt.md, stalls.txt).
+감시기 판: inferwatch iw-20261110-1 (reads ring format GGRPCTR1 v1..v1) (/data/parksThink/inferwatch-iw-20261110-1)
+
+| 설정 | 감시기 tok/s | ms/단계 | AR 지연 A→B 중앙 / p99 µs | B→A | 1 ms 넘는 기다림 ms/단계 | 그중 링크 / 상대 계산 (번) | 링크 늦음 1–2.5 / 2.5–3.5 / 3.5–7 / 7–12 / >12 ms (번) | 세션 |
+|---|---:|---:|---|---|---:|---|---|---|
+| none:def | 40.0 | 25.33 | 18.3 / 162.0 | 18.3 / 93.4 | 0.16 | 1 / 157 | 1 / 0 / 0 / 0 / 0 | 20261111-000629 |
+
+## 노드별 DRAM 읽기 (inferwatch dram-bytes, 기록 링 켠 회의 decode 단계, 쉬는 몫 뺌)
+
+| 회 | 노드 | GB/토큰 | decode 중 GB/s | 239.7 대비 | 쉬는 몫 GB/s | decode 토큰 |
+|---|---|---:|---:|---:|---:|---:|
+| none:def | A | 3.206 | 128.4 | 0.536 | 0.492 | 1429 |
+| none:def | B | 3.228 | 129.2 | 0.539 | 1.761 | 1429 |
+
+85% 목표 값: 노드마다 GB/토큰 × 같은 구성 속도 회(기록 링 끔) tok/s ÷ 239.7. 자료: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/bchk-1110/dram
+srv-2node-none-bs-def-w-1111-000624-bench.txt: 6/6 same
+srv-2node-none-bs-def-1111-000039-bench.txt: 6/6 same
