@@ -154,6 +154,13 @@
   기록 켠 회를 하나 더 돌려 감시기 세션을 남기고 `tools/watch/stallsum.py` 비교표를 `$OUT/watch-summary-<시각>.md` 에 쓴다(영수증 사본 `watch-receipt-*.md`).
   `stallsum.py <이름>=<세션 폴더> ...` 는 따로도 쓴다(늦음 목록은 세션의 `stalls.txt` 로 한 번 만듦). bench 스크립트들은 이제 저장소 `tools/bench` 에서 돈다(예전 scratchpad 사본 `pf/`).
   `SPEED=0` 이면 속도 회 없이 감시기 회만(11-07 저녁). 늦음 목록(`INFERWATCH_STALLS=1`)에 그 시각의 노드 사이 시계 차 `off`(B − A, µs)가 붙는다.
+- 2026-11-10 밤(측정 기준 바꿈, 사용자 결정): node-ab 감시기 회는 이 저장소 `tools/watch` 대신 inferwatch 저장소의 tag 사본을 쓴다 —
+  `IW`(기본 `/data/parksThink/inferwatch-iw-20261110-1`, `git -C /data/parksThink/inferwatch worktree add <사본> <tag>` 뒤 그 안에서 `cargo build --release`).
+  비교표 머리에 쓴 판 한 줄. 같은 회에서 노드별 DRAM 읽기 바이트(85% 목표의 분자 실측, inferwatch docs/DRAM.md): `DRAM=auto`(기본 — 두 노드에
+  `amd_df`·`perf_event_paranoid ≤ 0`·perf·B 감시기 사본이 있으면 잼, 없으면 이유 한 줄 뒤 건너뜀)|`1`(못 하면 멈춤)|`0`(끔). 서버 전 노드마다 5 초 쉬는 몫,
+  회 동안 50 ms 표본(새 세션 그룹으로 띄워 그룹째 멈춤), 회 뒤 `inferwatch dram-bytes` 를 노드마다 → `$OUT/dram/<시각>-<cfg>-w-{a,b}.json`, 비교표에
+  노드별 GB/토큰·decode 중 GB/s·239.7 대비. 속도 회에는 붙이지 않는다. 준비(노드마다, 사용자 sudo, 재부팅하면 풀림): `sudo modprobe amd-uncore`,
+  `sudo sysctl kernel.perf_event_paranoid=0`. 첫 2노드 회 전에는 시험하지 못함(B 꺼짐) — A 쪽 표본기 켜기·그룹째 멈추기만 확인.
 - 2026-11-09 밤(MTP 검증 4토큰): `GGML_CUDA_MOE_DEDUP=1`(기본 꺼짐) — 2–4토큰 MUL_MAT_ID 에서 같은 전문가를 고른 토큰들을 한 번의 가중치 읽기로
   (`mul_mat_vec_q_moe_dedup`, 값 같음) — **MTP −23% 라 끔**(블록마다 전문가 목록을 다시 계산하는 몫, RESULTS.md 2026-11-09 22:20 절).
   `GGML_CUDA_MOE_DEDUP_VERIFY=1`(기존 커널과 비트 비교), `GGML_CUDA_MOE_OVERLAP_STATS=<n>`(디버그: 4토큰이 고른 전문가 중 서로 다른 것의 비율, 동기화).
