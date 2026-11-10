@@ -68,6 +68,9 @@
     `GGML_RPC_BATCH_MAX` 만 켜면(그래프 명령까지 묶음) −5.7%: 서버가 커널을 깊게 앞서 넣어 GPU 계산 +0.8 ms. `GGML_RDMA_TX_SLOTS` 8·16 차이 없음(4 그대로).
   - 추론 감시: 서버 `GGML_RPC_TRACE=/dev/shm/ggml-rpc-trace-{port}.bin`, 클라이언트 `GGML_RPC_TRACE_CLIENT=...`(run_tp.sh·srv-probe.sh 가 켬, `TRACE=0` 끔, 부담 ≈1.5%),
     `tools/watch/inferwatch.sh start` → 실행마다 `runs/watch/<시각>/report.html`·`receipt.md`. tbv 카운터를 리포트에 넣으려면 `inferwatch.sh tbv-copy`(sudo).
+    기록 조건(코드 ggml-rpc.cpp `comm_prof_every()`·`rpc_serve_client`, 2026-11-10 확인): 서버의 CMD 와 AR·AR_SYNC·RECV·GPU·PROXY 는 모두 같은
+    `GGML_RPC_COMM_PROF` 값을 따른다 — 주지 않으면 기록 링이 켜졌을 때 1000(켬), `=0` 이면 모두 빠짐. 함정: `run_tp.sh` 는 B 에
+    `GGML_RPC_COMM_PROF=${GGML_RPC_COMM_PROF:-0}` 을 넘겨, 따로 주지 않으면 B 링에 CMD·AR 기록이 없다(node-ab 는 `BASE` 가 두 서버에 =1000).
   - 2026-11-04 밤(자세히는 RESULTS.md "11-03 23:50 – 11-04"):
     - greedy argmax 빠른 경로(llama-server 대상 샘플러, 항상): temperature 0 이고 최댓값을 지울 수 있는 샘플러가 없을 때 후보 배열·정렬 대신 argmax. 값 같음
     - `GGML_RPC_COMM_DEV=<RDMA 장치>`(두 서버): AR 링크만 그 장치로(두 번째 케이블). 스크립트 기본값에는 없다 — 11-05(ZC=1)·11-07(ZC=3) 다시 재 보니
