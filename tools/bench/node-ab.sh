@@ -34,16 +34,17 @@ one_run() {  # $1 = spec:cfg, $2 = 기록 링 0|1 (비면 TR_<cfg>, 없으면 TR
   export A_WRAP=$(eval echo \${AW_$cfg}) B_WRAP=$(eval echo \${BW_$cfg})   # A·B rpc-server 앞 명령: AW_<cfg>, BW_<cfg>
   tp=$(eval echo \${TBPIN_$cfg}); export TBPIN=${tp:-${TBPIN_ALL:-1}}   # TB 인터럽트 CPU 피하기(srv-probe 기본 1): TBPIN_<cfg>=0 이면 끔
   td=$(eval echo \${TBDEV_$cfg}); export TBDEV=${td:-${TBDEV_ALL:-1}}   # AR 링크를 클라이언트가 안 쓰는 장치로(srv-probe 기본 1): TBDEV_<cfg>=0 이면 끔
+  r2=$(eval echo \${RAIL2_$cfg}); export RAIL2=${r2:-${RAIL2_ALL:-auto}}   # AR 둘째 레일(srv-probe 기본 auto = MTP 회만, 32 KB 이상만): RAIL2_<cfg>=0|1|auto
   # MTP 초안 모델 인자: SE_<cfg>(빈 값이면 -devd 없이 본 모델처럼 2노드 TP), 없으면 -devd ROCm0(A GPU 혼자)
   if eval "[ -n \"\${SE_$cfg+x}\" ]"; then export SPEC_EXTRA=$(eval echo \${SE_$cfg}); else export SPEC_EXTRA="-devd ROCm0"; fi
   for i in $(seq 60); do b=$(timeout 10 ssh -o BatchMode=yes parks-zbook@10.99.0.2 "cut -d' ' -f1 /proc/loadavg"); a=$(cut -d' ' -f1 /proc/loadavg); awk "BEGIN{exit !($a<0.6 && $b<0.6)}" && break; sleep 5; done
   # RDMA 가 안 올라와 TCP 로 떨어진 회는 다시(최대 3번)
   for try in 1 2 3; do
     bb=$(eval echo \${BASE_$cfg}); bb=${bb:-$BASE}                  # 기본 서버 환경 바꾸기: BASE_<cfg>(예: 그래프 켜기)
-    if [ -n "$DRAMD" ]; then   # 서버 전 5 초 쉬는 몫(두 노드 같이), 회 동안 50 ms 표본 — sample-dram 은 파일에 덧붙이므로 회마다 새 이름
+    if [ -n "$DRAMD" ]; then   # 서버 전 10 초 쉬는 몫(두 노드 같이, 끝난 뒤 서버 시작), 회 동안 50 ms 표본 — sample-dram 은 파일에 덧붙이므로 회마다 새 이름
       f=$DRAMD/$(date +%m%d-%H%M%S)-$cfg$3; fb=$BDRAM/$(basename $f); PA=""; PB=""; ib=""
-      has b && { timeout 30 ssh -n -o BatchMode=yes $BH "$BIW sample-dram 5 100 $fb-idle-b.txt" & ib=$!; }
-      has a && timeout 30 $IWB sample-dram 5 100 $f-idle-a.txt; [ -n "$ib" ] && wait $ib
+      has b && { timeout 40 ssh -n -o BatchMode=yes $BH "$BIW sample-dram 10 100 $fb-idle-b.txt" & ib=$!; }
+      has a && timeout 40 $IWB sample-dram 10 100 $f-idle-a.txt; [ -n "$ib" ] && wait $ib
       # 새 세션(그룹)으로 띄우고 그 그룹 번호를 파일로 받는다 — 그룹째 멈춰야 자식 perf 도 끝남. `setsid x & $!` 는 setsid 가 fork 하면 다른 번호(11-10 시험)
       has a && { setsid -f bash -c "echo \$\$ > $f-a.pid; exec $IWB sample-dram 3600 50 $f-a.txt" > /dev/null 2>&1 < /dev/null; sleep 0.3; PA=$(cat $f-a.pid); }
       has b && PB=$(timeout 10 ssh -n -o BatchMode=yes $BH "setsid -f bash -c 'echo \$\$ > $fb-b.pid; exec $BIW sample-dram 3600 50 $fb-b.txt' > /dev/null 2>&1 < /dev/null; sleep 0.3; cat $fb-b.pid")
@@ -88,8 +89,13 @@ if [ "${WATCH:-1}" != 0 ]; then
     for i in $(seq 90); do last=$(ls -1d $W/2*/ 2>/dev/null | tail -1); [ "$last" != "$before" ] && [ -f $last/receipt.md ] && break; sleep 2; done
     if [ "$last" != "$before" ] && [ -f $last/receipt.md ]; then pairs+=("$run=$last"); else echo "   (감시기 세션 없음: $run)"; fi
     if [ -n "$DRAMD" ] && [ "$last" != "$before" ] && [ -f $last/receipt.md ]; then   # 노드별 토큰당 바이트(쉬는 몫 빼기·토큰 나누기는 inferwatch)
-      for x in $DN; do $IWB dram-bytes $last $f-$x.txt --node ${x^^} --idle-file $f-idle-$x.txt > $f-$x.json 2> $f-$x.err \
-        || echo "   (dram-bytes ${x^^} 실패: $(tail -1 $f-$x.err))"; done
+      # 쉬는 몫 = 쉬는 표본 구간의 중앙값(B/s) — 평균은 기록 양 끝의 튐을 넣는다(inferwatch 11-11 권고, 그 다음 판은 --idle-file 이 중앙값). 중앙값 3배 넘는 구간 수도 남김
+      for x in $DN; do
+        med=$(awk '!/^#/ && $3 > 0 {printf "%.0f\n", $2/($3/1e9)}' $f-idle-$x.txt | sort -n | awk '{a[NR]=$1} END {if (NR) printf "%.0f\n", (NR%2 ? a[(NR+1)/2] : (a[NR/2]+a[NR/2+1])/2)}')
+        hi=$(awk -v m="${med:-0}" '!/^#/ && $3 > 0 && $2/($3/1e9) > 3*m {n++} END {print n+0}' $f-idle-$x.txt); echo "${med:-?} $hi" > $f-idle-$x.med
+        $IWB dram-bytes $last $f-$x.txt --node ${x^^} ${med:+--idle-bps $med} > $f-$x.json 2> $f-$x.err \
+          || echo "   (dram-bytes ${x^^} 실패: $(tail -1 $f-$x.err))"
+      done
       drams+=("$run=$f")
     fi
   done
@@ -102,10 +108,12 @@ if [ "${WATCH:-1}" != 0 ]; then
       python3 -I $IW/scripts/stallsum.py "${pairs[@]}"
       if [ ${#drams[@]} -gt 0 ]; then
         echo; echo "## 노드별 DRAM 읽기 (inferwatch dram-bytes, 기록 링 켠 회의 decode 단계, 쉬는 몫 뺌)"; echo
-        echo "| 회 | 노드 | GB/토큰 | decode 중 GB/s | 239.7 대비 | 쉬는 몫 GB/s | decode 토큰 |"; echo "|---|---|---:|---:|---:|---:|---:|"
+        echo "| 회 | 노드 | GB/처리 토큰 | decode 중 GB/s | 239.7 대비 | 쉬는 몫 GB/s(중앙값, 3배 넘는 구간 수) | 처리 토큰 |"; echo "|---|---|---:|---:|---:|---|---:|"
         for p in "${drams[@]}"; do for x in a b; do python3 -I -c 'import json,sys
-d=json.load(open(sys.argv[1])); print("| %s | %s | %s | %s | %s | %s | %s |"%(sys.argv[2],d["node"],d["gb_per_token"],d["gbps_during_decode"],d["share_of_peak"],d["idle_gbps"],d["decode_tokens"]))' ${p#*=}-$x.json ${p%%=*} 2>/dev/null || echo "| ${p%%=*} | ${x^^} | (없음) | | | | |"; done; done
-        echo; echo "85% 목표 값: 노드마다 GB/토큰 × 같은 구성 속도 회(기록 링 끔) tok/s ÷ 239.7. 자료: $DRAMD"
+d=json.load(open(sys.argv[1])); m=open(sys.argv[3]).read().split() if len(sys.argv) > 3 else ["?", "?"]
+print("| %s | %s | %s | %s | %s | %s (%s) | %s |"%(sys.argv[2],d["node"],d["gb_per_token"],d["gbps_during_decode"],d["share_of_peak"],d["idle_gbps"],m[1],d["decode_tokens"]))' ${p#*=}-$x.json ${p%%=*} ${p#*=}-idle-$x.med 2>/dev/null || echo "| ${p%%=*} | ${x^^} | (없음) | | | | |"; done; done
+        echo; echo "처리 토큰 = 감시 세션 decode 단계가 처리한 토큰(MTP 는 검증 묶음의 토큰까지 — 출력 토큰보다 많다). 85% 목표 값(none): 노드마다 GB/토큰 × 같은 구성 속도 회(기록 링 끔) tok/s ÷ 239.7."
+        echo "MTP 는 decode 중 GB/s(기록 링 켠 회) 를 본다. 자료: $DRAMD"
       fi
       for p in "${pairs[@]}"; do cp ${p#*=}receipt.md $OUT/watch-receipt-$(basename ${p#*=}).md; done; } > $sum
     cat $sum

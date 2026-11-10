@@ -8,4 +8,7 @@
 # device here carries the same GID, so that is the first in ibv_get_device_list order; print the second.
 p=/sys/module/thunderbolt_ibverbs/parameters/rx_wq_poll
 [ -r $p ] && [ "$(cat $p)" != 0 ] || exit 0
-ibv_devices 2>/dev/null | awk 'NR > 2 && $1 != "" { n++; if (n == 2) print $1 }'
+# tbcommdev.sh rail2: the device for the second AR rail (GGML_RPC_COMM_RAIL2) instead — the first device, the one the client
+# link uses; printed only when there is a second device for the AR link itself (2026-11-10: MTP +1.5% with ZC_MIN 32768).
+want=2; [ "${1:-}" = rail2 ] && want=1
+ibv_devices 2>/dev/null | awk -v w=$want 'NR > 2 && $1 != "" { n++; d[n] = $1 } END { if (n >= 2) print d[w] }'

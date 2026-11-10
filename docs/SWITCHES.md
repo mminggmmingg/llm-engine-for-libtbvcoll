@@ -116,7 +116,9 @@
   `GGML_RPC_COMM_ZC=1` 이면 예전 경로(동기화 → 보내기 → 기다림 커널).
   두 번째 케이블: `GGML_RPC_COMM_RAIL2=usb4_rdma0`(두 서버, `GGML_RDMA_RX_DEPTH=32` 와 함께)이면 ZC=3 대리 스레드가 레일마다 하나씩 절반을 주고받는다
   (`GGML_RPC_COMM_RAIL2_ZC_MIN`, 기본 4096 B). 11-06 에는 이득이 없었으나, 11-10 `RAIL2=<클라이언트 장치>` + `ZC_MIN=32768`(4토큰 AR 만)이면
-  MTP +1.5%(출력 같음, RESULTS.md 11-10); 1토큰까지 나누면(4096) none −1%. 아직 기본 꺼짐.
+  MTP +1.5%(출력 같음, RESULTS.md 11-10); 1토큰까지 나누면(4096) none −1%.
+  2026-11-11: srv-probe·run_server 기본 `RAIL2=auto` — MTP 회이고 AR 장치가 정해졌으면 두 서버에 `RAIL2=<클라이언트 장치>`(tbcommdev.sh rail2)
+  `ZC_MIN=32768 RX_DEPTH=32`. 확인 회 MTP 6쌍 +0.8%(4쌍 이김, AR 지연 42 → 33 µs), none −0.5% 라 none 은 끔. `RAIL2=1|0` 강제, node-ab `RAIL2_<cfg>`.
 - 2026-11-06 밤(구간 커널 1a, 기본 꺼짐): `GGML_CUDA_SEG_MOE=1` — hc down → hc up/pre → BF16 행렬곱(라우터·indexer k)을 상주 커널 하나로(`k_seg_moe_head`),
   `GGML_CUDA_SEG_VERIFY=1` 비트 비교, `GGML_CUDA_SEG_PREFETCH=1` 다음 단계 가중치 앞서 읽기, `GGML_CUDA_SEG_COOP=1` 협동 실행. 디버그 `GGML_CUDA_DUMP_MOE=<n>`(MUL_MAT_ID 있는 1토큰 그래프 노드).
 - 2026-11-09 저녁(구간 커널 2a, 기본 꺼짐, 접음): `GGML_CUDA_SEG_MOE=2` — MoE 구간 hc down → 가중합 + AR 내보내기를 상주 커널 하나로(장벽 6개).

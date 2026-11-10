@@ -36,16 +36,26 @@ if [ "${TBDEV:-1}" != 0 ]; then
   DEV_A=$(bash "$D/tools/bench/tbcommdev.sh")
   [ "$TOPO" = 2node ] && DEV_B=$(ssh $SSHO $B "bash -s" < "$D/tools/bench/tbcommdev.sh")
 fi
-echo "A ${A_WRAP:-$PIN_A} | B ${B_WRAP:-$PIN_B} | client ${CLI_WRAP:-$PIN_A} | AR dev A ${DEV_A:--} B ${DEV_B:--}" > "$OUT/pin.txt"
+# RAIL2=auto(기본, 2026-11-11): MTP 회이고 AR 장치가 정해졌으면(위 TBDEV) 클라이언트 연결의 장치를 AR 의 둘째 레일로 — 32 KB 이상 부분합
+# (MTP 4토큰 검증의 40 KB AR)만 반씩 두 케이블로(GGML_RPC_COMM_RAIL2_ZC_MIN 기본 32768, 1토큰 10 KB 는 나누면 −1%), 두 서버 GGML_RDMA_RX_DEPTH=32.
+# MTP 6쌍 57.71 vs 57.27(+0.8%, 4쌍 이김, AR 지연 A→B 42 → 33 µs), none 2쌍 −0.5% → MTP 에서만(RESULTS.md 2026-11-10 00:50, 2026-11-11 00:17).
+# RAIL2=1 이면 none 에서도, 0 이면 끔. 두 노드 모두 장치가 있어야 켠다. SRV_ENV(_B) 가 이긴다.
+R2_A=""; R2_B=""
+if { [ "${RAIL2:-auto}" = 1 ] || { [ "${RAIL2:-auto}" = auto ] && [ "$SPEC" = mtp ]; }; } && [ "$TOPO" = 2node ] && [ -n "$DEV_A" ] && [ -n "$DEV_B" ]; then
+  r2a=$(bash "$D/tools/bench/tbcommdev.sh" rail2); r2b=$(ssh $SSHO $B "bash -s rail2" < "$D/tools/bench/tbcommdev.sh")
+  if [ -n "$r2a" ] && [ -n "$r2b" ]; then Z="GGML_RPC_COMM_RAIL2_ZC_MIN=${GGML_RPC_COMM_RAIL2_ZC_MIN:-32768} GGML_RDMA_RX_DEPTH=32"
+    R2_A="GGML_RPC_COMM_RAIL2=$r2a $Z"; R2_B="GGML_RPC_COMM_RAIL2=$r2b $Z"; fi
+fi
+echo "A ${A_WRAP:-$PIN_A} | B ${B_WRAP:-$PIN_B} | client ${CLI_WRAP:-$PIN_A} | AR dev A ${DEV_A:--} B ${DEV_B:--} | rail2 A ${R2_A:--} B ${R2_B:--}" > "$OUT/pin.txt"
 # 추론 감시(tools/watch/inferwatch.sh)용 기록 링: 서버 GGML_RPC_TRACE, 클라이언트 GGML_RPC_TRACE_CLIENT. TRACE=0 이면 끔
 TRACE_SRV=""; TRACE_CLI=""
 if [ "${TRACE:-1}" != 0 ]; then TRACE_SRV="GGML_RPC_TRACE=/dev/shm/ggml-rpc-trace-{port}.bin"; TRACE_CLI="GGML_RPC_TRACE_CLIENT=/dev/shm/ggml-rpc-trace-client.bin"; fi
 ARGS=(-m "$M" -ngl 99 -fa on -c 8192 -np 1 --port $PORT --host 127.0.0.1 ${SRV_EXTRA:-})
 [ "$SPEC" = mtp ] && ARGS+=(-md "$MTP" --spec-type draft-mtp -ngld 99 ${SPEC_EXTRA:-})
 if [ "$TOPO" = 2node ]; then
-  env ${DEV_A:+GGML_RPC_COMM_DEV=$DEV_A} $SRV_ENV $TRACE_SRV nohup ${A_WRAP:-$PIN_A} "$BIN/ggml-rpc-server" -H 127.0.0.1 -p 50052 > "$OUT/rpc-a.log" 2>&1 & echo $! >> "$OUT/pids"
+  env ${DEV_A:+GGML_RPC_COMM_DEV=$DEV_A} $R2_A $SRV_ENV $TRACE_SRV nohup ${A_WRAP:-$PIN_A} "$BIN/ggml-rpc-server" -H 127.0.0.1 -p 50052 > "$OUT/rpc-a.log" 2>&1 & echo $! >> "$OUT/pids"
   ssh $SSHO $B "mkdir -p $BBIN; pkill -x ggml-rpc-server; sleep 1"; scp -q -o ConnectTimeout=10 "$BIN/ggml-rpc-server" "$B:$BBIN/" || exit 3
-  ssh $SSHO $B "cd $BBIN && LD_LIBRARY_PATH=/opt/rocm/lib GGML_RDMA_RX_DEPTH=$GGML_RDMA_RX_DEPTH GGML_RDMA_CHUNK=$GGML_RDMA_CHUNK GGML_RDMA_TX_SLOTS=$GGML_RDMA_TX_SLOTS GGML_RPC_COMM_OVERLAP=$GGML_RPC_COMM_OVERLAP ${DEV_B:+GGML_RPC_COMM_DEV=$DEV_B} ${SRV_ENV_B-$SRV_ENV} $TRACE_SRV ${B_WRAP:-$PIN_B} setsid -f ./ggml-rpc-server -H 10.99.0.2 -p 50052 -c > rpc-server.log 2>&1 < /dev/null"
+  ssh $SSHO $B "cd $BBIN && LD_LIBRARY_PATH=/opt/rocm/lib GGML_RDMA_RX_DEPTH=$GGML_RDMA_RX_DEPTH GGML_RDMA_CHUNK=$GGML_RDMA_CHUNK GGML_RDMA_TX_SLOTS=$GGML_RDMA_TX_SLOTS GGML_RPC_COMM_OVERLAP=$GGML_RPC_COMM_OVERLAP ${DEV_B:+GGML_RPC_COMM_DEV=$DEV_B} $R2_B ${SRV_ENV_B-$SRV_ENV} $TRACE_SRV ${B_WRAP:-$PIN_B} setsid -f ./ggml-rpc-server -H 10.99.0.2 -p 50052 -c > rpc-server.log 2>&1 < /dev/null"
   ARGS+=(--rpc 10.99.0.2:50052,127.0.0.1:50052 -sm tensor -dev RPC0,RPC1)
   sleep 3
 fi
