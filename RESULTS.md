@@ -2776,3 +2776,27 @@ B 부팅 11-10 23:52(케이블 둘, rx_wq_poll=2, ports_active=2), 사용자가 
   감시기 회 단계는 80k 11.02 vs 96k 11.46 ms(초안 출력층이 짧아진 몫), 그러나 채택이 줄어 토큰당은 손해.
 - 11-06 곡선(64k + 한글 0.614 < 96k + 한글 0.646 ≈ 전체 0.648)과 같은 결론: 96k + 한글이 지금 말뭉치로 고른 어휘에서 가장 낫다. 더 줄이려면 말뭉치를
   키워 어휘 밖 토큰을 줄여야 한다(이번에는 안 함).
+
+## 2026-11-11 03:02–03:26 — 노드당 '더 읽는' 0.38 GB 나누기: 절반은 AR 기다림 중 가중치 미리 읽기(prefetch), 나머지는 GDN 상태·활성값·문맥
+사용자 지시(11-11 밤샘 4번). 실측 DRAM(감시기 회, none) A 3.21–3.24 / B 3.16–3.23 GB/토큰 vs 가중치 계산 2.83(`tools/bytes_per_token.py 512 10 loaded tp=2`:
+attention·GDN 1.00, 활성 전문가 0.64, hyper-connection 0.61(복제), shared expert·라우터 0.29(복제), 출력층 0.26, 기타 0.04).
+자료 `fixcost/bytes-1111/`, 프로파일 `runs/prof2node-fetch1t-1111-030238`(FETCH_SIZE), `runs/prof2node-fetchdf-*`, `runs/prof2node-ktdf-*`, `runs/prof2node-pf{0,16}-*`.
+새 도구: `tools/bench/prof2node.sh` `PROFARGS="--pmc FETCH_SIZE"`, `tools/bench/fetchsum.py`(커널별 GPU 읽기/토큰), `tools/bench/ktdf.sh`(2노드 llama-bench 디코드
+구간만 DRAM 바이트/토큰 — rocprofv3 타임스탬프 BOOTTIME 과 sample-dram MONOTONIC 의 차이를 맞춤).
+
+| 측정(A 노드, 1토큰 디코드) | GB/토큰 | 무엇 |
+|---|---:|---|
+| GPU 커널 읽기 합(FETCH_SIZE × 2, 커널이 줄지어 도는 프로파일 회) | 3.047 | 행렬곱 2.913, norm·원소별 0.067, GDN 상태 0.058, attention 0.005 |
+| 같은 회의 DRAM 카운터(디코드 구간) | 3.081 | GPU 밖(CPU·DMA 등) ≈ 0.03–0.05 |
+| 보통 실행(커널 기록만) DRAM, prefetch 켬(기본 16 MB) | 3.105 · 3.149 · 3.160 · 3.176 | |
+| 같은 조건, `GGML_CUDA_COMM_PREFETCH=0` | 2.939 · 2.955 · 2.957 | **prefetch 가 +0.18 GB/토큰** |
+
+- prefetch: AR 을 기다리는 커널(hc_post+norm, shared expert 꼬리)의 워프가 기다리는 동안 다음 행렬곱 가중치를 읽어 둔다. 커널별 FETCH 로 보면 그 norm 은 한 번에
+  0.83 MB(같은 norm 의 prefetch 없는 판 0.08 MB). 그런데 DRAM 은 켤 때 0.18 GB/토큰 늘어난다 — 미리 읽은 것의 상당 부분을 행렬곱이 DRAM 에서 다시 읽는다(추론).
+  그래도 속도는 켬 40.08·41.08·41.35 / 끔 40.19·40.01·40.49(llama-bench tg64, 커널 기록 아래, 켬 +1.5%, 회 사이 흔들림과 비슷한 크기).
+- CPU 몫(직접 잼, 2노드 none 디코드 30 초, `l2_fill_rsp_src.dram_io_near` × 64 B): A 노드 전체 0.77 GB/s(rpc-server 0.26, llama-server 0.26) = 같은 창 DRAM 의 0.96%,
+  B 0.34 GB/s = 0.42% → 토큰당 0.01–0.03 GB. (perf 를 프로세스에 붙인 동안 디코드가 27.9 tok/s 로 느려져 비율만 씀.)
+- 정리(A, 토큰당): 가중치 2.83 + 행렬곱의 가중치 밖(활성값·여백) ≈0.05–0.08 + GDN 상태 0.06 + norm 등 ≈0.01 + CPU·DMA ≈0.03 → prefetch 끈 2.95 와 맞음;
+  + prefetch 0.18 → 3.13–3.18; 서버 회(긴 문맥·클라이언트·기록 링) + 0.03–0.06 → 3.21–3.24.
+- 85% 목표에 대한 뜻: 실측 56–57% 에는 prefetch 로 두 번 읽는 ≈0.18 GB(≈6%p)가 들어 있다. 가중치·상태처럼 꼭 읽어야 하는 바이트만 세면 ≈50–51%.
+  목표를 '모든 DRAM 읽기'로 볼지 '필요한 바이트'로 볼지 정해야 한다(사용자 결정 거리).
