@@ -166,4 +166,5 @@
 - 2026-11-09 밤(MTP 검증 4토큰): `GGML_CUDA_MOE_DEDUP=1`(기본 꺼짐) — 2–4토큰 MUL_MAT_ID 에서 같은 전문가를 고른 토큰들을 한 번의 가중치 읽기로
   (`mul_mat_vec_q_moe_dedup`, 값 같음) — **MTP −23% 라 끔**(블록마다 전문가 목록을 다시 계산하는 몫, RESULTS.md 2026-11-09 22:20 절).
   `GGML_CUDA_MOE_DEDUP_VERIFY=1`(기존 커널과 비트 비교), `GGML_CUDA_MOE_OVERLAP_STATS=<n>`(디버그: 4토큰이 고른 전문가 중 서로 다른 것의 비율, 동기화).
-
+- 2026-11-11 새벽(4토큰 묶음, 기본 켬, 속도 같음): dense GLU 2–4토큰을 게이트 합친 mmvq 하나로(`GGML_CUDA_NO_GLU_NTOK=1` 끔, `GGML_CUDA_GLU_NTOK_VERIFY=1`),
+  SSM_CONV→SILU→q/k norm pair 1–4토큰 한 커널(`GGML_CUDA_NO_CONV_NORM_NTOK=1` 끔, 검증 `GGML_CUDA_CONV_NORM_VERIFY=1`). 단계당 커널 −130, MTP 속도 같음(RESULTS.md 11-11).

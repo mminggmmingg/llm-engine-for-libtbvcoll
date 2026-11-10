@@ -1,0 +1,31 @@
+TOTAL tokens 1407, decode 44.19 tok/s (token-weighted)
+run: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-verify-1111-011935
+== a
+      1 glu ntok verify: ffn_swiglu-3 tokens 2: same
+      1 glu ntok verify: ffn_swiglu-2 tokens 2: same
+      1 glu ntok verify: ffn_swiglu-1 tokens 2: same
+      1 glu ntok verify: ffn_swiglu-0 tokens 2: same
+      1 glu ntok verify: ffn_moe_swiglu-3 tokens 10: same
+      1 glu ntok verify: ffn_moe_swiglu-2 tokens 10: same
+      1 glu ntok verify: ffn_moe_swiglu-1 tokens 10: same
+      1 glu ntok verify: ffn_moe_swiglu-0 tokens 10: same
+      1 conv norm verify: conv_output_silu-9 head0 0 rows 8+8: same (silu 1 q 1 k 1)
+      1 conv norm verify: conv_output_silu-8 head0 0 rows 8+8: same (silu 1 q 1 k 1)
+      1 conv norm verify: conv_output_silu-6 head0 0 rows 8+8: same (silu 1 q 1 k 1)
+      1 conv norm verify: conv_output_silu-5 head0 0 rows 8+8: same (silu 1 q 1 k 1)
+DIFFER lines: 0
+== b
+      1 glu ntok verify: ffn_swiglu-3 tokens 2: same
+      1 glu ntok verify: ffn_swiglu-2 tokens 2: same
+      1 glu ntok verify: ffn_swiglu-1 tokens 2: same
+      1 glu ntok verify: ffn_swiglu-0 tokens 2: same
+      1 glu ntok verify: ffn_moe_swiglu-3 tokens 10: same
+      1 glu ntok verify: ffn_moe_swiglu-2 tokens 10: same
+      1 glu ntok verify: ffn_moe_swiglu-1 tokens 10: same
+      1 glu ntok verify: ffn_moe_swiglu-0 tokens 10: same
+      1 conv norm verify: conv_output_silu-9 head0 0 rows 8+8: same (silu 1 q 1 k 1)
+      1 conv norm verify: conv_output_silu-8 head0 0 rows 8+8: same (silu 1 q 1 k 1)
+      1 conv norm verify: conv_output_silu-6 head0 0 rows 8+8: same (silu 1 q 1 k 1)
+      1 conv norm verify: conv_output_silu-5 head0 0 rows 8+8: same (silu 1 q 1 k 1)
+DIFFER lines: 0
+verify-bench.txt: 6/6 same

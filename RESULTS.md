@@ -2741,3 +2741,22 @@ B 부팅 11-10 23:52(케이블 둘, rx_wq_poll=2, ports_active=2), 사용자가 
   MTP 의 'GB/토큰'(0.48–0.60)은 감시기 decode 단계가 처리한 토큰(검증 묶음 포함, 5332)으로 나눈 값이라 출력 토큰당이 아니다 — 이후 표 머리를 '처리 토큰'으로 바꿈.
 - 같이 바꾼 측정: node-ab DRAM 쉬는 몫을 서버 전 10 초 재고 구간 중앙값으로 뺀다(`--idle-bps`, inferwatch 11-11 권고: 평균은 기록 양 끝 튐을 넣음 — B 중앙값 1.41
   vs 평균 1.31 GB/s, 토큰당 차이 0.001 GB). 중앙값 3배 넘는 구간 수도 표에 남김.
+
+## 2026-11-11 00:40–02:22 — 1토큰 묶음을 4토큰(MTP 검증)으로: GLU·conv-norm 두 묶음, 커널 −130개/단계, 출력 같음, 속도 같음 → 커널 수는 4토큰 단계의 병목이 아님
+사용자 지시(11-11 밤샘 3번). 자료: `fixcost/ntok-1111/`(build·verify·prof·speed·dump 스크립트와 로그, `dump-a.log` 4토큰 서브그래프 노드, `dram/`),
+프로파일 `runs/prof2node-pp4-bin-1111-012317`(새) · `runs/prof2node-pp4-bin-1109-2242-1111-012434`(예전). 예전 바이너리 `build-rocm3/bin-1109-2242`.
+- 바꾼 것(기본 켬, 끄는 스위치 있음):
+  - ① dense GLU 2–4토큰(shared expert gate·up·SWIGLU → `mul_mat_vec_q<type, T, true>` 하나): mmvq.cu `mul_mat_vec_q_switch_fusion` 이 열 4개까지 게이트
+    합치기를 받음(열마다 따로 더하는 같은 커널이라 값 같음), ggml-cuda.cu `ggml_cuda_glu_mmvq_ntok_ok`. `GGML_CUDA_NO_GLU_NTOK=1` 끔, `GGML_CUDA_GLU_NTOK_VERIFY=1` 비트 비교.
+  - ② SSM_CONV → SILU → q/k norm pair 1–4토큰 한 커널(ssm-conv.cu `ssm_conv_silu_norm_pair_f32` 에 ssm_conv_f32 의 토큰 고리, 워프 t 가 토큰 t 의 norm).
+    `GGML_CUDA_NO_CONV_NORM_NTOK=1` 끔, 검증 `GGML_CUDA_CONV_NORM_VERIFY=1`.
+- 검증(사실): 2노드 MTP 1회에 두 VERIFY — 두 노드 모두 DIFFER 0(GLU 2토큰·conv-norm 4토큰 등 "same"), 해시 6/6. 속도 회 12회 모두 해시 6/6.
+- 4토큰 묶음 단계 커널(llama-bench -p 4, A 커널 기록): 1902 → 1772 개/단계, GPU 바쁜 시간(합집합) 20.6 → 19.7 ms. GLU 합친 커널은 셋보다 +29 µs,
+  conv-norm 은 −60 µs(커널 시간 합은 같음).
+- **속도(번갈아, r2 기본): MTP 새 59.00 · 57.62 · 58.70 (58.44) / 예전 58.76 · 57.70 · 58.93 (58.46) — 같음. none 42.20 / 42.39.** 감시기 단계 11.25 vs 11.18 ms.
+- 판정: 단계당 커널 130개를 없애도 MTP 속도는 그대로다. 4토큰 단계(≈38 ms)는 커널 발행 빈틈에 묶여 있지 않다(호스트가 앞서 발행해 빈틈이 가려짐 —
+  추론). 11-10 밤 사용자에게 낸 "+5–8%(커널 수 × 2.9 µs)" 계산은 틀렸다. 남은 4토큰 차이(hc 묶음 190개, quantize 94개 등)도 같은 이유로 손대지 않는다.
+  두 묶음은 값이 같고 느리지 않아 켜 둔다.
+- 덤프에서 본 것: llama-bench `-p 4` 프로파일의 scale_f32 393216·15360(층마다, 단계당 0.39 ms)은 반복마다 새 시퀀스라 상태를 0 으로 지우는 연산(upstream
+  build_rs 의 state_zero)이다 — 실제 MTP 서빙에서는 크기 0 이라 돌지 않는다. pp4 프로파일로 4토큰 비용을 볼 때 빼고 볼 것.
+- 남는 4토큰 비용은 커널 시간(전문가 matmul 10.6 ms/단계, 4토큰이 고른 전문가 26.6개 — 11-09) + AR 기다림이다.
