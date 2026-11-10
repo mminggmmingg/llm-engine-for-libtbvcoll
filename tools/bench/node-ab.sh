@@ -12,11 +12,11 @@ TRACE_DEF=${TRACE:-0}
 # 감시기 = inferwatch 저장소의 tag 사본(측정 기준, inferwatch docs/ENVIRONMENT.md "엔진 연결"; 2026-11-10까지는 이 저장소 tools/watch)
 IW=${IW:-/data/parksThink/inferwatch-iw-20261110-1}; IWB=$IW/target/release/inferwatch
 BH=parks-zbook@10.99.0.2; BIW=/home/parks-zbook/inferwatch/bin/inferwatch; BDRAM=/home/parks-zbook/inferwatch/dram   # B: 데몬이 복사한 같은 판
-# 노드별 DRAM 읽기 바이트(inferwatch docs/DRAM.md, perf amd_df): DRAM=auto(기본, 두 노드 준비됐으면 감시기 회에서 잼)|1(못 하면 멈춤)|0(끔).
-# 노드마다 amd-uncore 모듈·perf_event_paranoid ≤ 0 (사용자 sudo, 재부팅하면 풀림)·perf 필요.
-dram_chk() { local c='[ -d /sys/bus/event_source/devices/amd_df ] && [ "$(cat /proc/sys/kernel/perf_event_paranoid)" -le 0 ] && command -v perf > /dev/null'
-  bash -c "$c" || { echo A; return 1; }; timeout 10 ssh -n -o BatchMode=yes $BH "$c && [ -x $BIW ] && mkdir -p $BDRAM" || { echo B; return 1; }; }
-DRAMD=""
+# 노드별 DRAM 읽기 바이트(inferwatch docs/DRAM.md, perf amd_df): DRAM=auto(기본, 준비된 노드만 감시기 회에서 잼 — 안 된 노드 값은 비움)
+# |1(두 노드 중 하나라도 못 하면 멈춤)|0(끔). 노드마다 amd-uncore 모듈·perf_event_paranoid ≤ 0 (사용자 sudo, 재부팅하면 풀림)·perf 필요.
+DCHK='[ -d /sys/bus/event_source/devices/amd_df ] && [ "$(cat /proc/sys/kernel/perf_event_paranoid)" -le 0 ] && command -v perf > /dev/null'
+DRAMD=""; DN=""                                   # DN: DRAM 을 재는 노드(a, b)
+has() { case " $DN " in *" $1 "*) return 0 ;; esac; return 1; }
 one_run() {  # $1 = spec:cfg, $2 = 기록 링 0|1 (비면 TR_<cfg>, 없으면 TRACE), $3 = 실행 폴더 이름 꼬리
   run=$1; spec=${run%:*}; cfg=${run#*:}
   case $cfg in
@@ -41,16 +41,17 @@ one_run() {  # $1 = spec:cfg, $2 = 기록 링 0|1 (비면 TR_<cfg>, 없으면 TR
   for try in 1 2 3; do
     bb=$(eval echo \${BASE_$cfg}); bb=${bb:-$BASE}                  # 기본 서버 환경 바꾸기: BASE_<cfg>(예: 그래프 켜기)
     if [ -n "$DRAMD" ]; then   # 서버 전 5 초 쉬는 몫(두 노드 같이), 회 동안 50 ms 표본 — sample-dram 은 파일에 덧붙이므로 회마다 새 이름
-      f=$DRAMD/$(date +%m%d-%H%M%S)-$cfg$3; fb=$BDRAM/$(basename $f)
-      timeout 30 ssh -n -o BatchMode=yes $BH "$BIW sample-dram 5 100 $fb-idle-b.txt" & ib=$!; timeout 30 $IWB sample-dram 5 100 $f-idle-a.txt; wait $ib
+      f=$DRAMD/$(date +%m%d-%H%M%S)-$cfg$3; fb=$BDRAM/$(basename $f); PA=""; PB=""; ib=""
+      has b && { timeout 30 ssh -n -o BatchMode=yes $BH "$BIW sample-dram 5 100 $fb-idle-b.txt" & ib=$!; }
+      has a && timeout 30 $IWB sample-dram 5 100 $f-idle-a.txt; [ -n "$ib" ] && wait $ib
       # 새 세션(그룹)으로 띄우고 그 그룹 번호를 파일로 받는다 — 그룹째 멈춰야 자식 perf 도 끝남. `setsid x & $!` 는 setsid 가 fork 하면 다른 번호(11-10 시험)
-      setsid -f bash -c "echo \$\$ > $f-a.pid; exec $IWB sample-dram 3600 50 $f-a.txt" > /dev/null 2>&1 < /dev/null; sleep 0.3; PA=$(cat $f-a.pid)
-      PB=$(timeout 10 ssh -n -o BatchMode=yes $BH "setsid -f bash -c 'echo \$\$ > $fb-b.pid; exec $BIW sample-dram 3600 50 $fb-b.txt' > /dev/null 2>&1 < /dev/null; sleep 0.3; cat $fb-b.pid")
+      has a && { setsid -f bash -c "echo \$\$ > $f-a.pid; exec $IWB sample-dram 3600 50 $f-a.txt" > /dev/null 2>&1 < /dev/null; sleep 0.3; PA=$(cat $f-a.pid); }
+      has b && PB=$(timeout 10 ssh -n -o BatchMode=yes $BH "setsid -f bash -c 'echo \$\$ > $fb-b.pid; exec $BIW sample-dram 3600 50 $fb-b.txt' > /dev/null 2>&1 < /dev/null; sleep 0.3; cat $fb-b.pid")
     fi
     out=$(SRV_ENV="$bb $SA" SRV_ENV_B="$bb $SB" TAG=bs-$cfg$3 bash srv-probe.sh 2node $spec 2>&1); d=$(echo "$out" | tail -1); n=$(basename $d)
     if [ -n "$DRAMD" ]; then
       [ -n "$PA" ] && kill -TERM -- -$PA; [ -n "$PB" ] && timeout 10 ssh -n -o BatchMode=yes $BH "kill -TERM -- -$PB"; sleep 1
-      scp -q $BH:$fb-b.txt $f-b.txt; scp -q $BH:$fb-idle-b.txt $f-idle-b.txt
+      has b && { scp -q $BH:$fb-b.txt $f-b.txt; scp -q $BH:$fb-idle-b.txt $f-idle-b.txt; }
     fi
     [ "$(grep -cE "RDMA activated|allreduce link on .* [(]RDMA[)]" $d/rpc-a.log)" -ge 1 ] && break   # AR 링크 줄: GGML_RPC_LOCAL_TCP 이면 클라이언트 연결은 TCP
     echo "   ($n: rdma=0 — 다시 $try)"; sleep 10
@@ -69,9 +70,12 @@ if [ "${WATCH:-1}" != 0 ]; then
   if ! { [ -f $W/daemon.pid ] && kill -0 "$(cat $W/daemon.pid)" 2>/dev/null; }; then INFERWATCH_OUT=$W $IW/scripts/inferwatch.sh start > /dev/null; started=1
   else e=$(readlink /proc/$(cat $W/daemon.pid)/exe); [ "$e" = "$IWB" ] || echo "   (주의: 이미 도는 감시 데몬이 다른 판이다: $e)"; fi
   if [ "${DRAM:-auto}" != 0 ]; then
-    for i in 1 2 3 4 5; do why=$(dram_chk) && break; sleep 2; done   # B 사본은 데몬이 띄울 때 복사하므로 잠깐 기다림
-    if [ -z "$why" ]; then DRAMD=$OUT/dram; mkdir -p $DRAMD
-    else echo "   (DRAM 바이트 못 잼: 노드 $why 에 amd_df·perf_event_paranoid ≤ 0·perf·B 감시기 사본 중 하나가 없다 — inferwatch docs/DRAM.md 1절)"; [ "$DRAM" = 1 ] && exit 1; fi
+    bash -c "$DCHK" && DN="a"
+    for i in 1 2 3 4 5; do   # B 사본은 데몬이 띄울 때 복사하므로 잠깐 기다림
+      timeout 10 ssh -n -o BatchMode=yes $BH "$DCHK && [ -x $BIW ] && mkdir -p $BDRAM" && { DN="$DN b"; break; }; sleep 2; done
+    for x in a b; do has $x || echo "   (DRAM: 노드 ${x^^} 못 잼 — amd_df·perf_event_paranoid ≤ 0·perf(B 는 감시기 사본도) 중 하나 없음, inferwatch docs/DRAM.md 1절. 그 노드 값은 비움)"; done
+    [ "$DRAM" = 1 ] && ! { has a && has b; } && exit 1
+    [ -n "$DN" ] && { DRAMD=$OUT/dram; mkdir -p $DRAMD; }
   fi
   seen=" "; pairs=(); drams=()
   for run in $RUNS; do
@@ -84,7 +88,7 @@ if [ "${WATCH:-1}" != 0 ]; then
     for i in $(seq 90); do last=$(ls -1d $W/2*/ 2>/dev/null | tail -1); [ "$last" != "$before" ] && [ -f $last/receipt.md ] && break; sleep 2; done
     if [ "$last" != "$before" ] && [ -f $last/receipt.md ]; then pairs+=("$run=$last"); else echo "   (감시기 세션 없음: $run)"; fi
     if [ -n "$DRAMD" ] && [ "$last" != "$before" ] && [ -f $last/receipt.md ]; then   # 노드별 토큰당 바이트(쉬는 몫 빼기·토큰 나누기는 inferwatch)
-      for x in a b; do $IWB dram-bytes $last $f-$x.txt --node ${x^^} --idle-file $f-idle-$x.txt > $f-$x.json 2> $f-$x.err \
+      for x in $DN; do $IWB dram-bytes $last $f-$x.txt --node ${x^^} --idle-file $f-idle-$x.txt > $f-$x.json 2> $f-$x.err \
         || echo "   (dram-bytes ${x^^} 실패: $(tail -1 $f-$x.err))"; done
       drams+=("$run=$f")
     fi
