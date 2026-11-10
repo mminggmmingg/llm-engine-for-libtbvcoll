@@ -16,6 +16,7 @@ BH=parks-zbook@10.99.0.2; BIW=/home/parks-zbook/inferwatch/bin/inferwatch; BDRAM
 # |1(두 노드 중 하나라도 못 하면 멈춤)|0(끔). 노드마다 amd-uncore 모듈·perf_event_paranoid ≤ 0 (사용자 sudo, 재부팅하면 풀림)·perf 필요.
 DCHK='[ -d /sys/bus/event_source/devices/amd_df ] && [ "$(cat /proc/sys/kernel/perf_event_paranoid)" -le 0 ] && command -v perf > /dev/null'
 DRAMD=""; DN=""                                   # DN: DRAM 을 재는 노드(a, b)
+MTP0=${MTP:-}                                      # 초안 모델: 구성마다 MTP_<cfg>, 없으면 이 값(또는 srv-probe 기본)
 has() { case " $DN " in *" $1 "*) return 0 ;; esac; return 1; }
 one_run() {  # $1 = spec:cfg, $2 = 기록 링 0|1 (비면 TR_<cfg>, 없으면 TRACE), $3 = 실행 폴더 이름 꼬리
   run=$1; spec=${run%:*}; cfg=${run#*:}
@@ -35,6 +36,7 @@ one_run() {  # $1 = spec:cfg, $2 = 기록 링 0|1 (비면 TR_<cfg>, 없으면 TR
   tp=$(eval echo \${TBPIN_$cfg}); export TBPIN=${tp:-${TBPIN_ALL:-1}}   # TB 인터럽트 CPU 피하기(srv-probe 기본 1): TBPIN_<cfg>=0 이면 끔
   td=$(eval echo \${TBDEV_$cfg}); export TBDEV=${td:-${TBDEV_ALL:-1}}   # AR 링크를 클라이언트가 안 쓰는 장치로(srv-probe 기본 1): TBDEV_<cfg>=0 이면 끔
   r2=$(eval echo \${RAIL2_$cfg}); export RAIL2=${r2:-${RAIL2_ALL:-auto}}   # AR 둘째 레일(srv-probe 기본 auto = MTP 회만, 32 KB 이상만): RAIL2_<cfg>=0|1|auto
+  mt=$(eval echo \${MTP_$cfg}); if [ -n "$mt" ]; then export MTP=$mt; elif [ -n "$MTP0" ]; then export MTP=$MTP0; else unset MTP; fi   # MTP_<cfg>: 초안 GGUF
   # MTP 초안 모델 인자: SE_<cfg>(빈 값이면 -devd 없이 본 모델처럼 2노드 TP), 없으면 -devd ROCm0(A GPU 혼자)
   if eval "[ -n \"\${SE_$cfg+x}\" ]"; then export SPEC_EXTRA=$(eval echo \${SE_$cfg}); else export SPEC_EXTRA="-devd ROCm0"; fi
   for i in $(seq 60); do b=$(timeout 10 ssh -o BatchMode=yes parks-zbook@10.99.0.2 "cut -d' ' -f1 /proc/loadavg"); a=$(cut -d' ' -f1 /proc/loadavg); awk "BEGIN{exit !($a<0.6 && $b<0.6)}" && break; sleep 5; done

@@ -4,6 +4,8 @@
 #   결과: runs/prof2node-<tag>-<시각>/ (a_kernel_trace.csv, a_memory_copy_trace.csv, bench.txt, rpc-a.log). 아무것도 지우지 않는다.
 #   분석: tools/bench/kgroup.py <그 폴더>
 #   BARGS="<llama-bench 인자>" 로 -p 0 -n N -r 1 대신(예: MTP 검증과 같은 4토큰 묶음 BARGS="-p 4 -n 0 -r 30")
+#   PROFARGS="<rocprofv3 인자>" 로 커널 기록 대신(예: 커널마다 L2 밖 읽기 PROFARGS="--pmc FETCH_SIZE" → a_counter_collection.csv; gfx1151 은
+#   FETCH_SIZE 와 WRITE_SIZE 를 한 번에 못 모으고, FETCH_SIZE 는 읽은 바이트의 절반을 KB 로 센다 — inferwatch readbw 보정 11-10)
 set -u
 R=/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll
 BIN=${BIN:-/data/parksThink/macos_reversing/codex/zbook-rdma/experiments/engine2n/llama.cpp/build-rocm3/bin}
@@ -16,7 +18,7 @@ if pgrep -x ggml-rpc-server > /dev/null || pgrep -x llama-server > /dev/null; th
 scp -q "$BIN/ggml-rpc-server" "$B:$BBIN/" || exit 3
 ssh -o BatchMode=yes $B "pkill -x ggml-rpc-server; sleep 1; cd $BBIN && env $(echo $ENV) setsid -f ./ggml-rpc-server -H 10.99.0.2 -p 50052 -c > rpc-server-prof2node.log 2>&1 < /dev/null"
 cd $O || exit 1
-env $(echo $ENV) /opt/rocm/bin/rocprofv3 --kernel-trace --memory-copy-trace --output-format csv -d $O/prof -o a -- "$BIN/ggml-rpc-server" -H 127.0.0.1 -p 50052 > rpc-a.log 2>&1 & APID=$!   # APID = 서버(셸 아님)
+env $(echo $ENV) /opt/rocm/bin/rocprofv3 ${PROFARGS:---kernel-trace --memory-copy-trace} --output-format csv -d $O/prof -o a -- "$BIN/ggml-rpc-server" -H 127.0.0.1 -p 50052 > rpc-a.log 2>&1 & APID=$!   # APID = 서버(셸 아님)
 sleep 5
 env LD_LIBRARY_PATH=/opt/rocm/lib LLAMA_TP_FFN_GRAN=32 GGML_RDMA_CHUNK=65536 GGML_RDMA_RX_DEPTH=48 GGML_RDMA_TX_SLOTS=4 ${CLIX:-} \
     "$BIN/llama-bench" -m "$M" -fa 1 ${BARGS:--p 0 -n $NTOK -r 1} --rpc 10.99.0.2:50052,127.0.0.1:50052 -sm tensor -dev RPC0/RPC1 -o md > $O/bench.txt 2>&1
@@ -31,5 +33,5 @@ for i in $(seq 120); do
     last=$sz; sleep 1
 done
 kill -KILL $APID 2>/dev/null; pkill -KILL -x ggml-rpc-server; ssh -o BatchMode=yes $B "pkill -KILL -x ggml-rpc-server; true"
-[ -d $O/prof ] && cp $O/prof/a_kernel_trace.csv $O/prof/a_memory_copy_trace.csv $O/ 2>/dev/null
+[ -d $O/prof ] && cp $O/prof/a_kernel_trace.csv $O/prof/a_memory_copy_trace.csv $O/prof/a_counter_collection.csv $O/ 2>/dev/null
 ls $O; echo "$O"
