@@ -4,6 +4,8 @@
 # 2node 는 run_tp.sh 와 같은 구성(B rank 0, A 127.0.0.1, OVERLAP=2, 그래프 끔, FFN 320/320). 결과: runs/srv-<topo>-<spec>-<시각>/
 set -uo pipefail
 D=/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll; TOPO=${1:?1node|2node}; SPEC=${2:?none|mtp}; NMAX=${3:-256}
+# ssh 가 끊긴 링크에서 영영 기다리지 않게(2026-11-10 재발 방지)
+SSHO="-o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
 B=parks-zbook@10.99.0.2; BIN=${BIN:-$D/llama.cpp/build-rocm/bin}; BBIN=/home/parks-zbook/engine2n/bin
 M=${MODEL:-/data/parksThink/hf-models/qwen38-flash-next-gguf/UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf}
 # 공유형 MTP 파일에 본 모델의 token_embd·output 을 붙인 파일(tools/gguf_merge_mtp.py) — 이 llama.cpp 는 공유형을 단독으로 못 연다 —
@@ -24,7 +26,7 @@ SRV_ENV=${SRV_ENV-GGML_CUDA_DISABLE_GRAPHS=1}
 PIN_A=""; PIN_B=""
 if [ "${TBPIN:-1}" != 0 ]; then
   PIN_A="env HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0 taskset -c $(bash "$D/tools/bench/tbcpus.sh")"
-  [ "$TOPO" = 2node ] && PIN_B="env HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0 taskset -c $(ssh -o BatchMode=yes $B "bash -s" < "$D/tools/bench/tbcpus.sh")"
+  [ "$TOPO" = 2node ] && PIN_B="env HSA_OVERRIDE_CPU_AFFINITY_DEBUG=0 taskset -c $(ssh $SSHO $B "bash -s" < "$D/tools/bench/tbcpus.sh")"
 fi
 # TBDEV=1(기본): tbv 가 받은 프레임을 높은 우선순위 작업에서 마무리하면(rx_wq_poll, tbv 브랜치 rx-highpri-poll) AR 링크를 그 노드에서
 # 클라이언트 연결이 쓰지 않는 RDMA 장치로(tools/bench/tbcommdev.sh, 노드마다 읽음 — 장치 이름은 재부팅 때 바뀔 수 있다). none +2.0%, MTP +2.1%.
@@ -32,7 +34,7 @@ fi
 DEV_A=""; DEV_B=""
 if [ "${TBDEV:-1}" != 0 ]; then
   DEV_A=$(bash "$D/tools/bench/tbcommdev.sh")
-  [ "$TOPO" = 2node ] && DEV_B=$(ssh -o BatchMode=yes $B "bash -s" < "$D/tools/bench/tbcommdev.sh")
+  [ "$TOPO" = 2node ] && DEV_B=$(ssh $SSHO $B "bash -s" < "$D/tools/bench/tbcommdev.sh")
 fi
 echo "A ${A_WRAP:-$PIN_A} | B ${B_WRAP:-$PIN_B} | client ${CLI_WRAP:-$PIN_A} | AR dev A ${DEV_A:--} B ${DEV_B:--}" > "$OUT/pin.txt"
 # 추론 감시(tools/watch/inferwatch.sh)용 기록 링: 서버 GGML_RPC_TRACE, 클라이언트 GGML_RPC_TRACE_CLIENT. TRACE=0 이면 끔
@@ -42,8 +44,8 @@ ARGS=(-m "$M" -ngl 99 -fa on -c 8192 -np 1 --port $PORT --host 127.0.0.1 ${SRV_E
 [ "$SPEC" = mtp ] && ARGS+=(-md "$MTP" --spec-type draft-mtp -ngld 99 ${SPEC_EXTRA:-})
 if [ "$TOPO" = 2node ]; then
   env ${DEV_A:+GGML_RPC_COMM_DEV=$DEV_A} $SRV_ENV $TRACE_SRV nohup ${A_WRAP:-$PIN_A} "$BIN/ggml-rpc-server" -H 127.0.0.1 -p 50052 > "$OUT/rpc-a.log" 2>&1 & echo $! >> "$OUT/pids"
-  ssh -o BatchMode=yes $B "mkdir -p $BBIN; pkill -x ggml-rpc-server; sleep 1"; scp -q "$BIN/ggml-rpc-server" "$B:$BBIN/" || exit 3
-  ssh -o BatchMode=yes $B "cd $BBIN && LD_LIBRARY_PATH=/opt/rocm/lib GGML_RDMA_RX_DEPTH=$GGML_RDMA_RX_DEPTH GGML_RDMA_CHUNK=$GGML_RDMA_CHUNK GGML_RDMA_TX_SLOTS=$GGML_RDMA_TX_SLOTS GGML_RPC_COMM_OVERLAP=$GGML_RPC_COMM_OVERLAP ${DEV_B:+GGML_RPC_COMM_DEV=$DEV_B} ${SRV_ENV_B-$SRV_ENV} $TRACE_SRV ${B_WRAP:-$PIN_B} setsid -f ./ggml-rpc-server -H 10.99.0.2 -p 50052 -c > rpc-server.log 2>&1 < /dev/null"
+  ssh $SSHO $B "mkdir -p $BBIN; pkill -x ggml-rpc-server; sleep 1"; scp -q -o ConnectTimeout=10 "$BIN/ggml-rpc-server" "$B:$BBIN/" || exit 3
+  ssh $SSHO $B "cd $BBIN && LD_LIBRARY_PATH=/opt/rocm/lib GGML_RDMA_RX_DEPTH=$GGML_RDMA_RX_DEPTH GGML_RDMA_CHUNK=$GGML_RDMA_CHUNK GGML_RDMA_TX_SLOTS=$GGML_RDMA_TX_SLOTS GGML_RPC_COMM_OVERLAP=$GGML_RPC_COMM_OVERLAP ${DEV_B:+GGML_RPC_COMM_DEV=$DEV_B} ${SRV_ENV_B-$SRV_ENV} $TRACE_SRV ${B_WRAP:-$PIN_B} setsid -f ./ggml-rpc-server -H 10.99.0.2 -p 50052 -c > rpc-server.log 2>&1 < /dev/null"
   ARGS+=(--rpc 10.99.0.2:50052,127.0.0.1:50052 -sm tensor -dev RPC0,RPC1)
   sleep 3
 fi
@@ -54,20 +56,35 @@ curl -sf http://127.0.0.1:$PORT/health > /dev/null || { echo "server not ready";
 PS=${PROBE_S:-80}
 python3 -I $D/tools/probe/gpumetrics_ts.py $PS > "$OUT/gm-a.txt" 2>&1 &
 APID=$(pgrep -x ggml-rpc-server | head -1); top -H -b -d 2 -n $((PS/2)) -p $APID > "$OUT/thr-a.txt" 2>&1 &
-ssh -o BatchMode=yes $B "cd $BBIN; (python3 -I gpumetrics_ts.py $PS > gm-b.txt 2>&1 &); top -H -b -d 2 -n $((PS/2)) -p \$(pgrep -x ggml-rpc-server) > thr-b.txt 2>&1 &" &
+ssh $SSHO $B "cd $BBIN; (python3 -I gpumetrics_ts.py $PS > gm-b.txt 2>&1 &); top -H -b -d 2 -n $((PS/2)) -p \$(pgrep -x ggml-rpc-server) > thr-b.txt 2>&1 &" &
 # BENCH: 벤치 대신 돌릴 클라이언트("<저장소 안 스크립트> <서버 URL 뒤 인자들>", 인자는 절대 경로 — 이 스크립트는 다른 곳에서 돈다),
 #   예: BENCH="tools/draft_vocab_corpus.py $D/eval/draft_vocab_prompts.json 384 $D/fixcost/x/corpus-tokens.jsonl". {OUT} 은 이 실행의 폴더
+# BENCH_S: 벤치(클라이언트) 시간 제한 초(기본 3600). 넘으면 멈추고 stop.txt 에 남긴다
+BENCH_S=${BENCH_S:-3600}
 if [ -n "${BENCH:-}" ]; then
   BENCH=${BENCH//\{OUT\}/$OUT}
-  python3 -I "$D/${BENCH%% *}" http://127.0.0.1:$PORT ${BENCH#* } | tee "$OUT/bench.txt"
+  timeout -k 30 $BENCH_S python3 -I "$D/${BENCH%% *}" http://127.0.0.1:$PORT ${BENCH#* } | tee "$OUT/bench.txt"
 else
-  python3 -I "$D/tools/spec_bench.py" http://127.0.0.1:$PORT "$D/eval/spec_prompts.json" "$NMAX" "$OUT/results.jsonl" | tee "$OUT/bench.txt"
+  timeout -k 30 $BENCH_S python3 -I "$D/tools/spec_bench.py" http://127.0.0.1:$PORT "$D/eval/spec_prompts.json" "$NMAX" "$OUT/results.jsonl" | tee "$OUT/bench.txt"
 fi
+[ "${PIPESTATUS[0]}" = 124 ] && echo "$(date +%T) bench did not finish in ${BENCH_S}s -> stopped" | tee -a "$OUT/stop.txt"
 grep -iE 'draft|mtp|spec' "$OUT/server.log" | grep -v '^\s*$' | head -6
 # llama-server 를 먼저 내리고(끝날 때 RPC 서버에 메모리를 묻는다) 그다음 RPC 서버
-SP=$(tail -1 "$OUT/pids"); kill $SP 2>/dev/null; while kill -0 $SP 2>/dev/null; do sleep 1; done
+# stop_pid <pid> [sent]: TERM 뒤 STOP_S 초(기본 60) 안에 안 끝나면 KILL 하고 stop.txt 에 남긴다. rocprofv3 로 감싼 llama-server(CW_/CLI_WRAP)는
+# SIGTERM 에 기록을 다 쓴 뒤 rocprofv3 와 llama-server 의 신호 처리기가 서로를 부르며 끝나지 않는다 — 2026-11-10 밤 이 기다림에서 7시간 멈춤.
+# prof2node.sh 와 같은 처리(기록은 TERM 때 이미 써져 있어 KILL 해도 잃지 않음)
+stop_pid() {
+  local p=$1 i
+  [ "${2:-}" = sent ] || kill $p 2>/dev/null
+  for i in $(seq ${STOP_S:-60}); do kill -0 $p 2>/dev/null || return 0; sleep 1; done
+  echo "$(date +%T) pid $p ($(ps -o comm= -p $p 2>/dev/null)) did not exit ${STOP_S:-60}s after TERM -> KILL" | tee -a "$OUT/stop.txt"
+  kill -KILL $p 2>/dev/null
+  for i in $(seq 20); do kill -0 $p 2>/dev/null || return 0; sleep 1; done
+  echo "$(date +%T) pid $p still alive 20s after KILL" | tee -a "$OUT/stop.txt"; return 1
+}
+SP=$(tail -1 "$OUT/pids"); stop_pid $SP
 xargs -r kill < "$OUT/pids" 2>/dev/null
-# 다음 실행이 메모리 부족을 겪지 않게, 프로세스가 끝나 GPU 메모리를 돌려줄 때까지 기다린다
-for p in $(cat "$OUT/pids"); do while kill -0 $p 2>/dev/null; do sleep 1; done; done; sleep 3
-[ "$TOPO" = 2node ] && { sleep 2; scp -q $B:$BBIN/gm-b.txt $B:$BBIN/thr-b.txt "$OUT/"; ssh -o BatchMode=yes $B "pkill -x ggml-rpc-server"; }
+# 다음 실행이 메모리 부족을 겪지 않게, 프로세스가 끝나 GPU 메모리를 돌려줄 때까지 기다린다(위와 같은 시간 제한)
+for p in $(cat "$OUT/pids"); do stop_pid $p sent; done; sleep 3
+[ "$TOPO" = 2node ] && { sleep 2; scp -q -o ConnectTimeout=10 $B:$BBIN/gm-b.txt $B:$BBIN/thr-b.txt "$OUT/"; r=$(ssh $SSHO $B "pkill -x ggml-rpc-server; for i in \$(seq 30); do pgrep -x ggml-rpc-server > /dev/null || exit 0; sleep 1; done; pkill -KILL -x ggml-rpc-server; echo B rpc-server did not exit 30s after TERM -> KILL"); [ -n "$r" ] && echo "$(date +%T) $r" | tee -a "$OUT/stop.txt"; }
 echo "$OUT"

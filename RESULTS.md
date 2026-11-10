@@ -2645,3 +2645,20 @@ old = 예전 고정(`taskset` 만), def = 지금 기본(`env HSA_OVERRIDE_CPU_AF
   상당 부분이 이미 캐시(L2·MALL)에서 나왔던 것으로 봄(추론). 기본 꺼짐.
 - 다음 후보(계산, 실측 아님): ① 1토큰 전용 묶음을 4토큰으로 넓혀 커널 수 ≈1930 → ≈1200(빈틈 ≈2 ms + 일부 커널 시간), ② 4토큰 AR(40 KB, ≈41 µs)
   — 케이블 두 개로 나눠 보내기 등, ③ 중복 제거는 전문가 목록을 호출당 한 번 만들고 블록이 여러 행을 맡게 다시 — 다만 캐시가 이미 일부를 막아 기대가 작음.
+
+## 2026-11-10 00:50–02:20 — 두 번째 케이블(두 레일)로 4토큰 AR 만 나누기: MTP +1.5%, 출력 같음 / 초안 프로파일 / 밤샘 7시간 멈춤과 재발 방지
+자료: `fixcost/mtpv-1110/`(run-r2·run-r2b 스크립트·로그, 감시기 요약 `watch-summary-1110-012552.md`·`-021622.md`, 초안 분석 `draftk.py`·`draftk-out.txt`).
+- 설정: 두 서버에 `GGML_RPC_COMM_RAIL2=usb4_rdma5`(클라이언트가 쓰는 첫 장치 — AR 은 tbcommdev.sh 가 고른 둘째 장치) `GGML_RDMA_RX_DEPTH=32`.
+  r2 = `GGML_RPC_COMM_RAIL2_ZC_MIN=32768`(4토큰 부분합 40 KB 만 나눔), r2a = 4096(1토큰 10 KB 도 나눔).
+- **MTP r2 58.39 · 57.52 · 57.86 / 기본 57.18 · 57.08 · 56.93(번갈아 3쌍 모두 r2, +1.5%)**. 감시기 AR 지연 A→B 중앙 30.4 vs 41.7 µs, B→A 29.2 vs 41.0.
+- r2a: none 41.81 · 41.64 / 기본 42.16 · 42.14(−1.0%, 감시기 AR 중앙 21.5 vs 18.1 µs — 10 KB 는 나누면 손해), MTP r2a 57.50 · 57.79 / r2 57.58 · 57.57(같음).
+  → 4토큰 AR 만 나누는 r2 가 후보. **아직 srv-probe 기본값 아님**(장치 자동 선택·번갈아 확인 남음). 해시 24회 모두 6/6 같음.
+- 초안(클라이언트 GPU, rocprofv3 커널 기록 111,090개, 프로파일러 아래 53.4 tok/s): 초안 1단계(62커널) 벽 2.02 ms, GPU 바쁨 1.47 ms, 빈틈 0.54 ms(프로파일러로 부풀 수 있음).
+  **출력 머리 `output.weight`(2560×104459 Q4_K, 150.4 MB) 1개가 650 µs = 231 GB/s — 이미 대역폭 한계**. 그 밖에 attn q 106 µs, 전문가 GLU 96 + down 50 µs,
+  copyBuffer 앞 빈틈 91·38 µs, flash_attn 앞 49 µs. 초안을 크게 줄일 길은 어휘를 더 줄이는 것(그리디 검증이라 출력 토큰은 같고 수락률과 맞바꿈, 실측 전).
+- 사고: 프로파일 회는 02:20:09 에 벤치를 마쳤으나, rocprofv3 로 감싼 llama-server 가 SIGTERM 에 기록을 쓴 뒤 rocprofv3 와 서버의 신호 처리기가 서로를 부르며
+  끝나지 않았고(server.log `rocprofv3 caught signal 15` 반복), srv-probe 의 `while kill -0` 이 시간 제한 없이 기다려 09:31 까지 멈춤(GPU 멈춤 아님, 두 rpc-server 는
+  그동안 바쁜 대기로 CPU 100%). 같은 문제는 prof2node.sh 에는 이미 처리돼 있었다.
+- 재발 방지(`tools/bench/srv-probe.sh`): 프로세스 내리기 `stop_pid` — TERM 뒤 `STOP_S`(기본 60)초 안에 안 끝나면 KILL, 그 사실을 실행 폴더 `stop.txt` 에 남김;
+  벤치 클라이언트 `timeout -k 30 $BENCH_S`(기본 3600 초); B rpc-server 도 30 초 뒤 KILL; ssh 에 ConnectTimeout·ServerAlive. 단위 시험(TERM 을 무시하는 프로세스 → 3초 뒤 KILL) 통과,
+  실제 2노드 회로는 아직 안 돌림.

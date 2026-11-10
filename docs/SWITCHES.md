@@ -107,10 +107,13 @@
 - 2026-11-06 오후: MTP 초안 출력층을 일부 어휘로 — 초안 GGUF 에 `d2t`(I64) 가 있으면 qwen4exp 가 줄인 `output.weight` 를 받아 그 행만 계산하고
   나머지 로짓을 -inf 로 둔다(만들기: `tools/draft_vocab_corpus.py` → `tools/draft_vocab_select.py` → `tools/gguf_draft_vocab.py`).
   `tools/bench/srv-probe.sh` 의 `BENCH`(벤치 대신 돌릴 클라이언트, `{OUT}` = 실행 폴더).
+  같은 스크립트의 시간 제한(2026-11-10): `STOP_S`(서버 등을 TERM 뒤 기다릴 초, 기본 60 — 넘으면 KILL), `BENCH_S`(벤치 클라이언트 제한 초, 기본 3600).
+  KILL·시간 초과가 있었으면 실행 폴더에 `stop.txt`. rocprofv3 로 감싼 서버(`CLI_WRAP`·`CW_<cfg>`)는 SIGTERM 에 안 끝나 이 처리에 기대야 한다.
 - 2026-11-06 저녁: AR 기본 경로를 스트림 안으로 — `GGML_RPC_COMM_ZC` 기본 3(예전 1), `GGML_RPC_COMM_ZC3_AHEAD` 기본 2(예전 0, 서버 스레드가 앞서는 AR 수).
   `GGML_RPC_COMM_ZC=1` 이면 예전 경로(동기화 → 보내기 → 기다림 커널).
   두 번째 케이블: `GGML_RPC_COMM_RAIL2=usb4_rdma0`(두 서버, `GGML_RDMA_RX_DEPTH=32` 와 함께)이면 ZC=3 대리 스레드가 레일마다 하나씩 절반을 주고받는다
-  (`GGML_RPC_COMM_RAIL2_ZC_MIN`, 기본 4096 B). 엔진에서는 이득이 없어 기본 꺼짐(RESULTS.md 11-06 18:10).
+  (`GGML_RPC_COMM_RAIL2_ZC_MIN`, 기본 4096 B). 11-06 에는 이득이 없었으나, 11-10 `RAIL2=<클라이언트 장치>` + `ZC_MIN=32768`(4토큰 AR 만)이면
+  MTP +1.5%(출력 같음, RESULTS.md 11-10); 1토큰까지 나누면(4096) none −1%. 아직 기본 꺼짐.
 - 2026-11-06 밤(구간 커널 1a, 기본 꺼짐): `GGML_CUDA_SEG_MOE=1` — hc down → hc up/pre → BF16 행렬곱(라우터·indexer k)을 상주 커널 하나로(`k_seg_moe_head`),
   `GGML_CUDA_SEG_VERIFY=1` 비트 비교, `GGML_CUDA_SEG_PREFETCH=1` 다음 단계 가중치 앞서 읽기, `GGML_CUDA_SEG_COOP=1` 협동 실행. 디버그 `GGML_CUDA_DUMP_MOE=<n>`(MUL_MAT_ID 있는 1토큰 그래프 노드).
 - 2026-11-09 저녁(구간 커널 2a, 기본 꺼짐, 접음): `GGML_CUDA_SEG_MOE=2` — MoE 구간 hc down → 가중합 + AR 내보내기를 상주 커널 하나로(장벽 6개).

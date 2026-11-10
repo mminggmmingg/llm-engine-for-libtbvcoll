@@ -1,0 +1,54 @@
+dispatches 111090, groups 2425 (gap>300 us)
+size  count  wall_us(med)  busy_us(med)  idle_us(med)
+   62    946       2020.5        1472.3         543.1
+   25    487        953.7         828.0         124.3
+   37    425        996.2         644.5         350.9
+   43    421       1432.2        1108.4         321.0
+   80     46       2773.2        1780.3         985.3
+    4     12         99.3          34.5          70.2
+   31     11       1298.6         940.4         280.1
+    1      9         12.5          12.5           0.0
+
+most common group size 62: per-group kernel time by name (us)
+  1039.5 us  x 10.9  mul_mat_vec_q<
+   111.1 us  x  2.0  mul_mat_vec_q_glu_q8<
+    55.0 us  x  0.1  mul_mat_q<
+    52.3 us  x  2.0  k_hc_up_pre<true, 1, false>
+    46.0 us  x  4.0  top_k_radix_select<256, 8>
+    26.0 us  x  3.0  rms_norm_f32<1024, 1, true, true, false, false, true, false,
+    25.7 us  x  8.0  __amd_rocclr_copyBuffer
+    21.0 us  x  1.0  mul_mat_vec_f<__hip_bfloat16, float, 1, 256, false, false>
+    20.4 us  x  4.0  top_k_radix_histogram<256, 8>
+    18.0 us  x  1.0  pad_f32
+    17.5 us  x  1.0  mul_mat_vec_q_shexp_tail<
+    13.8 us  x  1.0  flash_attn_tile<256, 256, 1, 4, false>
+    11.0 us  x  2.0  rms_norm_f32<1024, 1, true, true, false, false, false, false
+    10.1 us  x  1.0  k_set_rows<float, long, float>
+     9.0 us  x  1.0  rms_norm_mul_rope_multi_f32<128, false, float>
+     7.6 us  x  2.0  quantize_q8_1
+     6.7 us  x  1.0  rms_norm_mul_rope_multi_f32<128, false, __half>
+     6.5 us  x  1.0  topk_moe_softmax_cuda<512>
+
+kernel-to-kernel gap in group: med 4.7 us, p90 18.1 us, sum/group 557.5 us
+between groups: med 495.2 us
+
+62-kernel draft step, position-wise (us, median over 946 steps), mmvq only + top others
+  1    24.1 gap_before    8.7  grid 10240x1 wg 32  mul_mat_vec_q<
+  5    21.7 gap_before    3.5  grid 327680x1 wg 32  mul_mat_vec_q<
+  7   649.5 gap_before    3.7  grid 3342688x1 wg 32  mul_mat_vec_q<
+ 10    16.8 gap_before    5.3  grid 248320x2 wg 256  pad_f32
+ 25     4.4 gap_before   91.2  grid 1024x1 wg 512  __amd_rocclr_copyBuffer
+ 26     4.1 gap_before   38.0  grid 512x1 wg 512  __amd_rocclr_copyBuffer
+ 36    46.5 gap_before    4.0  grid 81920x1 wg 32  mul_mat_vec_q<
+ 38    24.0 gap_before    3.5  grid 10368x1 wg 32  mul_mat_vec_q<
+ 39    26.9 gap_before    5.9  grid 81920x1 wg 1024  k_hc_up_pre<true, 1, false>
+ 40   105.6 gap_before    5.5  grid 393216x1 wg 32  mul_mat_vec_q<
+ 46    11.9 gap_before   48.8  grid 32x32 wg 32  flash_attn_tile<256, 256, 1, 4, false>
+ 49    56.7 gap_before    3.6  grid 81920x1 wg 32  mul_mat_vec_q<
+ 51    25.1 gap_before    3.7  grid 10368x1 wg 32  mul_mat_vec_q<
+ 52    25.2 gap_before    5.6  grid 81920x1 wg 1024  k_hc_up_pre<true, 1, false>
+ 53    21.0 gap_before    7.0  grid 131072x1 wg 256  mul_mat_vec_f<__hip_bfloat16, float, 1, 256, false, false>
+ 55    95.5 gap_before    4.1  grid 20480x10 wg 1024  mul_mat_vec_q_glu_q8<
+ 56    49.8 gap_before    5.9  grid 20480x10 wg 32  mul_mat_vec_q<
+ 58    15.6 gap_before    3.3  grid 20480x1 wg 1024  mul_mat_vec_q_glu_q8<
+ 59    17.3 gap_before    4.2  grid 81920x1 wg 1024  mul_mat_vec_q_shexp_tail<
