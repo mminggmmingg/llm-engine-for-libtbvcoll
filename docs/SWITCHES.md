@@ -197,3 +197,7 @@
   - **기본(스위치 없음):** KEEP 에서 UNKNOWN(원소 0개) ↔ 다른 축 바뀜에는 캐시를 비우지 않음; 메타 분할 계산은 축만 읽는 빠른 조회(`ggml_backend_meta_get_split_axis`).
   - `GGML_META_REUSE=1`(꺼짐 — 번갈아 이득 없음): 계산 텐서의 단순 텐서를 다시 짓기 사이에 다시 씀(필드·분할 상태 세대가 같을 때, 바뀌기 전 내용 하나 기억).
     `GGML_META_REUSE_VERIFY=1`(재사용마다 원래 방식과 바이트 비교), `GGML_META_REUSE_WHY=<n>`(재사용 못 한 까닭 n 줄).
+- 2026-11-12 새벽(감시기 기반, RESULTS.md 11-12 02:13 절):
+  - `LLAMA_QSA_SHORT=1`(클라이언트 그래프, 기본 꺼짐 — 출력이 이전 기준과 비트 동일 아님, 사용자 결정 대기): KV 가 인덱서 top-k 예산 안이면 인덱서 점수 대신 pool_mask 로
+    같은 마스크(인덱서 q 사영·norm/rope·풀 키 모으기·인덱서 생략). none +3.5%, MTP +2.0%. `=2`·`=3` 은 원인 가르기용(인덱서 돌리고 마스크만 바꿈 / 쓰지 않는 노드 하나 추가).
+  - 진단: `EVALCB_GEN=<n>`(llama-eval-callback 이 prompt 뒤 greedy n 단계), `GGML_META_MIRROR_READ=<j>`(MIRRORED 텐서를 단순 백엔드 j 에서 읽기).

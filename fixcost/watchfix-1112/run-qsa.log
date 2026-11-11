@@ -1,0 +1,11 @@
+mtp qg bin=bin load A=0.59 B=0.17 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 63.01 tok/s (token-weighted) | srv-2node-mtp-bs-qg-1112-023018
+   a: n=269 gfx 2254/2410/2488 상한 2181/2517/2821 활동 72/89/95 소켓W 67/69/70 gfxW 22/28/30 코어W 6/9/19 코어상한 1588/1957/4760 fclk 1606/1626/1675 uclk 1000/1000/1000 dramR 8061/34302/43964 dramW 7191/7749/8114 
+   b: n=267 gfx 2159/2223/2250 상한 2269/2453/2900 활동 64/77/82 소켓W 65/68/70 gfxW 24/29/30 코어W 4/6/13 코어상한 1571/1604/5002 fclk 1599/1600/1604 uclk 998/1000/1000 dramR 5438/20300/58796 dramW 6175/7218/7660 
+none qg bin=bin load A=0.59 B=0.26 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 45.45 tok/s (token-weighted) | srv-2node-none-bs-qg-1112-023536
+   a: n=352 gfx 2371/2643/2715 상한 2420/2733/2805 활동 75/95/97 소켓W 67/70/70 gfxW 22/28/30 코어W 5/6/17 코어상한 1583/1925/4691 fclk 1605/1621/1670 uclk 1000/1000/1000 dramR 5708/54973/64698 dramW 3916/4020/4813 
+   b: n=353 gfx 2501/2651/2727 상한 2567/2723/2893 활동 74/95/98 소켓W 65/69/70 gfxW 26/30/32 코어W 2/3/10 코어상한 1569/1933/4897 fclk 1600/1601/1610 uclk 998/1000/1000 dramR 850/44202/64376 dramW 3969/4119/4272 
+srv-2node-none-bs-qg-1112-023536-bench.txt: 0/6 same DIFF ['prose', 'code', 'ko', 'math', 'json', 'summary']
+srv-2node-mtp-bs-qg-1112-023018-bench.txt: 1/6 same DIFF ['prose', 'code', 'ko', 'json', 'summary']
+gate: 0 of 2 runs 6/6
+GATE FAILED — no A/B
+ALLDONE

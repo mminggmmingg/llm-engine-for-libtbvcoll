@@ -1,0 +1,13 @@
+none v0 bin=bin load A=0.55 B=0.42 rdma=2 trace=0 zc=ZC=3/ZC=3:  | srv-2node-none-bs-v0-1112-050428
+   a: n=396 gfx 2340/2484/2515 상한 2517/2703/2878 활동 75/86/88 소켓W 68/70/70 gfxW 22/25/26 코어W 6/7/14 코어상한 1917/2342/4395 fclk 1603/1612/1645 uclk 1000/1000/1000 dramR 18452/41969/45286 dramW 3753/3873/4734 
+   b: n=401 gfx 2413/2483/2514 상한 2532/2670/2899 활동 74/85/87 소켓W 66/70/70 gfxW 26/28/29 코어W 3/3/8 코어상한 1569/1933/4208 fclk 1600/1601/1608 uclk 999/1000/1000 dramR 19926/42873/45836 dramW 3574/3682/4203 
+none v1 bin=bin load A=0.56 B=0.12 rdma=2 trace=0 zc=ZC=3/ZC=3:  | srv-2node-none-bs-v1-1112-050940
+   a: n=382 gfx 2324/2459/2490 상한 2522/2728/2862 활동 74/86/87 소켓W 68/70/70 gfxW 22/25/26 코어W 6/7/14 코어상한 2044/2556/4491 fclk 1602/1614/1650 uclk 1000/1000/1000 dramR 20157/44349/47932 dramW 3592/3736/4610 
+   b: n=385 gfx 2389/2459/2497 상한 2517/2652/2875 활동 74/85/87 소켓W 66/70/70 gfxW 26/28/28 코어W 3/3/7 코어상한 1569/1935/4349 fclk 1600/1601/1609 uclk 999/1000/1000 dramR 21013/45148/47886 dramW 3481/3611/4130 
+prose      first differs at token 67 of 256: a 13 b 220 | a's top-2: id 13 logp -0.6864 id 220 logp -0.8232 (gap 0.1368) | b's top-2: id 220 logp -0.7152 id 13 logp -0.7718 (gap 0.0566)
+code       first differs at token 72 of 256: a 38710 b 791 | a's top-2: id 38710 logp -1.0963 id 791 logp -1.1019 (gap 0.0056) | b's top-2: id 791 logp -1.0313 id 38710 logp -1.1212 (gap 0.0899)
+ko         first differs at token 75 of 256: a 34030 b 13224 | a's top-2: id 34030 logp -0.9250 id 13224 logp -0.9602 (gap 0.0352) | b's top-2: id 13224 logp -0.8806 id 34030 logp -0.9481 (gap 0.0675)
+math       first differs at token 7 of 256: a 2923 b 13 | a's top-2: id 2923 logp -0.6686 id 13 logp -0.7404 (gap 0.0717) | b's top-2: id 13 logp -0.6046 id 2923 logp -0.8138 (gap 0.2092)
+json       same 174 tokens
+summary    first differs at token 105 of 201: a 321 b 13 | a's top-2: id 321 logp -1.1271 id 13 logp -1.1350 (gap 0.0079) | b's top-2: id 13 logp -1.1231 id 321 logp -1.2082 (gap 0.0851)
+ALLDONE

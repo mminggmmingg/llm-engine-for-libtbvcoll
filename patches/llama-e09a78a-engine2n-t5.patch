@@ -731,6 +731,41 @@ index 4262327..c4433cb 100644
  struct common_speculative_deleter {
      void operator()(common_speculative * s) { common_speculative_free(s); }
  };
+diff --git a/examples/eval-callback/eval-callback.cpp b/examples/eval-callback/eval-callback.cpp
+index 703ce13..702daff 100644
+--- a/examples/eval-callback/eval-callback.cpp
++++ b/examples/eval-callback/eval-callback.cpp
+@@ -32,6 +32,30 @@ static bool run(llama_context * ctx, const common_params & params) {
+         return false;
+     }
+ 
++    // engine2n: EVALCB_GEN=<n> — then n greedy one-token decode steps (to dump tensors of decode graphs too); prints the tokens
++    const int n_gen = getenv("EVALCB_GEN") ? atoi(getenv("EVALCB_GEN")) : 0;
++    const int n_vocab = llama_vocab_n_tokens(vocab);
++    std::string gen;
++    for (int g = 0; g < n_gen; g++) {
++        const float * logits = llama_get_logits_ith(ctx, -1);
++        llama_token best = 0;
++        for (int i = 1; i < n_vocab; i++) {
++            if (logits[i] > logits[best]) {
++                best = i;
++            }
++        }
++        gen += " " + std::to_string(best);
++        std::vector<llama_token> one = { best };
++        common_batch b1 = common_batch_get_one(ctx, one);
++        if (llama_process(ctx, LLAMA_PROCESS_TYPE_DECODE, b1.get())) {
++            LOG_ERR("%s : failed to eval step %d\n", __func__, g);
++            return false;
++        }
++    }
++    if (n_gen > 0) {
++        fprintf(stderr, "EVALCB_GEN tokens:%s\n", gen.c_str());
++    }
++
+     return true;
+ }
+ 
 diff --git a/ggml/include/ggml-backend.h b/ggml/include/ggml-backend.h
 index 7a65d81..e3f9301 100644
 --- a/ggml/include/ggml-backend.h
@@ -749,7 +784,7 @@ index 7a65d81..e3f9301 100644
      // Utils
      //
 diff --git a/ggml/src/ggml-backend-meta.cpp b/ggml/src/ggml-backend-meta.cpp
-index fb35be3..301200c 100644
+index fb35be3..0a9788a 100644
 --- a/ggml/src/ggml-backend-meta.cpp
 +++ b/ggml/src/ggml-backend-meta.cpp
 @@ -16,6 +16,8 @@
@@ -1257,7 +1292,18 @@ index fb35be3..301200c 100644
  }
  
  static void ggml_backend_meta_buffer_memset_tensor(
-@@ -1995,11 +2391,29 @@ static void ggml_backend_meta_synchronize(ggml_backend_t backend) {
+@@ -1663,7 +2059,9 @@ static void ggml_backend_meta_buffer_get_tensor(ggml_backend_buffer_t buffer, co
+         } break;
+         case GGML_BACKEND_SPLIT_AXIS_MIRRORED: {
+             // TODO other simple backend may be better
+-            const ggml_tensor * simple_tensor = ggml_backend_meta_buffer_simple_tensor(tensor, 0);
++            // engine2n GGML_META_MIRROR_READ=<j> (check only): read a mirrored tensor from simple backend j instead of 0
++            static const int mirror_j = getenv("GGML_META_MIRROR_READ") ? atoi(getenv("GGML_META_MIRROR_READ")) : 0;
++            const ggml_tensor * simple_tensor = ggml_backend_meta_buffer_simple_tensor(tensor, (size_t) mirror_j);
+             ggml_backend_tensor_get(simple_tensor, data, offset, size);
+         } break;
+         default: {
+@@ -1995,11 +2393,29 @@ static void ggml_backend_meta_synchronize(ggml_backend_t backend) {
  
  static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend, struct ggml_cgraph * cgraph) {
      GGML_ASSERT(cgraph->grads == nullptr);
@@ -1287,7 +1333,7 @@ index fb35be3..301200c 100644
  
      bool max_nnodes_raised = false;
      if (cgraph->n_nodes > backend_ctx->max_nnodes) {
-@@ -2036,6 +2450,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+@@ -2036,6 +2452,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
          }
          size_t n_subgraphs  = 0;
          size_t max_tmp_size = 0;
@@ -1295,7 +1341,7 @@ index fb35be3..301200c 100644
  
          for (size_t j = 0; j < n_backends; j++) {
              auto & bcj = backend_ctx->backend_configs[j];
-@@ -2055,6 +2470,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+@@ -2055,6 +2472,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
              }
          }
  
@@ -1303,7 +1349,7 @@ index fb35be3..301200c 100644
          {
              // For MoE models it may make sense to delay the AllReduce in order to reduce I/O:
              auto get_i_delayed_branch = [&](const int i) -> int {
-@@ -2068,7 +2484,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+@@ -2068,7 +2486,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
                  auto skip_unrelated = [&]() {
                      while (id + 1 < cgraph->n_nodes) {
                          ggml_tensor * next = cgraph->nodes[id+1];
@@ -1312,7 +1358,7 @@ index fb35be3..301200c 100644
                              break;
                          }
                          bool safe = true;
-@@ -2080,7 +2496,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+@@ -2080,7 +2498,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
                                  safe = false;
                                  break;
                              }
@@ -1321,7 +1367,7 @@ index fb35be3..301200c 100644
                                  safe = false;
                                  break;
                              }
-@@ -2099,8 +2515,8 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+@@ -2099,8 +2517,8 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
                  {
                      ggml_tensor * next = cgraph->nodes[id+1];
                      if (next->op == GGML_OP_ADD_ID && next->src[0] == node &&
@@ -1332,7 +1378,7 @@ index fb35be3..301200c 100644
                          node = next;
                          id++;
                          idr = id;
-@@ -2115,7 +2531,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+@@ -2115,7 +2533,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
                      }
                      ggml_tensor * next = cgraph->nodes[id+1];
                      if (next->op == GGML_OP_MUL && next->src[0] == node &&
@@ -1341,7 +1387,7 @@ index fb35be3..301200c 100644
                          node = next;
                          id++;
                          idr = id;
-@@ -2180,7 +2596,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+@@ -2180,7 +2598,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
                      if (next->view_src != nullptr && next->view_src->op == GGML_OP_NONE && ggml_backend_buffer_is_host(next->view_src->buffer)) {
                          continue;
                      }
@@ -1350,7 +1396,7 @@ index fb35be3..301200c 100644
                          continue;
                      }
  
-@@ -2196,7 +2612,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+@@ -2196,7 +2614,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
                              !ggml_are_same_shape(node, other) || node->type != other->type || sum->type != node->type ||
                              !((sum->src[0] == node && sum->src[1] == other) ||
                                (sum->src[0] == other && sum->src[1] == node)) ||
@@ -1359,7 +1405,7 @@ index fb35be3..301200c 100644
                          return i_delayed;
                      }
  
-@@ -2219,11 +2635,11 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+@@ -2219,11 +2637,11 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
                  if (node->view_src != nullptr && node->view_src->op == GGML_OP_NONE && ggml_backend_buffer_is_host(node->view_src->buffer)) {
                      continue;
                  }
@@ -1374,7 +1420,7 @@ index fb35be3..301200c 100644
                  if (!new_subgraph) {
                      continue;
                  }
-@@ -2256,6 +2672,8 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+@@ -2256,6 +2674,8 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
              }
              GGML_ASSERT(i_start == cgraph->n_nodes);
          }
@@ -1383,7 +1429,7 @@ index fb35be3..301200c 100644
  
          backend_ctx->uid         = cgraph->uid;
          backend_ctx->n_subgraphs = n_subgraphs;
-@@ -2299,6 +2717,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+@@ -2299,6 +2719,7 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
              }
          }
  
@@ -1391,7 +1437,7 @@ index fb35be3..301200c 100644
          for (size_t j = 0; j < n_backends; j++) {
              auto & bcj = backend_ctx->backend_configs[j];
              for (size_t i_graph = 0; i_graph < n_subgraphs; i_graph++) {
-@@ -2319,6 +2738,9 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+@@ -2319,6 +2740,9 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
          }
      }
  
@@ -1401,7 +1447,7 @@ index fb35be3..301200c 100644
      size_t iga = 0; // i graph aux
      size_t ina = 0; // i node aux
  
-@@ -2497,6 +2919,31 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+@@ -2497,6 +2921,31 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
              }
          }
      }
@@ -1433,7 +1479,7 @@ index fb35be3..301200c 100644
      return GGML_STATUS_SUCCESS;
  }
  
-@@ -2545,3 +2992,114 @@ ggml_backend_t ggml_backend_meta_simple_backend(ggml_backend_t meta_backend, siz
+@@ -2545,3 +2994,114 @@ ggml_backend_t ggml_backend_meta_simple_backend(ggml_backend_t meta_backend, siz
      const ggml_backend_meta_context * backend_ctx = (const ggml_backend_meta_context *) meta_backend->context;
      return backend_ctx->backend_configs[index].backend;
  }
@@ -14155,7 +14201,7 @@ index 81af890..cb23593 100644
          memset(split_state.ne, 0, sizeof(split_state.ne));
          split_state.nr[0] = 1;
 diff --git a/src/models/qwen4exp.cpp b/src/models/qwen4exp.cpp
-index c3e2b01..4500860 100644
+index c3e2b01..cab0612 100644
 --- a/src/models/qwen4exp.cpp
 +++ b/src/models/qwen4exp.cpp
 @@ -190,7 +190,12 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
@@ -14284,6 +14330,49 @@ index c3e2b01..4500860 100644
 +
      return (llm_graph_input_kpool *) res->add_input(std::move(inp));
  }
+ 
+@@ -864,6 +921,27 @@ ggml_tensor * llama_model_qwen4exp::graph::build_qsa_sel(
+     // scatter the fresh pooled keys into their rep rows, then gather all n_pool of them by cell:
+     // the older pools come from the rows earlier ubatches wrote
+     ggml_build_forward_expand(gf, kpool_cache.scatter_pooled(pooled_new, inp_kpool->new_pool_rep));
++
++    // engine2n: LLAMA_QSA_SHORT=1 — while every pool fits the budget (n_pool <= top_k/kpool, i.e. up to 2048 cells here), top_k picks all
++    // of them and the selection keeps exactly the visible ones: top_k_mask only asks whether a pick's score is above -inf, and the
++    // indexer score is -inf exactly where pool_mask is. So score with pool_mask itself and skip the indexer query projection, its
++    // norm and rope, the gather of all pooled keys, the weights and the lightning indexer. The cache writes above stay (later,
++    // longer steps need them); the mask and the attention call are the same as before.
++    // =2 (check only): the indexer still runs (its score is computed and dropped), only the mask comes from pool_mask
++    static const int qsa_short = [] { const char * e = getenv("LLAMA_QSA_SHORT"); return e != nullptr ? atoi(e) : 0; }();
++    const bool qsa_all_pools = cparams.fused_top_k_mask && n_pool <= (int64_t) (hparams.indexer_top_k / kpool);
++    if (qsa_short == 1 && qsa_all_pools) {
++        const ggml_type type_mask_s = cparams.flash_attn ? GGML_TYPE_F16 : GGML_TYPE_F32;
++        ggml_tensor * vis   = ggml_cast(ctx0, inp_kpool->pool_mask, GGML_TYPE_F32); // [n_pool, n_tokens]: 0 visible, -inf not
++        ggml_tensor * top_k = ggml_top_k(ctx0, vis, n_pool);                          // all pools
++        cb(top_k, "indexer_top_k", il);
++        GGML_ASSERT(kpool*n_pool + inp_kpool->tail_idxs->ne[0] == inp_kpool->n_sel);
++        ggml_tensor * keep = ggml_fill(ctx0, ggml_new_tensor_1d(ctx0, type_mask_s, inp_kpool->n_kv), 0.0f);
++        ggml_tensor * sel  = ggml_top_k_mask(ctx0, keep, top_k, vis, inp_kpool->pool_idxs, inp_kpool->tail_idxs); // [n_kv, n_tokens]
++        res->add_fused_node({LLM_FUSED_OP_TOP_K_MASK, sel, il});
++        cb(sel, "indexer_sel", il);
++        return sel;
++    }
+     ggml_tensor * pooled = kpool_cache.gather_pooled(inp_kpool->pool_cells);
+     pooled = ggml_reshape_3d(ctx0, pooled, idx_dim, 1, n_pool);
+     cb(pooled, "indexer_k", il);
+@@ -884,6 +962,14 @@ ggml_tensor * llama_model_qwen4exp::graph::build_qsa_sel(
+     cb(score, "indexer_score", il);
+ 
+     const int64_t n_top_pool = std::min<int64_t>(n_pool, hparams.indexer_top_k / kpool);
++    if (qsa_short == 2 && qsa_all_pools) {
++        ggml_build_forward_expand(gf, score);
++        score = ggml_cast(ctx0, inp_kpool->pool_mask, GGML_TYPE_F32);
++    }
++    if (qsa_short == 3 && qsa_all_pools) {
++        // check only: the original computation plus one unused node (does the layout alone change the result?)
++        ggml_build_forward_expand(gf, ggml_cast(ctx0, inp_kpool->pool_mask, GGML_TYPE_F32));
++    }
+     ggml_tensor * top_k = ggml_top_k(ctx0, score, n_top_pool); // [n_top_pool, n_tokens], unordered
+     cb(top_k, "indexer_top_k", il);
  
 diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
 index e2c3daf..308df6a 100644

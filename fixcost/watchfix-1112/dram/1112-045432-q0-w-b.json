@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "inferwatch.dram_bytes",
+  "generator": {
+    "name": "inferwatch",
+    "version": "iw-20261110-1"
+  },
+  "session_id": "20261112-045448",
+  "node": "B",
+  "samples_file": "/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/watchfix-1112/dram/1112-045432-q0-w-b.txt",
+  "decode_steps_covered": 1409,
+  "decode_tokens": 1429,
+  "decode_time_s": 34.498,
+  "intervals": 693,
+  "gb_read_gross": 4603.644,
+  "idle_gbps": 1.402,
+  "idle_source": "--idle-bps",
+  "gb_read_net": 4555.271,
+  "gb_per_token": 3.188,
+  "gbps_during_decode": 132.0,
+  "share_of_peak": 0.551,
+  "peak_gbps": 239.7,
+  "classification": "measured (bytes), derived (per token, rate)",
+  "notes": [
+    "system-wide DRAM reads of this node (GPU and CPU), data fabric read beats x 64 B (docs/DRAM.md); the idle rate is subtracted",
+    "decode steps = the session's decode steps (client llama_decode calls); a node other than A is moved onto A's clock with the session's clock alignment"
+  ]
+}
