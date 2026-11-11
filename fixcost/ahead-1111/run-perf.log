@@ -1,0 +1,5 @@
+Terminated                 timeout 150 perf record -F 999 -g -p $P -o $O/perf-client.data -- sleep 120 > $O/perf-record.log 2>&1
+mtp pf bin=bin load A=0.59 B=0.10 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 58.92 tok/s (token-weighted) | srv-2node-mtp-bs-pf-1111-130521
+   a: n=294 gfx 2119/2394/2510 상한 2047/2561/2748 활동 66/87/94 소켓W 67/69/70 gfxW 20/28/31 코어W 7/11/23 코어상한 1586/1924/4833 fclk 1615/1638/1692 uclk 1000/1000/1000 dramR 10852/30615/56652 dramW 7151/7635/7875 
+   b: n=289 gfx 2176/2231/2264 상한 2293/2496/2900 활동 59/75/80 소켓W 65/68/70 gfxW 23/29/30 코어W 4/8/18 코어상한 1570/1931/5048 fclk 1609/1626/1669 uclk 999/1000/1000 dramR 5859/15940/57568 dramW 6121/7208/7657 
+-rw------- 1 park2 park2 8967944 Nov 11 13:07 /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/ahead-1111/perf-client.data

@@ -1,0 +1,18 @@
+mtp spt bin=bin load A=0.57 B=0.18 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 57.30 tok/s (token-weighted) | srv-2node-mtp-bs-spt-1111-131032
+   a: n=303 gfx 2046/2351/2497 상한 1843/2549/2849 활동 61/83/92 소켓W 67/69/70 gfxW 19/27/30 코어W 8/13/26 코어상한 1598/1933/4828 fclk 1612/1643/1708 uclk 1000/1000/1000 dramR 10543/29728/55736 dramW 6491/7417/7801 
+   b: n=285 gfx 2169/2227/2257 상한 2279/2489/2888 활동 57/73/80 소켓W 64/68/69 gfxW 23/28/30 코어W 4/8/18 코어상한 1571/1931/5030 fclk 1612/1635/1679 uclk 1000/1000/1000 dramR 5356/15908/59106 dramW 5908/6957/7572 
+mtp spj bin=bin load A=0.59 B=0.27 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 58.68 tok/s (token-weighted) | srv-2node-mtp-bs-spj-1111-131459
+   a: n=295 gfx 2087/2351/2476 상한 1879/2535/2713 활동 63/84/93 소켓W 67/69/70 gfxW 19/27/30 코어W 8/13/26 코어상한 1587/1925/4846 fclk 1615/1645/1711 uclk 1000/1000/1000 dramR 10448/30689/56443 dramW 6801/7560/8087 
+   b: n=289 gfx 2165/2228/2253 상한 2268/2488/2884 활동 57/74/81 소켓W 64/68/70 gfxW 22/28/30 코어W 5/8/18 코어상한 1572/1934/5048 fclk 1612/1630/1678 uclk 999/1000/1000 dramR 5445/16826/57769 dramW 5936/7083/7735 
+mtp sp bin=bin load A=0.56 B=0.14 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 56.22 tok/s (token-weighted) | srv-2node-mtp-bs-sp-1111-132011
+   a: n=307 gfx 2104/2390/2518 상한 1977/2569/2836 활동 60/83/93 소켓W 67/69/70 gfxW 19/27/30 코어W 7/13/26 코어상한 1605/1928/4841 fclk 1613/1641/1702 uclk 1000/1000/1000 dramR 9678/28414/56171 dramW 6353/7270/7720 
+   b: n=294 gfx 2077/2214/2253 상한 2205/2472/2865 활동 56/73/80 소켓W 64/68/69 gfxW 22/28/30 코어W 5/10/19 코어상한 1581/1938/5076 fclk 1611/1634/1680 uclk 999/1000/1000 dramR 4734/15405/59660 dramW 5784/6854/7502 
+== spt TOTAL tokens 1407, decode 57.30 tok/s (token-weighted)
+[graph dedup] 4291 new-uid graphs: serialize 457.5 us, again 448.4 us, hash 0.0 us (avg, 83 nodes, 31172 bytes) | probe (cpu time): hash 0.0
+[graph dedup] 5417 new-uid graphs: serialize 457.4 us, again 448.3 us, hash 0.0 us (avg, 91 nodes, 1633188 bytes) | probe (cpu time): hash 0
+== spj TOTAL tokens 1407, decode 58.68 tok/s (token-weighted)
+[graph dedup] 4658 new-uid graphs: serialize 338.5 us, again 335.5 us, hash 0.0 us (avg, 91 nodes, 1794804 bytes) | probe (cpu time): hash 0
+[graph dedup] 5998 new-uid graphs: serialize 350.8 us, again 347.1 us, hash 0.0 us (avg, 52 nodes, 1597356 bytes) | probe (cpu time): hash 0
+== sp TOTAL tokens 1407, decode 56.22 tok/s (token-weighted)
+[graph dedup] 4291 new-uid graphs: serialize 426.9 us, again 428.6 us, hash 0.0 us (avg, 83 nodes, 31172 bytes) | probe (cpu time): hash 0.0
+[graph dedup] 5326 new-uid graphs: serialize 429.1 us, again 428.3 us, hash 0.0 us (avg, 92 nodes, 699020 bytes) | probe (cpu time): hash 0.

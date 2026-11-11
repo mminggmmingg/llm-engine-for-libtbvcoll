@@ -1,0 +1,60 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 91K of event 'cpu/cycles/P'
+# Event count (approx.): 238293738174
+#
+# Overhead  Command       Shared Object                   Symbol                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+# ........  ............  ..............................  ............................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+#
+    20.39%  llama-server  llama-server                    [.] void rpc_wait<std::future<void> >(std::future<void>&)
+            |          
+            |--16.17%--void rpc_wait<std::future<void> >(std::future<void>&)
+            |          |          
+            |           --1.65%--0
+            |          
+            |--2.29%--std::future_status std::__basic_future<void>::wait_for<long, std::ratio<1l, 1l> >(std::chrono::duration<long, std::ratio<1l, 1l> > const&) const
+            |          |          
+            |           --0.57%--0
+            |          
+             --1.93%--std::__future_base::_State_baseV2::_M_is_deferred_future() const
+                       |          
+                        --0.74%--0
+
+    19.96%  llama-server  llama-server                    [.] socket_t::impl::rdma_poll(ibv_cq*, ibv_wc*)
+            |          
+            |--11.18%--usb4_rdma_poll_cq
+            |          
+             --8.52%--socket_t::impl::rdma_poll(ibv_cq*, ibv_wc*)
+
+     5.09%  llama-server  [unknown]                       [k] 0xffffffffae000080
+            |          
+             --3.58%--0xffffffffaf73baa7
+                       0xffffffffae4cf539
+                       0xffffffffae4cf5de
+                       0xffffffffae346fe2
+                       0xffffffffaf720b65
+                       0xffffffffae00012b
+                       __sched_yield
+
+     3.92%  llama-server  libusb4_rdma-rdmav59.so         [.] usb4_rdma_poll_cq
+            |          
+            |--2.08%--usb4_rdma_poll_cq
+            |          
+             --1.79%--socket_t::impl::rdma_poll(ibv_cq*, ibv_wc*)
+
+     2.33%  llama-server  [vdso]                          [.] 0x0000000000000a06
+            |          
+             --1.77%--lll_mutex_lock_optimized (inlined)
+                       pthread_mutex_lock@@GLIBC_2.2.5
+                       message_queue<std::shared_ptr<rpc_dispatcher::rpc_msg> >::try_pop(std::shared_ptr<rpc_dispatcher::rpc_msg>*)
+
+     2.13%  llama-server  llama-server                    [.] rpc_dispatcher::work()
+            |          
+            |--0.85%--0x7b7a3250da09
+            |          clock_gettime@@GLIBC_2.17
+            |          std::chrono::duration<long, std::ratio<1l, 1000000000l> > std::chrono::__duration_cast_impl<std::chrono::duration<long, std::ratio<1l, 1000000000l> >, std::ratio<1000000000l, 1l>, long, false, true>::__cast<long, std::ratio<1l, 1l> >(std::chrono::duration<long, std::ratio<1l, 1l> > const&) (inlined)
+            |          std::enable_if<std::chrono::__is_duration<std::chrono::duration<long, std::ratio<1l, 1000000000l> > >::value, std::chrono::duration<long, std::ratio<1l, 1000000000l> > >::type std::chrono::duration_cast<std::chrono::duration<long, std::ratio<1l, 1000000000l> >, long, std::ratio<1l, 1l> >(std::chrono::duration<long, std::ratio<1l, 1l> > const&) (inlined)
+            |          std::chrono::duration<long, std::ratio<1l, 1000000000l> >::duration<long, std::ratio<1l, 1l>, void>(std::chrono::duration<long, std::ratio<1l, 1l> > const&) (inlined)

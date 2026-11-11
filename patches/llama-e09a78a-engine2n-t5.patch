@@ -749,7 +749,7 @@ index 7a65d81..e3f9301 100644
      // Utils
      //
 diff --git a/ggml/src/ggml-backend-meta.cpp b/ggml/src/ggml-backend-meta.cpp
-index fb35be3..6850cc9 100644
+index fb35be3..7daf7c2 100644
 --- a/ggml/src/ggml-backend-meta.cpp
 +++ b/ggml/src/ggml-backend-meta.cpp
 @@ -16,6 +16,7 @@
@@ -831,7 +831,22 @@ index fb35be3..6850cc9 100644
  
      bool max_nnodes_raised = false;
      if (cgraph->n_nodes > backend_ctx->max_nnodes) {
-@@ -2545,3 +2596,114 @@ ggml_backend_t ggml_backend_meta_simple_backend(ggml_backend_t meta_backend, siz
+@@ -2497,6 +2548,14 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+             }
+         }
+     }
++    // engine2n GGML_RPC_SER_ASYNC: the rpc dispatcher workers serialize the new subgraphs from the objects above; let them finish
++    // before the caller can rebuild (and reuse) those objects — drains the command queues only, not the devices
++    static const bool ser_async = [] { const char * e = getenv("GGML_RPC_SER_ASYNC"); return e != nullptr && atoi(e) != 0; }();
++    if (needs_rebuild && ser_async) {
++        for (size_t j = 0; j < n_backends; j++) {
++            ggml_backend_synchronize(backend_ctx->backend_configs[j].backend);
++        }
++    }
+     return GGML_STATUS_SUCCESS;
+ }
+ 
+@@ -2545,3 +2604,114 @@ ggml_backend_t ggml_backend_meta_simple_backend(ggml_backend_t meta_backend, siz
      const ggml_backend_meta_context * backend_ctx = (const ggml_backend_meta_context *) meta_backend->context;
      return backend_ctx->backend_configs[index].backend;
  }
@@ -9858,7 +9873,7 @@ index 8e8f5a4..e20821d 100644
  #define cudaStreamFireAndForget hipStreamFireAndForget
  #define cudaStreamNonBlocking hipStreamNonBlocking
 diff --git a/ggml/src/ggml-rpc/ggml-rpc.cpp b/ggml/src/ggml-rpc/ggml-rpc.cpp
-index 8cedee7..11ecd4e 100644
+index 8cedee7..ed4d9ef 100644
 --- a/ggml/src/ggml-rpc/ggml-rpc.cpp
 +++ b/ggml/src/ggml-rpc/ggml-rpc.cpp
 @@ -6,6 +6,12 @@
@@ -10114,17 +10129,23 @@ index 8cedee7..11ecd4e 100644
  
      void start(const std::string & endpoint);
      void work();
-@@ -526,6 +725,7 @@ private:
+@@ -526,6 +725,9 @@ private:
          void                        * output;
          size_t                        output_size;
          std::promise<void>            completion;
++        const ggml_cgraph           * graph        = nullptr;  // engine2n GGML_RPC_SER_ASYNC: serialized by the worker just before sending
++        uint32_t                      graph_device = 0;
 +        int64_t                       t_queued = rpc_trace_on() ? ggml_time_us() : 0;  // GGML_RPC_TRACE_CLIENT
      };
      using rpc_msg_ptr   = std::shared_ptr<rpc_msg>;
      using rpc_msg_queue = message_queue<rpc_msg_ptr>;
-@@ -535,13 +735,86 @@ private:
+@@ -534,14 +736,90 @@ private:
+         std::shared_future<void> sf;
      };
      std::mutex graph_mutex;
++    // engine2n GGML_RPC_SER_TIME: the worker's serialize / send totals (worker thread only)
++    uint64_t n_ser = 0, n_dedup = 0;
++    int64_t  t_ser_us = 0, t_send_us = 0, t_ser_print = 0;
      std::unordered_map<uint32_t, std::unordered_set<uint64_t>> graph_uids;
 +    // engine2n: GGML_RPC_GRAPH_DEDUP=1 recomputes a graph whose serialized form equals one the server already stores under
 +    // that graph's uid instead of sending it again. A rebuild of the client graph gives every subgraph a new uid and about
@@ -10209,7 +10230,7 @@ index 8cedee7..11ecd4e 100644
  static void rpc_dispatcher_trampoline(rpc_dispatcher * dispatcher)
  {
      dispatcher->work();
-@@ -556,7 +829,7 @@ void rpc_dispatcher::send(enum rpc_cmd cmd, std::shared_ptr<const void> input, s
+@@ -556,7 +834,7 @@ void rpc_dispatcher::send(enum rpc_cmd cmd, std::shared_ptr<const void> input, s
      msg->output_size = 0;
      GGML_ASSERT(queue.push(msg));
      auto future = msg->completion.get_future();
@@ -10218,7 +10239,7 @@ index 8cedee7..11ecd4e 100644
  }
  
  void rpc_dispatcher::send_async(enum rpc_cmd cmd, std::shared_ptr<const void> input, size_t input_size) {
-@@ -578,7 +851,7 @@ void rpc_dispatcher::send(enum rpc_cmd cmd, std::shared_ptr<const void> input, s
+@@ -578,7 +856,7 @@ void rpc_dispatcher::send(enum rpc_cmd cmd, std::shared_ptr<const void> input, s
      msg->output_size = output_size;
      GGML_ASSERT(queue.push(msg));
      auto future = msg->completion.get_future();
@@ -10227,7 +10248,7 @@ index 8cedee7..11ecd4e 100644
  }
  
  void rpc_dispatcher::send_async(enum rpc_cmd cmd, std::shared_ptr<const void> input, size_t input_size, void * output, size_t output_size) {
-@@ -610,7 +883,7 @@ void rpc_dispatcher::event_free(ggml_backend_event_t event) {
+@@ -610,7 +888,7 @@ void rpc_dispatcher::event_free(ggml_backend_event_t event) {
  
  void rpc_dispatcher::event_synchronize(ggml_backend_event_t event) {
      rpc_event * ev = (rpc_event *)event->context;
@@ -10236,7 +10257,7 @@ index 8cedee7..11ecd4e 100644
  }
  
  void rpc_dispatcher::event_record(ggml_backend_event_t event) {
-@@ -626,7 +899,8 @@ void rpc_dispatcher::synchronize() {
+@@ -626,7 +904,8 @@ void rpc_dispatcher::synchronize() {
      auto msg = std::make_shared<rpc_msg>();
      msg->cmd = RPC_CMD_NONE;
      GGML_ASSERT(queue.push(msg));
@@ -10246,7 +10267,7 @@ index 8cedee7..11ecd4e 100644
  }
  
  void rpc_dispatcher::busy_spin_acquire() {
-@@ -656,18 +930,49 @@ void rpc_dispatcher::start(const std::string & endpoint) {
+@@ -656,18 +935,53 @@ void rpc_dispatcher::start(const std::string & endpoint) {
          GGML_ABORT("RPC handshake failed for %s\n", endpoint.c_str());
      }
      LOG_DBG("[%s] connected to %s\n", __func__, endpoint.c_str());
@@ -10263,6 +10284,10 @@ index 8cedee7..11ecd4e 100644
      thread = std::thread(rpc_dispatcher_trampoline, this);
  }
  
++static uint8_t * serialize_graph(uint32_t device, const ggml_cgraph * cgraph, const rpc_dispatcher * dispatcher, size_t * output_size);
++static uint64_t rpc_graph_hash(const uint8_t * p, size_t n);
++static bool rpc_graph_same(const uint8_t * a, const uint8_t * b, size_t n);
++
  void rpc_dispatcher::work() {
      auto last_cmd = std::chrono::steady_clock::now();
 +    // engine2n: no-reply commands already queued behind one go out with it in one write (one send() on TCP instead of three
@@ -10298,7 +10323,71 @@ index 8cedee7..11ecd4e 100644
              if (!queue.try_pop(&msg_ptr)) {
                  rpc_cpu_relax();
                  continue;
-@@ -680,17 +985,66 @@ void rpc_dispatcher::work() {
+@@ -675,22 +989,139 @@ void rpc_dispatcher::work() {
+         } else if (!queue.pop(&msg_ptr)) {
+             break;
+         }
++        // engine2n GGML_RPC_SER_TIME=1 (measurement): this worker's time to serialize queued graphs and to send them
++        static const bool ser_time = getenv("GGML_RPC_SER_TIME") != nullptr;
++        int64_t ser_t0 = 0;
++        bool    ser_msg = false;
++        if (msg_ptr->graph != nullptr) {
++            // engine2n GGML_RPC_SER_ASYNC: this worker serializes the graph (the client thread only queued it)
++            const int64_t ta = ser_time ? ggml_time_us() : 0;
++            size_t sz = 0;
++            uint8_t * in = serialize_graph(msg_ptr->graph_device, msg_ptr->graph, this, &sz);
++            std::shared_ptr<uint8_t> in_ptr(in, std::default_delete<uint8_t[]>());
++            msg_ptr->input      = in_ptr;
++            msg_ptr->input_size = sz;
++            // with GGML_RPC_GRAPH_DEDUP=1: a graph that is byte for byte one the server already holds (all but the uid) is sent as a
++            // GRAPH_RECOMPUTE of that one, the new uid an alias of it — the server skips setup, deserialize and first launch
++            static const bool dedup_w = [] { const char * e = getenv("GGML_RPC_GRAPH_DEDUP"); return e != nullptr && atoi(e) != 0; }();
++            const uint64_t new_uid = msg_ptr->graph->uid;
++            const uint32_t dev     = msg_ptr->graph_device;
++            const uint64_t h       = dedup_w ? rpc_graph_hash(in, sz) : 0;
++            {
++                std::lock_guard<std::mutex> lock(graph_mutex);
++                auto & by_hash = graph_by_hash[dev];
++                bool aliased = false;
++                auto range = dedup_w ? by_hash.equal_range(h) : std::make_pair(by_hash.end(), by_hash.end());
++                for (auto it = range.first; it != range.second; ++it) {
++                    const stored_bytes & sb = it->second;
++                    if (sb.size == sz && sb.uid != new_uid && graph_uids[dev].count(sb.uid) > 0 && rpc_graph_same(sb.bytes.get(), in, sz)) {
++                        graph_alias[dev][new_uid] = sb.uid;
++                        auto request = std::make_shared<rpc_msg_graph_recompute_req>();
++                        request->device = dev;
++                        request->uid    = sb.uid;
++                        msg_ptr->cmd        = RPC_CMD_GRAPH_RECOMPUTE;
++                        msg_ptr->input      = request;
++                        msg_ptr->input_size = sizeof(*request);
++                        aliased = true;
++                        n_dedup++;
++                        break;
++                    }
++                }
++                if (!aliased) {
++                    // mirrors rpc_server::graph_compute: a new uid when the store is full clears it first
++                    if (graph_uids[dev].size() >= GRAPH_CACHE_MAX) {
++                        graph_uids[dev].clear();
++                        by_hash.clear();
++                        graph_alias[dev].clear();
++                    }
++                    graph_uids[dev].insert(new_uid);
++                    if (dedup_w) {
++                        by_hash.emplace(h, stored_bytes{new_uid, in_ptr, sz});
++                    }
++                }
++            }
++            msg_ptr->graph      = nullptr;
++            if (ser_time) {
++                ser_t0  = ggml_time_us();
++                ser_msg = true;
++                t_ser_us += ser_t0 - ta;
++                n_ser++;
++            }
++        }
+         if (msg_ptr->cmd != RPC_CMD_NONE) {
+             LOG_DBG2("[%s] %s (in: %s, out: %s)\n", __func__, rpc_cmd_name(msg_ptr->cmd),
                       rpc_log_format_size(msg_ptr->input_size).c_str(), rpc_log_format_size(msg_ptr->output_size).c_str());
              const bool trace = rpc_log_debug_level() >= 3;
              const auto t0 = std::chrono::steady_clock::now();
@@ -10315,7 +10404,7 @@ index 8cedee7..11ecd4e 100644
 +                    rpc_msg_ptr next;
 +                    while (queue.try_pop(&next)) {
 +                        const size_t nb = 1 + sizeof(uint64_t) + next->input_size;
-+                        if (next->cmd == RPC_CMD_NONE || next->output != nullptr || bytes + nb > batch_max ||
++                        if (next->cmd == RPC_CMD_NONE || next->output != nullptr || next->graph != nullptr || bytes + nb > batch_max ||
 +                            (batch_set_only && next->cmd != RPC_CMD_SET_TENSOR)) {
 +                            held = std::move(next);
 +                            break;
@@ -10327,6 +10416,15 @@ index 8cedee7..11ecd4e 100644
 +                if (batch.empty()) {
 +                    bool status = send_rpc_cmd(sock, msg_ptr->cmd, msg_ptr->input.get(), msg_ptr->input_size);
 +                    RPC_STATUS_ASSERT(status);
++                    if (ser_msg) {
++                        const int64_t now = ggml_time_us();
++                        t_send_us += now - ser_t0;
++                        if (now - t_ser_print > 5000000) {
++                            t_ser_print = now;
++                            fprintf(stderr, "[rpc worker %p] %llu graphs serialized here (%llu sent as a recompute of an identical one): serialize %.1f us, send %.1f us (avg)\n", (void *) this,
++                                    (unsigned long long) n_ser, (unsigned long long) n_dedup, (double) t_ser_us / n_ser, (double) t_send_us / n_ser);
++                        }
++                    }
 +                } else {
 +                    // | cmd (1 byte) | size (8 bytes) | data | for each, as send_rpc_cmd writes them
 +                    wire.resize(bytes);
@@ -10367,7 +10465,7 @@ index 8cedee7..11ecd4e 100644
          } else {
              LOG_DBG3("[%s] sync barrier\n", __func__);
          }
-@@ -731,6 +1085,7 @@ static void ggml_backend_rpc_buffer_free_buffer(ggml_backend_buffer_t buffer) {
+@@ -731,6 +1162,7 @@ static void ggml_backend_rpc_buffer_free_buffer(ggml_backend_buffer_t buffer) {
      auto request = std::make_shared<rpc_msg_free_buffer_req>();
      request->remote_ptr = ctx->remote_ptr;
      LOG_DBG2("[%s] remote_ptr: 0x%" PRIx64 "\n", __func__, request->remote_ptr);
@@ -10375,7 +10473,7 @@ index 8cedee7..11ecd4e 100644
      ctx->dispatcher->send(RPC_CMD_FREE_BUFFER, request, sizeof(*request));
      delete ctx;
  }
-@@ -872,6 +1227,17 @@ static void ggml_backend_rpc_buffer_set_tensor(ggml_backend_buffer_t buffer, ggm
+@@ -872,6 +1304,17 @@ static void ggml_backend_rpc_buffer_set_tensor(ggml_backend_buffer_t buffer, ggm
      }
      size_t input_size;
      auto input = serialize_set_tensor(rpc_tensor, cache_flag, offset, data, size, input_size);
@@ -10393,7 +10491,7 @@ index 8cedee7..11ecd4e 100644
      ctx->dispatcher->send(RPC_CMD_SET_TENSOR, input, input_size);
  }
  
-@@ -919,6 +1285,21 @@ static void ggml_backend_rpc_buffer_get_tensor_2d(ggml_backend_buffer_t buffer,
+@@ -919,6 +1362,21 @@ static void ggml_backend_rpc_buffer_get_tensor_2d(ggml_backend_buffer_t buffer,
      }
  }
  
@@ -10415,7 +10513,156 @@ index 8cedee7..11ecd4e 100644
  static void ggml_backend_rpc_buffer_get_tensor(ggml_backend_buffer_t buffer, const ggml_tensor * tensor, void * data, size_t offset, size_t size) {
      ggml_backend_rpc_buffer_context * ctx = (ggml_backend_rpc_buffer_context *)buffer->context;
      LOG_DBG2("[%s] tensor: %s, offset: %zu, size: %s\n", __func__, rpc_log_format_tensor(tensor).c_str(), offset,
-@@ -1212,6 +1593,34 @@ static void add_tensor(ggml_tensor * tensor, const ggml_cgraph * cgraph, const r
+@@ -1192,14 +1650,145 @@ static void ggml_backend_rpc_synchronize(ggml_backend_t backend) {
+     rpc_ctx->dispatcher->synchronize();
+ }
+ 
+-static void add_tensor(ggml_tensor * tensor, const ggml_cgraph * cgraph, const rpc_dispatcher * dispatcher, std::vector<rpc_tensor> & tensors, std::unordered_set<ggml_tensor*> & visited) {
++// engine2n: open-addressing pointer set for add_tensor (reused per thread: no allocation per tensor while serializing a graph)
++struct rpc_ptr_set {
++    std::vector<const void *> slots;
++    size_t mask  = 0;
++    size_t count = 0;
++    // n_expected is only a first size: add_tensor follows sources upstream of the subgraph too, so the set grows when half full
++    void reset(size_t n_expected) {
++        size_t cap = 64;
++        while (cap < 2*n_expected) {
++            cap <<= 1;
++        }
++        if (slots.size() < cap) {
++            slots.assign(cap, nullptr);
++        } else {
++            std::fill(slots.begin(), slots.end(), nullptr);
++        }
++        mask  = slots.size() - 1;
++        count = 0;
++    }
++    static size_t hash(const void * p) {
++        return (size_t) (((uintptr_t) p >> 4) * 0x9e3779b97f4a7c15ull);
++    }
++    void grow() {
++        std::vector<const void *> old;
++        old.swap(slots);
++        slots.assign(old.size()*2, nullptr);
++        mask = slots.size() - 1;
++        for (const void * q : old) {
++            if (q != nullptr) {
++                size_t h = hash(q) & mask;
++                while (slots[h] != nullptr) {
++                    h = (h + 1) & mask;
++                }
++                slots[h] = q;
++            }
++        }
++    }
++    // true if p was not in the set (and is now)
++    bool insert(const void * p) {
++        if (2*(count + 1) > slots.size()) {
++            grow();
++        }
++        size_t h = hash(p) & mask;
++        while (slots[h] != nullptr) {
++            if (slots[h] == p) {
++                return false;
++            }
++            h = (h + 1) & mask;
++        }
++        slots[h] = p;
++        count++;
++        return true;
++    }
++};
++
++// engine2n: open-addressing map from a nonzero 64-bit id to a value, reused per thread by the server's graph_compute (no allocation
++// per tensor while deserializing a new graph — the unordered_maps there cost about as much as the rest, 11-11). Key 0 = empty.
++template <typename V>
++struct rpc_id_map {
++    std::vector<uint64_t> keys;
++    std::vector<V>        vals;
++    size_t mask  = 0;
++    size_t count = 0;
++    void reset(size_t n_expected) {
++        size_t cap = 64;
++        while (cap < 2*n_expected) {
++            cap <<= 1;
++        }
++        if (keys.size() < cap) {
++            keys.assign(cap, 0);
++            vals.assign(cap, V());
++        } else {
++            std::fill(keys.begin(), keys.end(), 0);
++        }
++        mask  = keys.size() - 1;
++        count = 0;
++    }
++    static size_t hash(uint64_t k) {
++        return (size_t) ((k >> 4) * 0x9e3779b97f4a7c15ull);
++    }
++    V * find(uint64_t k) {
++        if (k == 0) {
++            return nullptr;
++        }
++        size_t h = hash(k) & mask;
++        while (keys[h] != 0) {
++            if (keys[h] == k) {
++                return &vals[h];
++            }
++            h = (h + 1) & mask;
++        }
++        return nullptr;
++    }
++    // keeps an existing value (like unordered_map::emplace); returns the stored one
++    V & insert(uint64_t k, V v) {
++        GGML_ASSERT(k != 0);
++        if (2*(count + 1) > keys.size()) {
++            grow();
++        }
++        size_t h = hash(k) & mask;
++        while (keys[h] != 0) {
++            if (keys[h] == k) {
++                return vals[h];
++            }
++            h = (h + 1) & mask;
++        }
++        keys[h] = k;
++        vals[h] = v;
++        count++;
++        return vals[h];
++    }
++    void grow() {
++        std::vector<uint64_t> ok;
++        std::vector<V>        ov;
++        ok.swap(keys);
++        ov.swap(vals);
++        keys.assign(ok.size()*2, 0);
++        vals.assign(ok.size()*2, V());
++        mask = keys.size() - 1;
++        for (size_t i = 0; i < ok.size(); i++) {
++            if (ok[i] != 0) {
++                size_t h = hash(ok[i]) & mask;
++                while (keys[h] != 0) {
++                    h = (h + 1) & mask;
++                }
++                keys[h] = ok[i];
++                vals[h] = ov[i];
++            }
++        }
++    }
++};
++
++static void add_tensor(ggml_tensor * tensor, const ggml_cgraph * cgraph, const rpc_dispatcher * dispatcher, std::vector<rpc_tensor> & tensors, rpc_ptr_set & visited) {
+     if (tensor == nullptr) {
+         return;
+     }
+-    if (visited.find(tensor) != visited.end()) {
++    if (!visited.insert(tensor)) {
+         return;
+     }
+-    visited.insert(tensor);
+     for (int i = 0; i < GGML_MAX_SRC; i++) {
+         add_tensor(tensor->src[i], cgraph, dispatcher, tensors, visited);
+     }
+@@ -1212,10 +1801,41 @@ static void add_tensor(ggml_tensor * tensor, const ggml_cgraph * cgraph, const r
      tensors.push_back(result);
  }
  
@@ -10449,8 +10696,17 @@ index 8cedee7..11ecd4e 100644
 +
  static uint8_t * serialize_graph(uint32_t device, const ggml_cgraph * cgraph, const rpc_dispatcher * dispatcher, size_t * output_size) {
      uint32_t n_nodes = cgraph->n_nodes;
-     std::vector<rpc_tensor> tensors;
-@@ -1246,26 +1655,123 @@ void rpc_dispatcher::graph_compute(uint32_t device, const ggml_cgraph * cgraph)
+-    std::vector<rpc_tensor> tensors;
+-    std::unordered_set<ggml_tensor*> visited;
++    // engine2n: reused per thread (the dispatcher workers serialize too, GGML_RPC_SER_ASYNC)
++    thread_local std::vector<rpc_tensor> tensors;
++    thread_local rpc_ptr_set visited;
++    tensors.clear();
++    visited.reset((size_t) n_nodes*(GGML_MAX_SRC + 2));
+     for (uint32_t i = 0; i < n_nodes; i++) {
+         add_tensor(cgraph->nodes[i], cgraph, dispatcher, tensors, visited);
+     }
+@@ -1246,26 +1866,150 @@ void rpc_dispatcher::graph_compute(uint32_t device, const ggml_cgraph * cgraph)
      std::lock_guard<std::mutex> lock(graph_mutex);
      GGML_ASSERT(cgraph->n_nodes > 0);
      auto & device_graph_uids = graph_uids[device];
@@ -10473,6 +10729,25 @@ index 8cedee7..11ecd4e 100644
 +        request->uid    = stored_uid;
          send_async(RPC_CMD_GRAPH_RECOMPUTE, request, sizeof(*request));
 +    };
++    // engine2n: GGML_RPC_SER_ASYNC=1 — a graph with a new uid is queued as is and this endpoint's dispatcher worker serializes it
++    // just before sending, so the two servers' graphs are serialized at the same time and not on the client thread. Only graphs
++    // with a uid (the meta backend's subgraphs, which stay as they are until its next rebuild; the meta backend synchronizes the
++    // rpc backends at the end of a rebuilding call, GGML_RPC_SER_ASYNC there too)
++    static const bool ser_async = [] { const char * e = getenv("GGML_RPC_SER_ASYNC"); return e != nullptr && atoi(e) != 0; }();
++    if (!reuse && ser_async && cgraph->uid != 0 && getenv("GGML_RPC_DEDUP_TIME") == nullptr) {
++        // the uid is recorded by the worker when it really sends this graph (an alias of an identical one is not stored by the
++        // server, and the client's record must count exactly what the server stores: both clear at GRAPH_CACHE_MAX)
++        auto msg = std::make_shared<rpc_msg>();
++        msg->cmd          = RPC_CMD_GRAPH_COMPUTE;
++        msg->input        = nullptr;
++        msg->input_size   = 0;
++        msg->output       = nullptr;
++        msg->output_size  = 0;
++        msg->graph        = cgraph;
++        msg->graph_device = device;
++        GGML_ASSERT(queue.push(msg));
++        return;
++    }
 +    if (reuse) {
 +        recompute(uid);
      } else {
@@ -10491,7 +10766,7 @@ index 8cedee7..11ecd4e 100644
 +        if (time_dbg) {
 +            // client cost of a graph with a new uid (rebuilt steps are bound by it, see RESULTS 11-04); with
 +            // GGML_RPC_DEDUP_TIME=2 also: the same hash timed by thread CPU time, and over a fresh heap and a fresh mmap buffer
-+            static int64_t t_ser = 0, t_hash = 0;
++            static int64_t t_ser = 0, t_hash = 0, t_ser2 = 0;
 +            static double  t_cpu = 0, t_heap = 0, t_mmap = 0, t_reg = 0;
 +            static uint64_t n = 0;
 +            static int64_t t_last = 0;
@@ -10499,6 +10774,14 @@ index 8cedee7..11ecd4e 100644
 +            t_ser += ts1 - ts0;
 +            t_hash += ts2 - ts1;
 +            n++;
++            {
++                // the same serialization again right away (its data now in cache): memory-bound or CPU-bound? (11-11)
++                size_t sz2 = 0;
++                const int64_t ta = ggml_time_us();
++                uint8_t * again = serialize_graph(device, cgraph, this, &sz2);
++                t_ser2 += ggml_time_us() - ta;
++                delete[] again;
++            }
 +            static const bool probe = atoi(getenv("GGML_RPC_DEDUP_TIME")) >= 2;
 +            if (probe) {
 +                auto cpu_us = [] {
@@ -10541,9 +10824,9 @@ index 8cedee7..11ecd4e 100644
 +            }
 +            if (ts2 - t_last > 5000000) {
 +                t_last = ts2;
-+                fprintf(stderr, "[graph dedup] %llu new-uid graphs: serialize %.1f us, hash %.1f us (avg, %u nodes, %zu bytes)"
++                fprintf(stderr, "[graph dedup] %llu new-uid graphs: serialize %.1f us, again %.1f us, hash %.1f us (avg, %u nodes, %zu bytes)"
 +                        " | probe (cpu time): hash %.1f us, fresh heap %.1f us, fresh mmap %.1f us, registers only %.1f us\n",
-+                        (unsigned long long) n, (double) t_ser / n, (double) t_hash / n, cgraph->n_nodes, input_size,
++                        (unsigned long long) n, (double) t_ser / n, (double) t_ser2 / n, (double) t_hash / n, cgraph->n_nodes, input_size,
 +                        t_cpu / n, t_heap / n, t_mmap / n, t_reg / n);
 +            }
 +        }
@@ -10581,7 +10864,7 @@ index 8cedee7..11ecd4e 100644
          send_async(RPC_CMD_GRAPH_COMPUTE, input_ptr, input_size);
      }
  }
-@@ -1388,6 +1894,270 @@ void ggml_backend_rpc_get_device_memory(const char * endpoint, uint32_t device,
+@@ -1388,6 +2132,270 @@ void ggml_backend_rpc_get_device_memory(const char * endpoint, uint32_t device,
  
  // RPC server-side implementation
  
@@ -10852,7 +11135,7 @@ index 8cedee7..11ecd4e 100644
  class rpc_server {
  public:
      rpc_server(std::vector<ggml_backend_t> all_backends, const char * cache_dir)
-@@ -1410,11 +2180,14 @@ public:
+@@ -1410,11 +2418,14 @@ public:
      bool set_tensor_hash(const rpc_msg_set_tensor_hash_req & request, rpc_msg_set_tensor_hash_rsp & response);
      bool get_tensor(const rpc_msg_get_tensor_req & request, std::vector<uint8_t> & response);
      bool get_tensor_2d(const rpc_msg_get_tensor_2d_req & request, std::vector<uint8_t> & response);
@@ -10867,7 +11150,7 @@ index 8cedee7..11ecd4e 100644
      bool comm_free(const rpc_msg_comm_free_req & request);
      bool init_tensor(const rpc_msg_init_tensor_req & request);
      bool get_alloc_size(const rpc_msg_get_alloc_size_req & request, rpc_msg_get_alloc_size_rsp & response);
-@@ -1427,6 +2200,7 @@ public:
+@@ -1427,28 +2438,58 @@ public:
  
  private:
      void sync_all_backends();
@@ -10875,7 +11158,13 @@ index 8cedee7..11ecd4e 100644
      bool get_cached_file(uint64_t hash, std::vector<uint8_t> & data);
      ggml_tensor * deserialize_tensor(struct ggml_context * ctx, const rpc_tensor * tensor);
      ggml_tensor * create_node(uint64_t id,
-@@ -1438,17 +2212,46 @@ private:
+                               struct ggml_context * ctx,
+-                              const std::unordered_map<uint64_t, const rpc_tensor*> & tensor_ptrs,
+-                              std::unordered_map<uint64_t, struct ggml_tensor*> & tensor_map);
++                              rpc_id_map<const rpc_tensor *> & tensor_ptrs,
++                              rpc_id_map<ggml_tensor *> & tensor_map);
+ 
+ 
      // pairwise allreduce over a direct connection to the peer server
      struct comm_state {
          socket_ptr              peer;
@@ -10922,7 +11211,7 @@ index 8cedee7..11ecd4e 100644
      // computed graphs cached per backend, keyed by uid
      std::vector<std::unordered_map<uint64_t, stored_graph>> stored_graphs;
      std::vector<comm_state> comm_states;
-@@ -1698,8 +2501,54 @@ ggml_tensor * rpc_server::deserialize_tensor(struct ggml_context * ctx, const rp
+@@ -1698,8 +2739,54 @@ ggml_tensor * rpc_server::deserialize_tensor(struct ggml_context * ctx, const rp
  }
  
  
@@ -10978,7 +11267,7 @@ index 8cedee7..11ecd4e 100644
      // serialization format: | rpc_tensor | cache_flag (1 byte) | offset (8 bytes) | data (size bytes) |
      uint8_t  cache_flag;
      uint64_t offset;
-@@ -1752,6 +2601,10 @@ bool rpc_server::set_tensor(const std::vector<uint8_t> & input) {
+@@ -1752,6 +2839,10 @@ bool rpc_server::set_tensor(const std::vector<uint8_t> & input) {
          ofs.write((const char *)data, size);
          LOG_INFO("[%s] saved to '%s'\n", __func__, cache_file.string().c_str());
      }
@@ -10989,7 +11278,7 @@ index 8cedee7..11ecd4e 100644
      ggml_backend_tensor_set(tensor, data, offset, size);
      return true;
  }
-@@ -1772,6 +2625,7 @@ bool rpc_server::set_tensor_2d(const std::vector<uint8_t> & input) {
+@@ -1772,6 +2863,7 @@ bool rpc_server::set_tensor_2d(const std::vector<uint8_t> & input) {
  
      const uint64_t data_size = input.size() - sizeof(rpc_tensor) - 4*sizeof(uint64_t);
      if (n_copies == 0 || size == 0 || size > data_size / n_copies || size * n_copies != data_size) {
@@ -10997,7 +11286,7 @@ index 8cedee7..11ecd4e 100644
          return false;
      }
  
-@@ -2009,6 +2863,45 @@ bool rpc_server::get_tensor_2d(const rpc_msg_get_tensor_2d_req & request, std::v
+@@ -2009,6 +3101,45 @@ bool rpc_server::get_tensor_2d(const rpc_msg_get_tensor_2d_req & request, std::v
      return true;
  }
  
@@ -11043,7 +11332,41 @@ index 8cedee7..11ecd4e 100644
  bool rpc_server::copy_tensor(const rpc_msg_copy_tensor_req & request, rpc_msg_copy_tensor_rsp & response) {
      sync_all_backends();
      struct ggml_init_params params {
-@@ -2107,6 +3000,7 @@ ggml_tensor * rpc_server::create_node(uint64_t id,
+@@ -2052,17 +3183,17 @@ bool rpc_server::copy_tensor(const rpc_msg_copy_tensor_req & request, rpc_msg_co
+ 
+ ggml_tensor * rpc_server::create_node(uint64_t id,
+                                       struct ggml_context * ctx,
+-                                      const std::unordered_map<uint64_t, const rpc_tensor*> & tensor_ptrs,
+-                                      std::unordered_map<uint64_t, struct ggml_tensor*> & tensor_map) {
+-    if (tensor_map.find(id) != tensor_map.end()) {
+-        return tensor_map[id];
++                                      rpc_id_map<const rpc_tensor *> & tensor_ptrs,
++                                      rpc_id_map<ggml_tensor *> & tensor_map) {
++    if (ggml_tensor ** found = tensor_map.find(id)) {
++        return *found;
+     }
+     // Safely find the tensor pointer
+-    auto it_ptr = tensor_ptrs.find(id);
+-    if (it_ptr == tensor_ptrs.end()) {
++    const rpc_tensor * const * it_ptr = tensor_ptrs.find(id);
++    if (it_ptr == nullptr) {
+         return nullptr;
+     }
+-    const rpc_tensor * tensor = it_ptr->second;
++    const rpc_tensor * tensor = *it_ptr;
+ 
+     struct ggml_tensor * result = deserialize_tensor(ctx, tensor);
+     if (result == nullptr) {
+@@ -2072,7 +3203,7 @@ ggml_tensor * rpc_server::create_node(uint64_t id,
+         LOG_ERROR("[%s] invalid data ptr\n", __func__);
+         return nullptr;
+     }
+-    tensor_map[id] = result;
++    tensor_map.insert(id, result);
+     for (int i = 0; i < GGML_MAX_SRC; i++) {
+         // Check if the source ID is 0 before calling create_node recursively
+         if (tensor->src[i] == 0) {
+@@ -2107,6 +3238,7 @@ ggml_tensor * rpc_server::create_node(uint64_t id,
  }
  
  bool rpc_server::graph_compute(const std::vector<uint8_t> & input) {
@@ -11051,7 +11374,35 @@ index 8cedee7..11ecd4e 100644
      // serialization format:
      // | device (4 bytes) | uid (8 bytes) | n_nodes (4 bytes) | nodes (n_nodes * sizeof(uint64_t) | n_tensors (4 bytes) | tensors (n_tensors * sizeof(rpc_tensor)) |
      if (input.size() < 2*sizeof(uint32_t) + sizeof(uint64_t)) {
-@@ -2191,10 +3085,33 @@ bool rpc_server::graph_compute(const std::vector<uint8_t> & input) {
+@@ -2162,13 +3294,16 @@ bool rpc_server::graph_compute(const std::vector<uint8_t> & input) {
+     ggml_context * ctx = ctx_ptr.get();
+     struct ggml_cgraph * graph = ggml_new_graph_custom(ctx, n_nodes, false);
+     graph->n_nodes = n_nodes;
+-    std::unordered_map<uint64_t, const rpc_tensor*> tensor_ptrs;
+-    tensor_ptrs.reserve(n_tensors);
++    // engine2n: reused per thread, no allocation per tensor (rpc_id_map)
++    thread_local rpc_id_map<const rpc_tensor *> tensor_ptrs;
++    thread_local rpc_id_map<ggml_tensor *>      tensor_map;
++    tensor_ptrs.reset(n_tensors);
+     for (uint32_t i = 0; i < n_tensors; i++) {
+-        tensor_ptrs.emplace(tensors[i].id, &tensors[i]);
++        if (tensors[i].id != 0) {
++            tensor_ptrs.insert(tensors[i].id, &tensors[i]);
++        }
+     }
+-    std::unordered_map<uint64_t, ggml_tensor*> tensor_map;
+-    tensor_map.reserve(n_nodes);
++    tensor_map.reset(n_tensors);
+     // the compute itself is asynchronous, so building the graph is the only server-side cost
+     // observable here - the round trip is timed on the client
+     const auto t_deserialize = std::chrono::steady_clock::now();
+@@ -2186,15 +3321,38 @@ bool rpc_server::graph_compute(const std::vector<uint8_t> & input) {
+         if (graph->nodes[i] != nullptr) {
+             LOG_DBG3("[%s] node %u: id=%" PRId64 ", %s\n", __func__, i, id, rpc_log_format_tensor(graph->nodes[i]).c_str());
+             const size_t hash_pos = ggml_hash_insert(&graph->visited_hash_set, graph->nodes[i]);
+-            graph->use_counts[hash_pos] = tensor_ptrs.at(id)->use_count;
++            graph->use_counts[hash_pos] = (*tensor_ptrs.find(id))->use_count;
+         }
      }
      const std::chrono::duration<double, std::milli> deserialize_ms = std::chrono::steady_clock::now() - t_deserialize;
  
@@ -11085,7 +11436,7 @@ index 8cedee7..11ecd4e 100644
      return true;
  }
  
-@@ -2236,6 +3153,17 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
+@@ -2236,6 +3394,17 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
      }
      uint8_t local_caps[RPC_CONN_CAPS_SIZE] = {};
      uint8_t remote_caps[RPC_CONN_CAPS_SIZE] = {};
@@ -11103,7 +11454,7 @@ index 8cedee7..11ecd4e 100644
      if (request.rank == 0) {
          socket_ptr srv = socket_t::create_server("0.0.0.0", request.port);
          if (srv == nullptr) {
-@@ -2277,6 +3205,93 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
+@@ -2277,6 +3446,93 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
          }
          state.peer->update_caps(remote_caps);
      }
@@ -11197,7 +11548,7 @@ index 8cedee7..11ecd4e 100644
      state.rank  = request.rank;
      state.world = request.world;
      LOG_INFO("[%s] device %u joined pairwise comm as rank %u\n", __func__, request.device, request.rank);
-@@ -2284,6 +3299,109 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
+@@ -2284,6 +3540,109 @@ bool rpc_server::comm_init(const rpc_msg_comm_init_req & request, rpc_msg_comm_i
      return true;
  }
  
@@ -11307,7 +11658,7 @@ index 8cedee7..11ecd4e 100644
  bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
      if (request.device >= backends.size()) {
          return false;
-@@ -2294,6 +3412,12 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2294,6 +3653,12 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
          return false;
      }
      ggml_backend_t backend = backends[request.device];
@@ -11320,7 +11671,7 @@ index 8cedee7..11ecd4e 100644
  
      size_t ctx_size = 16*ggml_tensor_overhead() + 2*ggml_graph_overhead_custom(8, false);
      struct ggml_init_params params = {
-@@ -2316,16 +3440,43 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2316,16 +3681,43 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
      }
      // reduce large partials in bf16 to halve the wire bytes; small (decode-sized) ones
      // stay f32 since the extra casts and sync cost more than the bytes saved
@@ -11367,7 +11718,7 @@ index 8cedee7..11ecd4e 100644
  
      auto new_scratch_tensor = [&](ggml_type type, size_t offset) {
          ggml_tensor * t = ggml_new_tensor_4d(ctx, type, t_dst->ne[0], t_dst->ne[1], t_dst->ne[2], t_dst->ne[3]);
-@@ -2352,41 +3503,377 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2352,41 +3744,377 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
          GGML_ASSERT(status == GGML_STATUS_SUCCESS && "Unsuccessful graph computations are not supported with RPC");
      };
  
@@ -11760,7 +12111,7 @@ index 8cedee7..11ecd4e 100644
      }
  
      ggml_tensor * t_red = ggml_new_tensor_4d(ctx, t_dst->type, t_dst->ne[0], t_dst->ne[1], t_dst->ne[2], t_dst->ne[3]);
-@@ -2402,6 +3889,40 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
+@@ -2402,6 +4130,40 @@ bool rpc_server::comm_allreduce(const rpc_msg_comm_allreduce_req & request) {
      } else {
          compute_nodes(t_red, nullptr);
      }
@@ -11801,7 +12152,7 @@ index 8cedee7..11ecd4e 100644
      return true;
  }
  
-@@ -2409,6 +3930,15 @@ bool rpc_server::comm_free(const rpc_msg_comm_free_req & request) {
+@@ -2409,6 +4171,15 @@ bool rpc_server::comm_free(const rpc_msg_comm_free_req & request) {
      if (request.device >= backends.size()) {
          return false;
      }
@@ -11817,7 +12168,7 @@ index 8cedee7..11ecd4e 100644
      comm_states[request.device] = comm_state();
      return true;
  }
-@@ -2474,10 +4004,34 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+@@ -2474,10 +4245,34 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
      // Activate transport upgrade using client's caps
      sock->update_caps(req.conn_caps);
      LOG_DBG("[%s] client connected, transport: %s\n", __func__, sock->transport_name());
@@ -11852,7 +12203,7 @@ index 8cedee7..11ecd4e 100644
          if (cmd >= RPC_CMD_COUNT) {
              // fail fast if the command is invalid
              LOG_ERROR("Unknown command: %d\n", cmd);
-@@ -2613,6 +4167,7 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+@@ -2613,6 +4408,7 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
              case RPC_CMD_SET_TENSOR_2D: {
                  std::vector<uint8_t> input;
                  if (!recv_msg(sock, input)) {
@@ -11860,7 +12211,7 @@ index 8cedee7..11ecd4e 100644
                      return;
                  }
                  if (!server.set_tensor_2d(input)) {
-@@ -2634,6 +4189,20 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+@@ -2634,6 +4430,20 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
                  }
                  break;
              }
@@ -11881,7 +12232,7 @@ index 8cedee7..11ecd4e 100644
              case RPC_CMD_SET_TENSOR_HASH: {
                  rpc_msg_set_tensor_hash_req request;
                  if (!recv_msg(sock, &request, sizeof(request))) {
-@@ -2701,9 +4270,14 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
+@@ -2701,9 +4511,14 @@ static void rpc_serve_client(const std::vector<ggml_backend_t> & backends, const
                  if (!recv_msg(sock, &request, sizeof(request))) {
                      return;
                  }
@@ -11896,7 +12247,7 @@ index 8cedee7..11ecd4e 100644
                  break;
              }
              case RPC_CMD_COMM_INIT: {
-@@ -2812,6 +4386,7 @@ void ggml_backend_rpc_start_server(const char * endpoint, const char * cache_dir
+@@ -2812,6 +4627,7 @@ void ggml_backend_rpc_start_server(const char * endpoint, const char * cache_dir
          LOG_ERROR("Failed to initialize RPC transport\n");
          return;
      }
@@ -11904,7 +12255,7 @@ index 8cedee7..11ecd4e 100644
      auto server_socket = socket_t::create_server(host.c_str(), port);
      if (server_socket == nullptr) {
          LOG_ERROR("Failed to create server socket\n");
-@@ -3102,6 +4677,9 @@ static void * ggml_backend_rpc_get_proc_address(ggml_backend_reg_t reg, const ch
+@@ -3102,6 +4918,9 @@ static void * ggml_backend_rpc_get_proc_address(ggml_backend_reg_t reg, const ch
      if (std::strcmp(name, "ggml_backend_rpc_add_server") == 0) {
          return (void *)ggml_backend_rpc_add_server;
      }
@@ -11914,7 +12265,7 @@ index 8cedee7..11ecd4e 100644
      if (std::strcmp(name, "ggml_backend_rpc_start_server") == 0) {
          return (void *)ggml_backend_rpc_start_server;
      }
-@@ -3114,6 +4692,9 @@ static void * ggml_backend_rpc_get_proc_address(ggml_backend_reg_t reg, const ch
+@@ -3114,6 +4933,9 @@ static void * ggml_backend_rpc_get_proc_address(ggml_backend_reg_t reg, const ch
      if (std::strcmp(name, "ggml_backend_comm_allreduce_tensor") == 0) {
          return (void *)ggml_backend_rpc_comm_allreduce_tensor;
      }
@@ -12249,10 +12600,19 @@ index ae54e66..c878a06 100644
      // when pooling_type == LLAMA_POOLING_TYPE_NONE or when using a generative model,
      // the embeddings for which llama_batch.logits[i] != 0 are stored contiguously
 diff --git a/src/llama-context.cpp b/src/llama-context.cpp
-index 33ad784..bd8c230 100644
+index 33ad784..a245802 100644
 --- a/src/llama-context.cpp
 +++ b/src/llama-context.cpp
-@@ -587,6 +587,11 @@ llama_context::~llama_context() {
+@@ -15,6 +15,8 @@
+ #include "llama.h"
+ 
+ #include <cinttypes>
++#include <atomic>
++#include <sched.h>
+ #include <cmath>
+ #include <cstring>
+ #include <limits>
+@@ -587,6 +589,11 @@ llama_context::~llama_context() {
      // wait for any pending asynchronous copies into the output buffers before they are freed
      synchronize();
  
@@ -12264,7 +12624,7 @@ index 33ad784..bd8c230 100644
      // when training, ggml_opt allocates extra buffers through the scheduler, so the sizes no longer match the expectation
      if (!model.no_alloc() && !opt_ctx) {
          for (size_t i = 0; i < backend_ptrs.size(); ++i) {
-@@ -885,12 +890,39 @@ void llama_context::sched_reserve() {
+@@ -885,12 +892,39 @@ void llama_context::sched_reserve() {
              __func__, (t_end_us - t_start_us)/1000.0, ggml_backend_sched_get_n_copies(sched.get()));
  }
  
@@ -12304,7 +12664,7 @@ index 33ad784..bd8c230 100644
  
      // FIXME: if multiple single tokens are evaluated without a synchronization,
      // the stats will be added to the prompt evaluation stats
-@@ -1028,11 +1060,50 @@ enum llama_pooling_type llama_context::pooling_type() const {
+@@ -1028,11 +1062,50 @@ enum llama_pooling_type llama_context::pooling_type() const {
  }
  
  float * llama_context::get_logits() {
@@ -12355,7 +12715,7 @@ index 33ad784..bd8c230 100644
  int64_t llama_context::output_resolve_row(int32_t i) const {
      int64_t j = -1;
  
-@@ -1063,6 +1134,7 @@ int64_t llama_context::output_resolve_row(int32_t i) const {
+@@ -1063,6 +1136,7 @@ int64_t llama_context::output_resolve_row(int32_t i) const {
  }
  
  float * llama_context::get_logits_ith(int32_t i) {
@@ -12363,7 +12723,7 @@ index 33ad784..bd8c230 100644
      output_reorder();
  
      try {
-@@ -1523,6 +1595,9 @@ bool llama_context::set_adapter_cvec(
+@@ -1523,6 +1597,9 @@ bool llama_context::set_adapter_cvec(
  }
  
  llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, llm_graph_type gtype, llama_memory_context_i * mctx, ggml_status & ret) {
@@ -12373,7 +12733,7 @@ index 33ad784..bd8c230 100644
      if (mctx && !mctx->apply()) {
          LLAMA_LOG_ERROR("%s: failed to apply memory context\n", __func__);
          ret = GGML_STATUS_FAILED;
-@@ -1547,6 +1622,7 @@ llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, ll
+@@ -1547,6 +1624,7 @@ llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, ll
          }
  
          n_reused++;
@@ -12381,7 +12741,7 @@ index 33ad784..bd8c230 100644
      } else {
          gf_res_prev_active = nullptr;
          res->reset();
-@@ -1578,14 +1654,20 @@ llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, ll
+@@ -1578,14 +1656,20 @@ llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, ll
      // set the input data for the input tensors
      {
          //const auto t_start_us = ggml_time_us();
@@ -12402,7 +12762,51 @@ index 33ad784..bd8c230 100644
      if (status != GGML_STATUS_SUCCESS) {
          LLAMA_LOG_ERROR("%s: failed to compute graph, compute status: %d\n", __func__, status);
          ret = status;
-@@ -1934,12 +2016,14 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
+@@ -1840,7 +1924,43 @@ static bool needs_raw_logits(const llama_ubatch & ubatch, const std::map<llama_s
+     return false; // all sequences use backend sampling
+ }
+ 
++// engine2n: LLAMA_CPU_PROBE=N (measurement only) — every N-th decode of any context, before the decode: the cost of a clock call,
++// and one register-only loop of 20000 steps timed by the TSC and by the clock, printed to stderr. For the 11-04 question of why
++// client CPU work inside llama-server measured ~40x slower than standalone (RESULTS 11-04 "client slowness").
++static void llama_cpu_probe() {
++    static const int every = [] { const char * e = getenv("LLAMA_CPU_PROBE"); return e ? atoi(e) : 0; }();
++    if (every <= 0) {
++        return;
++    }
++    static std::atomic<uint64_t> n_calls{0};
++    if (n_calls.fetch_add(1) % (uint64_t) every != 0) {
++        return;
++    }
++#if defined(__x86_64__)
++    const int64_t c0 = ggml_time_us();
++    int64_t c1 = c0;
++    for (int k = 0; k < 1000; k++) {
++        c1 = ggml_time_us();
++    }
++    const double clock_ns = (c1 - c0) * 1000.0 / 1000.0;  // per call
++    uint64_t x = (uint64_t) c1;
++    const int64_t  w0 = ggml_time_us();
++    const uint64_t r0 = __builtin_ia32_rdtsc();
++    for (int k = 0; k < 20000; k++) {
++        x = x * 6364136223846793005ULL + 1442695040888963407ULL;
++        x ^= x >> 29;
++        asm volatile("" : "+r"(x));
++    }
++    const uint64_t r1 = __builtin_ia32_rdtsc();
++    const int64_t  w1 = ggml_time_us();
++    fprintf(stderr, "cpu_probe: decode %llu: clock call %.0f ns, loop 20000 steps %lld us (%llu TSC ticks), cpu %d%s\n",
++            (unsigned long long) n_calls.load(), clock_ns, (long long) (w1 - w0), (unsigned long long) (r1 - r0), sched_getcpu(),
++            x == 42 ? "!" : "");
++#endif
++}
++
+ int llama_context::decode(const llama_batch_ext & batch_inp) {
++    llama_cpu_probe();
+     if (!memory) {
+         LLAMA_LOG_DEBUG("%s: cannot decode batches with this context (calling encode() instead)\n", __func__);
+         return encode(batch_inp);
+@@ -1934,12 +2054,14 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
      output_swaps.clear();
      embd_batch_idxs.clear();
  
@@ -12417,7 +12821,7 @@ index 33ad784..bd8c230 100644
  
      llama_memory_context_ptr mctx;
  
-@@ -1985,12 +2069,14 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
+@@ -1985,12 +2107,14 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
  
          break;
      }
@@ -12432,7 +12836,7 @@ index 33ad784..bd8c230 100644
  
      // start a new sampling transaction for this logical batch
      for (const auto & entry : sampling.samplers) {
-@@ -2021,6 +2107,9 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
+@@ -2021,6 +2145,9 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
  
          ggml_status status;
  
@@ -12442,7 +12846,7 @@ index 33ad784..bd8c230 100644
          const auto * res = process_ubatch(ubatch, ctx_type_to_graph_type(cparams.ctx_type), mctx.get(), status);
  
          if (!res) {
-@@ -2078,7 +2167,18 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
+@@ -2078,7 +2205,18 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
              if (n_outputs) {
                  GGML_ASSERT( n_outputs_prev + n_outputs <= n_outputs_all);
                  GGML_ASSERT((n_outputs_prev + n_outputs)*n_vocab <= (int64_t) logits.size);
@@ -12462,7 +12866,7 @@ index 33ad784..bd8c230 100644
              }
          }
  
-@@ -2250,6 +2350,9 @@ uint32_t llama_context::output_reserve(int32_t n_outputs) {
+@@ -2250,6 +2388,9 @@ uint32_t llama_context::output_reserve(int32_t n_outputs) {
      const auto & hparams = model.hparams;
      const auto & vocab   = model.vocab;
  
@@ -12472,7 +12876,7 @@ index 33ad784..bd8c230 100644
      const int64_t n_outputs_max = std::max<int64_t>(n_outputs, n_seq_max());
  
      const auto n_batch    = cparams.n_batch;
-@@ -2446,6 +2549,10 @@ void llama_context::output_reorder() {
+@@ -2446,6 +2587,10 @@ void llama_context::output_reorder() {
      const uint64_t n_embd      = model.hparams.n_embd;
      const uint64_t n_embd_out  = model.hparams.n_embd_out();
  
@@ -12483,7 +12887,7 @@ index 33ad784..bd8c230 100644
      for (size_t s = 0; s < output_swaps.size(); ++s) {
          const uint64_t i0 = output_swaps[s].i0;
          const uint64_t i1 = output_swaps[s].i1;
-@@ -4258,6 +4365,12 @@ float * llama_get_logits_ith(llama_context * ctx, int32_t i) {
+@@ -4258,6 +4403,12 @@ float * llama_get_logits_ith(llama_context * ctx, int32_t i) {
      return res;
  }
  
@@ -12496,7 +12900,7 @@ index 33ad784..bd8c230 100644
  float * llama_get_embeddings(llama_context * ctx) {
      ctx->synchronize();
  
-@@ -4647,7 +4760,13 @@ int32_t llama_encode(
+@@ -4647,7 +4798,13 @@ int32_t llama_encode(
  int32_t llama_decode(
          llama_context * ctx,
            llama_batch   batch) {
@@ -12510,7 +12914,7 @@ index 33ad784..bd8c230 100644
      if (ret != 0 && ret != 1) {
          LLAMA_LOG_ERROR("%s: failed to decode, ret = %d\n", __func__, ret);
      }
-@@ -4724,7 +4843,22 @@ void llama_opt_epoch(
+@@ -4724,7 +4881,22 @@ void llama_opt_epoch(
  int32_t llama_process(llama_context * ctx, llama_process_type type, llama_batch_ext * batch) {
      switch (type) {
          case LLAMA_PROCESS_TYPE_ENCODE: return ctx->encode(*batch);
@@ -13106,10 +13510,23 @@ index e2c3daf..308df6a 100644
  }
  
 diff --git a/tools/server/server-context.cpp b/tools/server/server-context.cpp
-index 2bd1ab9..ebbbc24 100644
+index 2bd1ab9..9356762 100644
 --- a/tools/server/server-context.cpp
 +++ b/tools/server/server-context.cpp
-@@ -1092,6 +1092,10 @@ private:
+@@ -588,7 +588,11 @@ struct server_slot {
+         //       also, need to leave space for 1 extra token to allow context shifts
+         int n_draft_max = n_ctx - prompt.n_tokens() - 2;
+ 
+-        if (n_remaining() > 0) {
++        // engine2n: keep the full draft length up to the token limit (default; LLAMA_SPEC_KEEP_TAIL=0 shrinks it as upstream does).
++        // Shrinking makes the last rounds verify 3, 2, 1 tokens, and each new batch size rebuilds the target graph (≈110–135 ms each
++        // with -sm tensor over rpc, 11-11: MTP +2.7%). Accepted tokens past the limit are dropped by process_token: same output.
++        static const bool keep_tail = [] { const char * e = getenv("LLAMA_SPEC_KEEP_TAIL"); return e == nullptr || atoi(e) != 0; }();
++        if (n_remaining() > 0 && !keep_tail) {
+             n_draft_max = std::min(n_draft_max, n_remaining() - 1);
+         }
+ 
+@@ -1092,6 +1096,10 @@ private:
  
      common_speculative_ptr spec;
  
@@ -13120,7 +13537,7 @@ index 2bd1ab9..ebbbc24 100644
      bool add_bos_token = true;
  
      int32_t n_ctx; // total context for all clients / slots
-@@ -2055,7 +2059,9 @@ private:
+@@ -2055,7 +2063,9 @@ private:
          // initialize samplers
          if (task.need_sampling()) {
              try {
@@ -13131,7 +13548,7 @@ index 2bd1ab9..ebbbc24 100644
              } catch (std::exception & e) {
                  std::string err_msg = std::string("Failed to initialize samplers: ") + e.what();
                  send_error(task, err_msg, ERROR_TYPE_INVALID_REQUEST);
-@@ -3930,7 +3936,10 @@ private:
+@@ -3930,7 +3940,10 @@ private:
                      GGML_ASSERT(ckpt.load_dft(ctx_dft, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY));
                  }
  
@@ -13143,7 +13560,7 @@ index 2bd1ab9..ebbbc24 100644
                      GGML_ABORT("failed to remove sequence %d\n", slot.id);
                  }
              }
-@@ -4691,6 +4700,18 @@ private:
+@@ -4691,6 +4704,18 @@ private:
          int ret = 0;
          queue_tasks.yield_to_queue([&]() {
              ret = llama_process(ctx_tgt, LLAMA_PROCESS_TYPE_DECODE, batch.view.get());

@@ -178,3 +178,10 @@
   - `GGML_CUDA_GRAPH_KEY_SHAPE=1`(ggml-cuda): CUDA 그래프 캐시 키에 그래프 모양(노드 수·첫·끝 노드 행 수)을 넣어 크기마다 따로. 잡음 안.
 - 2026-11-11 낮: `GGML_CUDA_MOE_DEDUP=2`(ggml-cuda, 기본 꺼짐) — 2–4토큰 MoE 를 `mul_mat_vec_q_moe_dd2`(워프마다 shuffle·ballot 으로 전문가 목록, R 행)로. 값 같음, 커널은 기본보다 느림.
   `GGML_CUDA_MOE_DEDUP_R=<down>,<gate+up>`(1|2|4|8|16|32, 기본 8,2), `GGML_CUDA_MOE_DEDUP_ONLY=down|gate`. 검사는 기존 `GGML_CUDA_MOE_DEDUP_VERIFY=1`(RESULTS.md 11-11 10:53 절).
+- 2026-11-11 오후(그래프 다시 짓기, RESULTS.md 11-11 12:25·13:05 절):
+  - **기본 켬:** 생성 한도 직전에도 초안 길이 유지(server `get_n_draft_max`; `LLAMA_SPEC_KEEP_TAIL=0` 이면 예전처럼 남은 토큰 수로 줄임) — 검증 크기가 3·2·1 로 바뀌며 다시 짓던 것을 없앰,
+    출력 같음, MTP +2.7%(한도로 끝나는 요청에서). 클라이언트 `serialize_graph` 의 텐서 벡터·방문 집합을 스레드마다 재사용(방문 집합은 열린 주소 표) — 다시 짓기 133 → 88 ms, 값 그대로.
+  - `GGML_RPC_SER_ASYNC=1`(기본 꺼짐): uid 있는 새 부분그래프를 끝점마다의 디스패처 워커가 직렬화(메타 백엔드는 다시 짓는 호출 끝에서 RPC 큐를 비움). `GGML_RPC_GRAPH_DEDUP=1` 과 같이 쓰면
+    워커가 서버에 이미 있는 같은 내용 그래프를 GRAPH_RECOMPUTE 로 바꿈(uid 기록은 실제로 보낸 그래프만 — 서버 저장 표와 같이 1024 에서 비움). 둘 다 지금은 느림.
+  - 측정용: `GGML_RPC_SER_TIME=1`(워커의 직렬화·보내기 평균), `GGML_RPC_DEDUP_TIME=1`(직렬화 + '바로 한 번 더' 시간), `LLAMA_CPU_PROBE=N`(N 번째 decode 마다 시계 호출·레지스터 고리),
+    도구 `tools/bench/rebuilds.py <감시 세션>`(다시 지은 본 모델 단계 수·비용).

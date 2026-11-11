@@ -1,0 +1,16 @@
+none cp bin=bin load A=0.57 B=0.12 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 42.24 tok/s (token-weighted) | srv-2node-none-bs-cp-1111-122627
+   a: n=382 gfx 2265/2612/2730 상한 2193/2758/2818 활동 70/91/97 소켓W 67/70/70 gfxW 20/27/30 코어W 5/9/21 코어상한 1586/1927/4832 fclk 1610/1636/1704 uclk 1000/1000/1000 dramR 16094/52474/61171 dramW 3933/4024/5086 
+   b: n=383 gfx 2482/2654/2742 상한 2576/2743/2840 활동 68/90/97 소켓W 64/69/70 gfxW 25/30/32 코어W 3/5/13 코어상한 1572/1934/5003 fclk 1604/1621/1657 uclk 999/1000/1000 dramR 16634/53564/62488 dramW 4064/4199/4465 
+mtp cp bin=bin load A=0.55 B=0.20 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 56.68 tok/s (token-weighted) | srv-2node-mtp-bs-cp-1111-123052
+   a: n=303 gfx 2097/2370/2510 상한 1973/2559/2759 활동 65/87/94 소켓W 68/70/70 gfxW 19/28/30 코어W 7/12/25 코어상한 1583/1950/4878 fclk 1611/1639/1699 uclk 1000/1000/1000 dramR 9492/28900/56201 dramW 6851/7431/7796 
+   b: n=298 gfx 1853/2208/2246 상한 2048/2439/2868 활동 58/75/81 소켓W 64/68/70 gfxW 18/27/30 코어W 5/11/21 코어상한 1588/1943/5100 fclk 1611/1629/1665 uclk 999/1000/1000 dramR 4959/15914/59453 dramW 5968/6964/7584 
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-cp-1111-123052
+13
+cpu_probe: decode 1: clock call 19 ns, loop 20000 steps 24 us (73140 TSC ticks), cpu 15
+cpu_probe: decode 201: clock call 60 ns, loop 20000 steps 76 us (228960 TSC ticks), cpu 0
+cpu_probe: decode 401: clock call 58 ns, loop 20000 steps 81 us (242580 TSC ticks), cpu 13
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-none-bs-cp-1111-122627
+8
+cpu_probe: decode 1: clock call 18 ns, loop 20000 steps 26 us (76619 TSC ticks), cpu 1
+cpu_probe: decode 201: clock call 57 ns, loop 20000 steps 76 us (227760 TSC ticks), cpu 12
+cpu_probe: decode 401: clock call 52 ns, loop 20000 steps 64 us (189420 TSC ticks), cpu 14

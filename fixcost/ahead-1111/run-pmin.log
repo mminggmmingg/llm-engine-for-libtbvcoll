@@ -1,0 +1,16 @@
+mtp pm5 bin=bin load A=0.46 B=0.02 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 29.76 tok/s (token-weighted) | srv-2node-mtp-bs-pm5-1111-111537
+   a: n=408 gfx 1374/1790/2122 상한 1096/2037/2672 활동 51/58/71 소켓W 68/69/70 gfxW 12/16/22 코어W 22/34/39 코어상한 2023/4614/4859 fclk 1703/1780/1834 uclk 1000/1000/1000 dramR 17548/47802/59208 dramW 4991/5736/6774 
+   b: n=214 gfx 1561/1895/2151 상한 1778/2099/2602 활동 50/55/69 소켓W 60/64/67 gfxW 13/19/25 코어W 16/23/27 코어상한 2118/5002/5085 fclk 1664/1730/1787 uclk 1000/1000/1000 dramR 36543/46983/57490 dramW 4670/5540/6382 
+mtp def bin=bin load A=0.58 B=0.27 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 57.36 tok/s (token-weighted) | srv-2node-mtp-bs-def-1111-112021
+   a: n=299 gfx 2096/2349/2492 상한 1995/2543/2711 활동 64/86/93 소켓W 67/69/70 gfxW 20/27/30 코어W 8/12/25 코어상한 1584/1924/4854 fclk 1612/1646/1706 uclk 1000/1000/1000 dramR 9305/29830/56757 dramW 6922/7488/7776 
+   b: n=296 gfx 2152/2224/2253 상한 2290/2482/2861 활동 57/74/80 소켓W 65/68/70 gfxW 22/29/30 코어W 5/9/19 코어상한 1569/1936/5054 fclk 1612/1631/1680 uclk 999/1000/1000 dramR 6365/16122/58798 dramW 6058/7175/7630 
+srv-2node-mtp-bs-def-1111-112021-bench.txt: 6/6 same
+srv-2node-mtp-bs-pm5-1111-111537-bench.txt: 6/6 same
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-def-1111-112021
+ggml_backend_meta_graph_compute: 385 calls, 30 rebuilds (this call: uid 8050, previous 7850, 7018 nodes)
+ggml_backend_meta_graph_compute: 462 calls, 36 rebuilds (this call: uid 9592, previous 9592, 7018 nodes)
+1.38.731.282 I slot print_timing: id  0 | task 446 | draft acceptance = 0.72024 (  121 accepted /   168 generated), mean len =  3.16
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-pm5-1111-111537
+ggml_backend_meta_graph_compute: 435 calls, 245 rebuilds (this call: uid 50690, previous 50690, 7018 nodes)
+ggml_backend_meta_graph_compute: 498 calls, 262 rebuilds (this call: uid 54417, previous 54214, 7018 nodes)
+2.01.295.459 I slot print_timing: id  0 | task 498 | draft acceptance = 0.77273 (  119 accepted /   154 generated), mean len =  3.16
