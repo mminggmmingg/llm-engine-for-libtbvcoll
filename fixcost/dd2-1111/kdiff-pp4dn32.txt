@@ -1,0 +1,10 @@
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-pp4def-1111-105900: tokens 41.0 kernels/token 1798 kernel us/token 32254
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-pp4dn32-1111-110955: tokens 41.0 kernels/token 1798 kernel us/token 34608
+  47.0 ->    0.0 /tok    4548.4 ->      0.0 us/tok  mul_mat_vec_q_moe< g40960x40 w32
+  48.0 ->   48.0 /tok    2920.7 ->   2734.2 us/tok  mul_mat_vec_q_shexp_tail< g81920x1 w1024
+  97.0 ->   97.0 /tok    1901.1 ->   1880.0 us/tok  mul_mat_vec_q< g327680x1 w32
+  47.0 ->   47.0 /tok    6180.0 ->   6162.5 us/tok  mul_mat_vec_q_moe< g5120x40 w32
+  36.0 ->   36.0 /tok    2419.4 ->   2434.6 us/tok  mul_mat_vec_q< g262144x1 w32
+   1.0 ->    1.0 /tok      92.1 ->    127.9 us/tok  rms_norm_hcpost_one_block<16, true> g1024x1 w1024
+  94.0 ->   94.0 /tok    2649.2 ->   2705.1 us/tok  rms_norm_f32<1024, 1, true, true, false, false, true, false, g4096x4 w1024
+   0.0 ->   47.0 /tok       0.0 ->   7055.7 us/tok  mul_mat_vec_q_moe_dd2< g320x320 w32

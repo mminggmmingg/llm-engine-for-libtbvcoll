@@ -1,0 +1,20 @@
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-pp4def-1111-105900: tokens 41.0 kernels/token 1798 kernel us/token 32254
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-pp4dd2-1111-105745: tokens 41.0 kernels/token 1798 kernel us/token 34049
+  47.0 ->    0.0 /tok    6180.0 ->      0.0 us/tok  mul_mat_vec_q_moe< g5120x40 w32
+  47.0 ->    0.0 /tok    4548.4 ->      0.0 us/tok  mul_mat_vec_q_moe< g40960x40 w32
+  36.0 ->   36.0 /tok    2419.4 ->   2283.2 us/tok  mul_mat_vec_q< g262144x1 w32
+  47.0 ->   47.0 /tok     356.6 ->    254.6 us/tok  moe_weighted_reduction_f32_out g1024x10 w256
+  97.0 ->   97.0 /tok    1901.1 ->   1818.5 us/tok  mul_mat_vec_q< g327680x1 w32
+  47.0 ->   47.0 /tok     864.2 ->    802.7 us/tok  mul_mat_vec_f<__hip_bfloat16, float, 4, 256, false, false> g131072x1 w256
+  12.0 ->   12.0 /tok     616.3 ->    563.0 us/tok  mul_mat_vec_q< g196608x1 w32
+  47.0 ->   47.0 /tok    1035.1 ->    983.8 us/tok  mul_mat_vec_q< g20480x1 w32
+  48.0 ->   48.0 /tok    1806.0 ->   1768.9 us/tok  mul_mat_vec_q_comm_out< g81920x1 w256
+  12.0 ->   12.0 /tok     144.9 ->    116.2 us/tok  flash_attn_tile<256, 256, 4, 4, false> g32x64 w32
+  48.0 ->   48.0 /tok     114.4 ->     89.7 us/tok  quantize_q8_1 g2560x4 w256
+  36.0 ->   36.0 /tok     448.1 ->    429.2 us/tok  scale_f32<float> g393216x1 w256
+  12.0 ->   12.0 /tok     102.7 ->     87.4 us/tok  k_argsort_f32_i32< g256x1 w64
+   1.0 ->    1.0 /tok      63.0 ->     86.0 us/tok  k_comm_wait_add g1024x1 w1024
+  94.0 ->   94.0 /tok    2649.2 ->   3019.4 us/tok  rms_norm_f32<1024, 1, true, true, false, false, true, false, g4096x4 w1024
+  48.0 ->   48.0 /tok    2920.7 ->   3311.9 us/tok  mul_mat_vec_q_shexp_tail< g81920x1 w1024
+   0.0 ->   47.0 /tok       0.0 ->   4738.3 us/tok  mul_mat_vec_q_moe_dd2< g1280x320 w32
+   0.0 ->   47.0 /tok       0.0 ->   7804.9 us/tok  mul_mat_vec_q_moe_dd2< g160x320 w32

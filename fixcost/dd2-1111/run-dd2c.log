@@ -1,0 +1,12 @@
+== dn16 (GGML_CUDA_MOE_DEDUP_R=16,1 GGML_CUDA_MOE_DEDUP_ONLY=down)
+prof2node-pp4def-1111-105900: tokens 41.0 kernels/token 1798 kernel us/token 32254
+prof2node-pp4dn16-1111-110839: tokens 41.0 kernels/token 1798 kernel us/token 32899
+  47.0 ->    0.0 /tok    4548.4 ->      0.0 us/tok  mul_mat_vec_q_moe< g40960x40 w32
+   0.0 ->   47.0 /tok       0.0 ->   4980.2 us/tok  mul_mat_vec_q_moe_dd2< g640x320 w32
+== dn32 (GGML_CUDA_MOE_DEDUP_R=32,1 GGML_CUDA_MOE_DEDUP_ONLY=down)
+prof2node-pp4def-1111-105900: tokens 41.0 kernels/token 1798 kernel us/token 32254
+prof2node-pp4dn32-1111-110955: tokens 41.0 kernels/token 1798 kernel us/token 34608
+  47.0 ->    0.0 /tok    4548.4 ->      0.0 us/tok  mul_mat_vec_q_moe< g40960x40 w32
+  47.0 ->   47.0 /tok    6180.0 ->   6162.5 us/tok  mul_mat_vec_q_moe< g5120x40 w32
+   0.0 ->   47.0 /tok       0.0 ->   7055.7 us/tok  mul_mat_vec_q_moe_dd2< g320x320 w32
+== done 11:11:11

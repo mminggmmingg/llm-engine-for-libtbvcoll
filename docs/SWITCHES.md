@@ -168,3 +168,13 @@
   `GGML_CUDA_MOE_DEDUP_VERIFY=1`(기존 커널과 비트 비교), `GGML_CUDA_MOE_OVERLAP_STATS=<n>`(디버그: 4토큰이 고른 전문가 중 서로 다른 것의 비율, 동기화).
 - 2026-11-11 새벽(4토큰 묶음, 기본 켬, 속도 같음): dense GLU 2–4토큰을 게이트 합친 mmvq 하나로(`GGML_CUDA_NO_GLU_NTOK=1` 끔, `GGML_CUDA_GLU_NTOK_VERIFY=1`),
   SSM_CONV→SILU→q/k norm pair 1–4토큰 한 커널(`GGML_CUDA_NO_CONV_NORM_NTOK=1` 끔, 검증 `GGML_CUDA_CONV_NORM_VERIFY=1`). 단계당 커널 −130, MTP 속도 같음(RESULTS.md 11-11).
+- 2026-11-11 오전(MTP 초안·검증 겹치기, 모두 기본 꺼짐 — 이득 없음, RESULTS.md 11-11 07:20 절):
+  - `LLAMA_SPEC_AHEAD=1|2`(클라이언트, draft-mtp 단일 머리): 검증이 서버에서 도는 동안 A GPU 에서 초안 사슬을 다음 라운드 몫까지 이어 만든다 —
+    1 은 모두 채택 + 다음 토큰 적중이면 그 초안을 바로 검증, 2 는 만들기만(비용·적중률 측정). `LLAMA_SPEC_AHEAD_PMIN=<p>`(초안 top-1 p 곱이 이 이상일 때만),
+    `LLAMA_SPEC_AHEAD_LOG=<file>`(라운드 기록 덧붙임, `fixcost/ahead-1111/ahlog.py` 로 요약). 서버(llama-server)는 미리 만들기가 초안 영역을 읽은 뒤에
+    초안 KV 를 지운다(`spec_ahead_rm`). 같은 APU 메모리를 검증과 나눠 써 2 는 −9.4%.
+  - `GGML_CUDA_STREAM_PRIORITY=low|high|<n>`(ggml-cuda, 그 프로세스의 백엔드 스트림 우선순위; 설정되면 stderr 한 줄). 효과 없음.
+  - `LLAMA_SPEC_MERGE_CATCHUP=1`(클라이언트, draft-mtp): 검증 따라잡기 decode 를 채택 개수를 안 뒤 다음 첫 초안 단계와 한 번에. −1.9%.
+  - `GGML_CUDA_GRAPH_KEY_SHAPE=1`(ggml-cuda): CUDA 그래프 캐시 키에 그래프 모양(노드 수·첫·끝 노드 행 수)을 넣어 크기마다 따로. 잡음 안.
+- 2026-11-11 낮: `GGML_CUDA_MOE_DEDUP=2`(ggml-cuda, 기본 꺼짐) — 2–4토큰 MoE 를 `mul_mat_vec_q_moe_dd2`(워프마다 shuffle·ballot 으로 전문가 목록, R 행)로. 값 같음, 커널은 기본보다 느림.
+  `GGML_CUDA_MOE_DEDUP_R=<down>,<gate+up>`(1|2|4|8|16|32, 기본 8,2), `GGML_CUDA_MOE_DEDUP_ONLY=down|gate`. 검사는 기존 `GGML_CUDA_MOE_DEDUP_VERIFY=1`(RESULTS.md 11-11 10:53 절).

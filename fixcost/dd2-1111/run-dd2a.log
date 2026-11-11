@@ -1,0 +1,19 @@
+mtp dv2 bin=bin load A=0.59 B=0.16 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 38.17 tok/s (token-weighted) | srv-2node-mtp-bs-dv2-1111-105540
+   a: n=421 gfx 2141/2457/2582 상한 2037/2589/2740 활동 65/86/90 소켓W 67/70/70 gfxW 22/31/35 코어W 10/13/25 코어상한 1930/3166/4742 fclk 1607/1626/1704 uclk 1000/1000/1000 dramR 1559/7480/62547 dramW 5744/6108/6368 
+   b: n=419 gfx 1672/1983/2278 상한 1727/2140/2614 활동 60/79/84 소켓W 65/69/70 gfxW 17/22/34 코어W 9/21/24 코어상한 1948/5008/5126 fclk 1605/1620/1666 uclk 1000/1000/1000 dramR 39326/54949/60160 dramW 5220/5739/6090 
+verify a: 32 lines, nonzero 0
+moe dedup verify: 2 tokens, gate+up: 0 of 6400 differ
+moe dedup verify: 2 tokens, down: 0 of 51200 differ
+verify b: 32 lines, nonzero 0
+moe dedup verify: 2 tokens, gate+up: 0 of 6400 differ
+moe dedup verify: 2 tokens, down: 0 of 51200 differ
+srv-2node-mtp-bs-dv2-1111-105540-bench.txt: 6/6 same
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-pp4def-1111-105900: tokens 41.0 kernels/token 1798 kernel us/token 32254
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-pp4dd2-1111-105745: tokens 41.0 kernels/token 1798 kernel us/token 34049
+  47.0 ->    0.0 /tok    6180.0 ->      0.0 us/tok  mul_mat_vec_q_moe< g5120x40 w32
+  47.0 ->    0.0 /tok    6180.0 ->      0.0 us/tok  mul_mat_vec_q_moe< g5120x40 w32
+  47.0 ->    0.0 /tok    4548.4 ->      0.0 us/tok  mul_mat_vec_q_moe< g40960x40 w32
+  47.0 ->   47.0 /tok     356.6 ->    254.6 us/tok  moe_weighted_reduction_f32_out g1024x10 w256
+   0.0 ->   47.0 /tok       0.0 ->   4738.3 us/tok  mul_mat_vec_q_moe_dd2< g1280x320 w32
+   0.0 ->   47.0 /tok       0.0 ->   7804.9 us/tok  mul_mat_vec_q_moe_dd2< g160x320 w32
+== done 11:00:17
