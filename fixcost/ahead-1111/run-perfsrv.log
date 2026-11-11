@@ -1,0 +1,4 @@
+Terminated                 timeout 120 perf record -F 1999 -g -p $P -o $O/perf-srv.data -- sleep 90 > $O/perf-srv-record.log 2>&1
+mtp ps bin=bin load A=0.56 B=0.35 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 59.01 tok/s (token-weighted) | srv-2node-mtp-bs-ps-1111-162226
+   a: n=292 gfx 2201/2439/2521 상한 2180/2562/2861 활동 69/88/95 소켓W 67/69/70 gfxW 20/28/31 코어W 7/10/22 코어상한 1584/1925/4785 fclk 1610/1637/1700 uclk 1000/1000/1000 dramR 10987/30805/56401 dramW 7573/7981/8135 
+   b: n=287 gfx 2175/2234/2264 상한 2289/2508/2900 활동 59/75/80 소켓W 64/68/70 gfxW 23/29/31 코어W 4/8/17 코어상한 1567/1931/5035 fclk 1608/1620/1653 uclk 999/1000/1000 dramR 5808/16042/57185 dramW 6249/7245/7650 
