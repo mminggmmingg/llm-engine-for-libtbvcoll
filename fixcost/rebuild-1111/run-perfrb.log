@@ -1,0 +1,6 @@
+Terminated                 timeout 90 perf record -F 499 --call-graph dwarf,8192 -t $P -o $O/perf-rb.data -- sleep 40 > $O/perf-rb-record.log 2>&1
+mtp prb bin=bin load A=0.59 B=0.35 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 43.64 tok/s (token-weighted) | srv-2node-mtp-bs-prb-1111-230326
+   a: n=362 gfx 1890/1946/2004 상한 1969/2166/2714 활동 65/76/79 소켓W 68/70/70 gfxW 18/20/21 코어W 22/26/28 코어상한 3835/4439/4873 fclk 1637/1652/1689 uclk 1000/1000/1000 dramR 4635/9883/58821 dramW 6223/6470/6696 
+   b: n=359 gfx 1506/1844/1960 상한 1827/2255/2832 활동 58/66/68 소켓W 62/65/68 gfxW 17/20/25 코어W 19/21/22 코어상한 4782/5029/5129 fclk 1600/1601/1607 uclk 1000/1000/1000 dramR 46744/58989/62981 dramW 5300/5693/5912 
+-rw------- 1 park2 park2 74806272 Nov 11 23:05 /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/rebuild-1111/perf-rb.data
+ALLDONE

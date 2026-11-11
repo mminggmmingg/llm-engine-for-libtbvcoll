@@ -193,3 +193,7 @@
   - 측정용: `GGML_RPC_GC_STATS=2`(서버, 새 그래프를 단계 안 순번 k 별로: 크기·받기·준비·풀기·발행·스레드 CPU·CPU 탐침), `LLAMA_GRAPH_TIME=1`(클라이언트, 다시 짓는 decode 크기
     ubatch 의 메모리 적용·reset·build·sched alloc, 컨텍스트별), `GGML_META_TIME=1`(메타 백엔드 다시 짓기 블록·부분그래프 발행, 그래프 하나의 init_tensor 합),
     `GGML_SCHED_TIME=1`(sched 분할·할당·재예약), `GGML_META_CACHE_DIGEST=1`(바깥에 돌려준 분할 상태의 누적 해시 — 두 회 비교용), `GGML_META_CACHE_STATS=1` 에 KEEP 통계·상태가 바뀐 텐서.
+- 2026-11-12 밤(RESULTS.md 11-11 23:00 절):
+  - **기본(스위치 없음):** KEEP 에서 UNKNOWN(원소 0개) ↔ 다른 축 바뀜에는 캐시를 비우지 않음; 메타 분할 계산은 축만 읽는 빠른 조회(`ggml_backend_meta_get_split_axis`).
+  - `GGML_META_REUSE=1`(꺼짐 — 번갈아 이득 없음): 계산 텐서의 단순 텐서를 다시 짓기 사이에 다시 씀(필드·분할 상태 세대가 같을 때, 바뀌기 전 내용 하나 기억).
+    `GGML_META_REUSE_VERIFY=1`(재사용마다 원래 방식과 바이트 비교), `GGML_META_REUSE_WHY=<n>`(재사용 못 한 까닭 n 줄).

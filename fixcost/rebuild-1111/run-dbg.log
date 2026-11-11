@@ -1,0 +1,36 @@
+mtp dbg bin=bin load A=0.59 B=0.39 rdma=3 trace=0 zc=ZC=3/ZC=3:  | srv-2node-mtp-bs-dbg-1112-005845
+   a: n=49 gfx 1994/2479/2548 상한 2446/2601/2900 활동 59/89/95 소켓W 60/68/70 gfxW 20/30/32 코어W 5/8/15 코어상한 1577/1584/4919 fclk 1610/1625/1683 uclk 1000/1000/1000 dramR 11214/32336/53961 dramW 6640/7771/8007 
+   b: n=46 gfx 1951/2220/2266 상한 2369/2554/2900 활동 56/77/81 소켓W 58/68/70 gfxW 22/29/31 코어W 3/5/9 코어상한 1563/1569/5081 fclk 1591/1599/1605 uclk 990/998/1000 dramR 5276/16016/56806 dramW 5675/7354/7686 
+375:Thread 1 "llama-server" received signal SIGSEGV, Segmentation fault.
+377:#0  0x00000000070e3411 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool) ()
+378:#1  0x00000000070e68d6 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool)::$_19::operator()() const ()
+379:#2  0x00000000070e3e11 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool) ()
+380:#3  0x00000000070e68d6 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool)::$_19::operator()() const ()
+381:#4  0x00000000070e3e11 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool) ()
+382:#5  0x00000000070e68d6 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool)::$_19::operator()() const ()
+383:#6  0x00000000070e3e11 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool) ()
+384:#7  0x00000000070e68d6 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool)::$_19::operator()() const ()
+385:#8  0x00000000070e3e11 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool) ()
+386:#9  0x00000000070e68d6 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool)::$_19::operator()() const ()
+387:#10 0x00000000070e3e11 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool) ()
+388:#11 0x00000000070e6985 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool)::$_19::operator()() const ()
+389:#12 0x00000000070e3e11 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool) ()
+390:#13 0x00000000070e68d6 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool)::$_19::operator()() const ()
+391:#14 0x00000000070e3e11 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool) ()
+392:#15 0x00000000070e68d6 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool)::$_19::operator()() const ()
+393:#16 0x00000000070e3e11 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool) ()
+394:#17 0x00000000070e68d6 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool)::$_19::operator()() const ()
+395:#18 0x00000000070e3e11 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool) ()
+396:#19 0x00000000070e68d6 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool)::$_19::operator()() const ()
+397:#20 0x00000000070e3e11 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool) ()
+398:#21 0x00000000070e68d6 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool)::$_19::operator()() const ()
+399:#22 0x00000000070e3e11 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool) ()
+400:#23 0x00000000070e68d6 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool)::$_19::operator()() const ()
+401:#24 0x00000000070e3e11 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool) ()
+402:#25 0x00000000070e68d6 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool)::$_19::operator()() const ()
+403:#26 0x00000000070e3e11 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool) ()
+404:#27 0x00000000070e6985 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool)::$_19::operator()() const ()
+405:#28 0x00000000070e3e11 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool) ()
+406:#29 0x00000000070e68d6 in ggml_backend_meta_get_split_state(ggml_backend_meta_simple_tensor_container&, ggml_tensor const*, bool)::$_19::operator()() const ()
+{"id": "prose", "n": 256, "tps": 56.108672156368485, "draft_n": 285, "draft_acc": 160, "prompt_tps": 86.49382130825836, "wall_s": 5.44, "sha": "c400cbc159a92385
+ALLDONE

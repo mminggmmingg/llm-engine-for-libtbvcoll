@@ -1,0 +1,83 @@
+mtp dge bin=bin load A=0.55 B=0.10 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 60.99 tok/s (token-weighted) | srv-2node-mtp-bs-dge-1111-235044
+   a: n=279 gfx 2275/2467/2538 상한 2226/2557/2900 활동 71/89/95 소켓W 67/69/70 gfxW 22/29/31 코어W 6/8/18 코어상한 1582/1925/4736 fclk 1607/1624/1672 uclk 1000/1000/1000 dramR 9820/32569/58173 dramW 7198/7782/8040 
+   b: n=275 gfx 2180/2233/2270 상한 2304/2492/2900 활동 64/78/82 소켓W 64/68/70 gfxW 24/29/31 코어W 4/6/13 코어상한 1570/1605/4998 fclk 1598/1601/1606 uclk 998/1000/1000 dramR 5916/17318/58053 dramW 6270/7296/7723 
+mtp rv2 bin=bin load A=0.59 B=0.13 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 60.99 tok/s (token-weighted) | srv-2node-mtp-bs-rv2-1111-235624
+   a: n=278 gfx 2266/2459/2532 상한 2219/2552/2887 활동 72/90/95 소켓W 67/69/70 gfxW 22/29/31 코어W 6/9/19 코어상한 1839/1930/4760 fclk 1606/1625/1673 uclk 1000/1000/1000 dramR 7840/31986/44482 dramW 7215/7746/7975 
+   b: n=274 gfx 2183/2238/2271 상한 2311/2507/2900 활동 64/78/82 소켓W 65/68/70 gfxW 25/29/31 코어W 3/6/12 코어상한 1570/1604/5011 fclk 1599/1602/1608 uclk 999/1000/1000 dramR 5023/17419/57505 dramW 6326/7347/7730 
+none rv2 bin=bin load A=0.55 B=0.59 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 43.76 tok/s (token-weighted) | srv-2node-none-bs-rv2-1112-000225
+   a: n=365 gfx 2386/2666/2742 상한 2399/2754/2823 활동 75/95/98 소켓W 67/70/70 gfxW 22/28/30 코어W 5/6/17 코어상한 1581/1924/4687 fclk 1607/1618/1665 uclk 1000/1000/1000 dramR 17548/57159/62527 dramW 3957/4062/4893 
+   b: n=365 gfx 2491/2660/2740 상한 2577/2747/2885 활동 74/95/98 소켓W 65/69/70 gfxW 26/30/32 코어W 2/3/10 코어상한 1572/1936/4927 fclk 1599/1600/1610 uclk 999/1000/1000 dramR 18395/58477/63619 dramW 4026/4192/4332 
+digest lines base 8 empty-exempt 8; diff:
+(end diff)
+ggml_backend_meta_get_split_state: split state cache (keep): 60000 changed tensors recomputed alone, 0 changed their split state (cache emptied)
+ggml_backend_meta_get_split_state: split state cache (keep): 80000 changed tensors recomputed alone, 0 changed their split state (cache emptied)
+ggml_backend_meta_get_split_state: split state cache (keep): 100000 changed tensors recomputed alone, 0 changed their split state (cache emptied)
+srv-2node-none-bs-rv2-1112-000225-bench.txt: 6/6 same
+srv-2node-mtp-bs-rv2-1111-235624-bench.txt: 6/6 same
+srv-2node-mtp-bs-dge-1111-235044-bench.txt: 6/6 same
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-none-bs-rv2-1112-000225
+verify mismatch lines: 0
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-rv2-1111-235624
+ggml_backend_meta_buffer_init_tensor_reuse: simple tensors reused 100000, made 82062, VERIFY mismatches 0
+verify mismatch lines: 0
+VERIFYDONE
+mtp rb2 bin=bin load A=0.57 B=0.28 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 61.12 tok/s (token-weighted) | srv-2node-mtp-bs-rb2-1112-000737
+   a: n=278 gfx 2282/2472/2540 상한 2256/2565/2741 활동 72/90/95 소켓W 67/69/70 gfxW 22/29/31 코어W 6/8/19 코어상한 1790/1925/4826 fclk 1607/1624/1671 uclk 1000/1000/1000 dramR 8146/32404/51844 dramW 7277/7803/8054 
+   b: n=275 gfx 2173/2240/2271 상한 2312/2473/2900 활동 64/78/82 소켓W 65/68/70 gfxW 25/29/31 코어W 3/5/13 코어상한 1569/1604/5030 fclk 1600/1601/1606 uclk 998/1000/1000 dramR 5149/17336/57423 dramW 6311/7345/7702 
+mtp rt2 bin=bin load A=0.56 B=0.20 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 61.21 tok/s (token-weighted) | srv-2node-mtp-bs-rt2-1112-001317
+   a: n=277 gfx 2306/2462/2515 상한 2351/2539/2900 활동 72/90/95 소켓W 67/69/70 gfxW 23/29/31 코어W 6/9/18 코어상한 1581/1920/4829 fclk 1611/1633/1678 uclk 1000/1000/1000 dramR 8431/32533/39473 dramW 7304/7799/8114 
+   b: n=273 gfx 2189/2244/2281 상한 2276/2488/2900 활동 64/78/82 소켓W 65/69/70 gfxW 24/29/31 코어W 3/5/13 코어상한 1569/1604/4975 fclk 1600/1601/1605 uclk 999/1000/1000 dramR 4433/17509/57069 dramW 6385/7390/7793 
+mtp rb2-w bin=bin load A=0.57 B=0.24 rdma=3 trace=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 61.14 tok/s (token-weighted) | srv-2node-mtp-bs-rb2-w-1112-001909
+   a: n=279 gfx 2486/2585/2662 상한 2509/2571/2900 활동 94/100/100 소켓W 68/70/70 gfxW 25/29/31 코어W 5/7/11 코어상한 1581/1920/4484 fclk 1608/1629/1678 uclk 1000/1000/1000 dramR 8531/32134/38515 dramW 7507/7965/8211 
+   b: n=272 gfx 2159/2224/2256 상한 2282/2469/2900 활동 65/78/82 소켓W 65/69/70 gfxW 25/29/30 코어W 4/5/12 코어상한 1572/1931/5012 fclk 1600/1604/1612 uclk 1000/1000/1000 dramR 5077/17404/58212 dramW 6473/7376/7719 
+mtp rt2-w bin=bin load A=0.57 B=0.39 rdma=3 trace=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 61.39 tok/s (token-weighted) | srv-2node-mtp-bs-rt2-w-1112-002319
+   a: n=279 gfx 2511/2584/2664 상한 2507/2573/2900 활동 94/100/100 소켓W 68/70/70 gfxW 25/29/31 코어W 5/6/11 코어상한 1582/1920/4549 fclk 1608/1628/1679 uclk 1000/1000/1000 dramR 7611/32618/38659 dramW 7544/8017/8155 
+   b: n=272 gfx 2155/2226/2256 상한 2272/2479/2900 활동 65/78/82 소켓W 65/69/70 gfxW 25/29/31 코어W 3/5/12 코어상한 1577/1933/4997 fclk 1601/1604/1618 uclk 1000/1000/1000 dramR 5359/17659/58386 dramW 6498/7403/7763 
+# 추론 감시 비교 (2026-11-12 00:25:13, RUNS="mtp:rb2 mtp:rt2")
+
+기록 링을 켠 회라 tok/s 는 속도 회보다 ≈6% 낮다. 세션 폴더: runs/watch/<세션>/(report.html, receipt.md, stalls.txt).
+감시기 판: inferwatch iw-20261110-1 (reads ring format GGRPCTR1 v1..v1) (/data/parksThink/inferwatch-iw-20261110-1)
+
+| 설정 | 감시기 tok/s | ms/단계 | AR 지연 A→B 중앙 / p99 µs | B→A | 1 ms 넘는 기다림 ms/단계 | 그중 링크 / 상대 계산 (번) | 링크 늦음 1–2.5 / 2.5–3.5 / 3.5–7 / 7–12 / >12 ms (번) | 세션 |
+|---|---:|---:|---|---|---:|---|---|---|
+| mtp:rb2 | 209.2 | 10.56 | 30.1 / 453.0 | 28.9 / 54.8 | 0.01 | 2 / 4 | 1 / 0 / 0 / 0 / 0 | 20261112-001914 |
+| mtp:rt2 | 214.1 | 10.32 | 30.0 / 463.6 | 29.1 / 50.6 | 0.02 | 6 / 11 | 6 / 0 / 0 / 0 / 0 | 20261112-002324 |
+
+## 노드별 DRAM 읽기 (inferwatch dram-bytes, 기록 링 켠 회의 decode 단계, 쉬는 몫 뺌)
+
+| 회 | 노드 | GB/처리 토큰 | decode 중 GB/s | 239.7 대비 | 쉬는 몫 GB/s(중앙값, 3배 넘는 구간 수) | 처리 토큰 |
+|---|---|---:|---:|---:|---|---:|
+| mtp:rb2 | A | 0.583 | 121.9 | 0.509 | 0.64 (0) | 5332 |
+| mtp:rb2 | B | 0.484 | 101.2 | 0.422 | 1.464 (0) | 5332 |
+| mtp:rt2 | A | 0.583 | 124.9 | 0.521 | 0.595 (0) | 5332 |
+| mtp:rt2 | B | 0.483 | 103.4 | 0.431 | 1.342 (0) | 5332 |
+
+처리 토큰 = 감시 세션 decode 단계가 처리한 토큰(MTP 는 검증 묶음의 토큰까지 — 출력 토큰보다 많다). 85% 목표 값(none): 노드마다 GB/토큰 × 같은 구성 속도 회(기록 링 끔) tok/s ÷ 239.7.
+MTP 는 decode 중 GB/s(기록 링 켠 회) 를 본다. 자료: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/rebuild-1111/dram
+srv-2node-mtp-bs-rt2-w-1112-002319-bench.txt: 6/6 same
+srv-2node-mtp-bs-rb2-w-1112-001909-bench.txt: 6/6 same
+srv-2node-mtp-bs-rt2-1112-001317-bench.txt: 6/6 same
+srv-2node-mtp-bs-rb2-1112-000737-bench.txt: 6/6 same
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-rt2-w-1112-002319
+[meta init_tensor] 20 graph allocations: 7.23 ms for 7070 tensors each (avg)
+[meta init_tensor] 30 graph allocations: 6.97 ms for 7070 tensors each (avg)
+process_ubatch: ctx 0x3a9d4340 graph time over 10 rebuilds (avg ms): memory apply 0.50, reset 0.05, build 1.17, sched alloc 8.54 (7022 nodes, ubatch 4)
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-rb2-w-1112-001909
+[meta init_tensor] 20 graph allocations: 9.25 ms for 7070 tensors each (avg)
+[meta init_tensor] 30 graph allocations: 9.18 ms for 7070 tensors each (avg)
+process_ubatch: ctx 0x3cd43320 graph time over 10 rebuilds (avg ms): memory apply 0.44, reset 0.05, build 1.23, sched alloc 12.28 (7022 nodes, ubatch 4)
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-rt2-1112-001317
+[meta init_tensor] 20 graph allocations: 7.17 ms for 7070 tensors each (avg)
+[meta init_tensor] 30 graph allocations: 6.92 ms for 7070 tensors each (avg)
+process_ubatch: ctx 0x2cec9310 graph time over 10 rebuilds (avg ms): memory apply 0.45, reset 0.05, build 1.07, sched alloc 8.28 (7022 nodes, ubatch 4)
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-rb2-1112-000737
+[meta init_tensor] 20 graph allocations: 8.72 ms for 7070 tensors each (avg)
+[meta init_tensor] 30 graph allocations: 8.65 ms for 7070 tensors each (avg)
+process_ubatch: ctx 0x1e472320 graph time over 10 rebuilds (avg ms): memory apply 0.43, reset 0.05, build 1.02, sched alloc 10.54 (7022 nodes, ubatch 4)
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/watch/20261112-001914: 본 모델 ubatch 499 (decode 크기 487: 다시 지음 19, 재사용 468)
+  다시 지음: 그래프 준비 중앙 14.0 ms, 발행까지 중앙 18.9 ms (최대 29.8), 합 0.36 s, GRAPH_COMPUTE 간격 중앙 12 us; 크기 [2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+  재사용: 발행까지 중앙 0.93 ms
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/watch/20261112-002324: 본 모델 ubatch 499 (decode 크기 487: 다시 지음 19, 재사용 468)
+  다시 지음: 그래프 준비 중앙 9.2 ms, 발행까지 중앙 15.8 ms (최대 37.3), 합 0.31 s, GRAPH_COMPUTE 간격 중앙 16 us; 크기 [2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+  재사용: 발행까지 중앙 0.87 ms
+ALLDONE
