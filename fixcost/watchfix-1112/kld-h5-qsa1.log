@@ -1,0 +1,54 @@
+libibverbs: Warning: couldn't load driver 'libodl_tb5-rdmav59.so': libodl_tb5-rdmav59.so: cannot open shared object file: No such file or directory
+0.00.196.655 W common_fit_params: failed to fit params to free device memory: llama_params_fit is not implemented for SPLIT_MODE_TENSOR, abort
+1.29.936.669 I cmn          init: llama threadpool init, n_threads = 16
+1.30.069.253 I 
+1.30.069.340 I system_info: n_threads = 16 (n_threads_batch = 16) / 32 | ROCm : NO_VMM = 1 | FA_QUANTS = q4_0-q4_0,q8_0-q8_0,f16-f16,bf16-bf16 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX_VNNI = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | AVX512 = 1 | AVX512_VBMI = 1 | AVX512_VNNI = 1 | AVX512_BF16 = 1 | LLAMAFILE = 1 | OPENMP = 1 | REPACK = 1 | 
+1.30.090.033 I kl_divergence: computing over 4 chunks, n_ctx=512, batch_size=512, n_seq=1
+1.36.442.195 I kl_divergence: 6.35 seconds per pass - ETA 0.42 minutes
+
+chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS            Same top p
+   1       1.1390 ±    0.0468       0.00085 ±    0.03236       0.07044 ±    0.02522    12.136 ±  2.275 %    96.863 ±  1.094 %
+   2       2.3594 ±    0.2185       0.04089 ±    0.02730       0.09377 ±    0.01478    11.646 ±  1.437 %    92.353 ±  1.178 %
+   3       2.4664 ±    0.1971       0.03786 ±    0.01999       0.08424 ±    0.01036    10.493 ±  1.099 %    93.203 ±  0.911 %
+   4       2.0110 ±    0.1241       0.03589 ±    0.01620       0.06785 ±    0.00802     9.510 ±  0.938 %    94.706 ±  0.701 %
+
+====== Perplexity statistics ======
+Mean PPL(Q)                   :   2.011036 ±   0.124073
+Mean PPL(base)                :   1.940144 ±   0.112815
+Cor(ln(PPL(Q)), ln(PPL(base))):  96.52%
+Mean ln(PPL(Q)/PPL(base))     :   0.035888 ±   0.016199
+Mean PPL(Q)/PPL(base)         :   1.036539 ±   0.016791
+Mean PPL(Q)-PPL(base)         :   0.070891 ±   0.033188
+
+====== KL divergence statistics ======
+Mean    KLD:   0.067849 ±   0.008020
+Maximum KLD:   4.925592
+99.9%   KLD:   2.489651
+99.0%   KLD:   1.176135
+95.0%   KLD:   0.359358
+90.0%   KLD:   0.159500
+Median  KLD:   0.000454
+10.0%   KLD:   0.000001
+ 5.0%   KLD:   0.000000
+ 1.0%   KLD:  -0.000002
+ 0.1%   KLD:  -0.000004
+Minimum KLD:  -0.000004
+
+====== Token probability statistics ======
+Mean    Δp: -0.442 ± 0.298 %
+Maximum Δp: 94.118%
+99.9%   Δp: 90.786%
+99.0%   Δp: 25.299%
+95.0%   Δp:  6.238%
+90.0%   Δp:  1.752%
+75.0%   Δp:  0.051%
+Median  Δp:  0.000%
+25.0%   Δp: -0.043%
+10.0%   Δp: -2.605%
+ 5.0%   Δp: -10.202%
+ 1.0%   Δp: -35.928%
+ 0.1%   Δp: -66.562%
+Minimum Δp: -85.969%
+RMS Δp    :  9.510 ± 0.938 %
+Same top p: 94.706 ± 0.701 %
+
