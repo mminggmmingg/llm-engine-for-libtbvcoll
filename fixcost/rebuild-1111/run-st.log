@@ -1,0 +1,39 @@
+mtp st bin=bin load A=0.56 B=0.17 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 60.97 tok/s (token-weighted) | srv-2node-mtp-bs-st-1111-210718
+   a: n=278 gfx 2221/2441/2519 상한 2165/2555/2770 활동 72/90/95 소켓W 67/69/70 gfxW 22/29/31 코어W 6/9/20 코어상한 1769/2035/4816 fclk 1605/1626/1673 uclk 1000/1000/1000 dramR 8444/32508/56256 dramW 7197/7793/8026 
+   b: n=271 gfx 2171/2233/2262 상한 2326/2486/2900 활동 64/77/82 소켓W 65/68/70 gfxW 24/29/31 코어W 4/6/13 코어상한 1572/1604/5015 fclk 1600/1601/1606 uclk 999/1000/1000 dramR 4939/15896/58251 dramW 6008/6964/7350 
+mtp st-w bin=bin load A=0.56 B=0.25 rdma=3 trace=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 61.11 tok/s (token-weighted) | srv-2node-mtp-bs-st-w-1111-211139
+   a: n=281 gfx 2510/2591/2671 상한 2505/2571/2900 활동 94/100/100 소켓W 68/70/70 gfxW 24/29/31 코어W 5/6/12 코어상한 1579/1918/4178 fclk 1607/1628/1684 uclk 1000/1000/1000 dramR 8457/32179/45654 dramW 7304/7849/8108 
+   b: n=269 gfx 2130/2204/2243 상한 2285/2474/2900 활동 64/77/82 소켓W 65/68/70 gfxW 25/29/30 코어W 4/6/12 코어상한 1572/1931/4892 fclk 1600/1603/1608 uclk 1000/1000/1000 dramR 4098/15745/58641 dramW 6092/6972/7387 
+# 추론 감시 비교 (2026-11-11 21:13:34, RUNS="mtp:st")
+
+기록 링을 켠 회라 tok/s 는 속도 회보다 ≈6% 낮다. 세션 폴더: runs/watch/<세션>/(report.html, receipt.md, stalls.txt).
+감시기 판: inferwatch iw-20261110-1 (reads ring format GGRPCTR1 v1..v1) (/data/parksThink/inferwatch-iw-20261110-1)
+
+| 설정 | 감시기 tok/s | ms/단계 | AR 지연 A→B 중앙 / p99 µs | B→A | 1 ms 넘는 기다림 ms/단계 | 그중 링크 / 상대 계산 (번) | 링크 늦음 1–2.5 / 2.5–3.5 / 3.5–7 / 7–12 / >12 ms (번) | 세션 |
+|---|---:|---:|---|---|---:|---|---|---|
+| mtp:st | 206.0 | 10.72 | 29.9 / 477.6 | 29.2 / 52.0 | 0.03 | 13 / 19 | 8 / 4 / 0 / 0 / 0 | 20261111-211144 |
+
+## 노드별 DRAM 읽기 (inferwatch dram-bytes, 기록 링 켠 회의 decode 단계, 쉬는 몫 뺌)
+
+| 회 | 노드 | GB/처리 토큰 | decode 중 GB/s | 239.7 대비 | 쉬는 몫 GB/s(중앙값, 3배 넘는 구간 수) | 처리 토큰 |
+|---|---|---:|---:|---:|---|---:|
+| mtp:st | A | 0.581 | 119.8 | 0.5 | 0.575 (1) | 5332 |
+| mtp:st | B | 0.482 | 99.3 | 0.414 | 0.388 (1) | 5332 |
+
+처리 토큰 = 감시 세션 decode 단계가 처리한 토큰(MTP 는 검증 묶음의 토큰까지 — 출력 토큰보다 많다). 85% 목표 값(none): 노드마다 GB/토큰 × 같은 구성 속도 회(기록 링 끔) tok/s ÷ 239.7.
+MTP 는 decode 중 GB/s(기록 링 켠 회) 를 본다. 자료: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/rebuild-1111/dram
+srv-2node-mtp-bs-st-w-1111-211139-bench.txt: 6/6 same
+srv-2node-mtp-bs-st-1111-210718-bench.txt: 6/6 same
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-st-w-1111-211139
+[meta init_tensor] 10 graph allocations: 11.89 ms for 7070 tensors each (avg)
+[meta time] 10 rebuilding calls: rebuild block 6.99 ms, subgraph launches 2.53 ms (avg, 7018 nodes, 97 subgraphs)
+[meta init_tensor] 20 graph allocations: 12.36 ms for 7070 tensors each (avg)
+[meta init_tensor] 30 graph allocations: 12.51 ms for 7070 tensors each (avg)
+process_ubatch: ctx 0x24994840 graph time over 860 rebuilds (avg ms): memory apply 0.03, reset 0.03, build 0.06, sched alloc 0.07 (140 nodes, ubatch 4)
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-st-1111-210718
+[meta init_tensor] 10 graph allocations: 11.48 ms for 7070 tensors each (avg)
+[meta time] 10 rebuilding calls: rebuild block 6.38 ms, subgraph launches 2.16 ms (avg, 7018 nodes, 97 subgraphs)
+[meta init_tensor] 20 graph allocations: 11.01 ms for 7070 tensors each (avg)
+[meta init_tensor] 30 graph allocations: 10.93 ms for 7070 tensors each (avg)
+process_ubatch: ctx 0x2b77c480 graph time over 860 rebuilds (avg ms): memory apply 0.03, reset 0.03, build 0.06, sched alloc 0.06 (140 nodes, ubatch 4)
+ALLDONE

@@ -1,0 +1,17 @@
+mtp ver bin=bin load A=0.59 B=0.10 rdma=3 trace=0 zc=ZC=3/ZC=3:  | srv-2node-mtp-bs-ver-1111-201654
+   a: no busy rows
+   b: no busy rows
+none ver bin=bin load A=0.55 B=0.24 rdma=2 trace=0 zc=ZC=3/ZC=3:  | srv-2node-none-bs-ver-1111-202114
+   a: no busy rows
+   b: no busy rows
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-none-bs-ver-1111-202114
+0
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-ver-1111-201654
+0
+mtp tb bin=bin load A=0.58 B=0.58 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 62.40 tok/s (token-weighted) | srv-2node-mtp-bs-tb-1111-202416
+   a: n=274 gfx 2211/2399/2492 상한 2131/2519/2684 활동 71/89/94 소켓W 67/69/70 gfxW 21/28/30 코어W 6/10/20 코어상한 1587/1966/4851 fclk 1607/1628/1676 uclk 1000/1000/1000 dramR 8102/34075/41230 dramW 7262/7961/8299 
+   b: n=268 gfx 2170/2223/2251 상한 2272/2481/2900 활동 64/78/82 소켓W 64/68/70 gfxW 24/29/30 코어W 4/6/13 코어상한 1574/1931/5024 fclk 1600/1602/1605 uclk 999/1000/1000 dramR 5849/19214/58201 dramW 6354/7433/7894 
+   (srv-2node-mtp-bs-tk-1111-202930: rdma=0 — 다시 1)
+mtp tk bin=bin load A=0.57 B=0.30 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 60.92 tok/s (token-weighted) | srv-2node-mtp-bs-tk-1111-203257
+   a: n=279 gfx 2259/2454/2538 상한 2189/2556/2871 활동 72/89/95 소켓W 67/69/70 gfxW 22/29/31 코어W 6/9/19 코어상한 1586/1922/4803 fclk 1606/1625/1678 uclk 1000/1000/1000 dramR 8441/31810/56276 dramW 7199/7736/7963 
+   b: n=276 gfx 2173/2227/2257 상한 2298/2478/2900 활동 63/78/82 소켓W 64/68/70 gfxW 24/29/31 코어W 4/6/13 코어상한 1577/1934/5021 fclk 1600/1601/1609 uclk 998/1000/1000 dramR 5721/17194/58388 dramW 6280/7339/7723 

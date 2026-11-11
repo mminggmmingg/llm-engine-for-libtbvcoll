@@ -1,0 +1,62 @@
+mtp gt bin=bin load A=0.58 B=0.27 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 60.52 tok/s (token-weighted) | srv-2node-mtp-bs-gt-1111-194343
+   a: n=280 gfx 2244/2429/2516 상한 2168/2538/2700 활동 71/89/95 소켓W 67/69/70 gfxW 22/28/31 코어W 6/9/19 코어상한 1582/1920/4783 fclk 1607/1625/1672 uclk 1000/1000/1000 dramR 9784/31867/56793 dramW 7212/7749/8050 
+   b: n=276 gfx 2165/2224/2257 상한 2309/2493/2900 활동 63/77/82 소켓W 64/68/70 gfxW 24/29/30 코어W 4/6/13 코어상한 1569/1611/5008 fclk 1599/1601/1606 uclk 999/1000/1000 dramR 5332/16782/57089 dramW 6241/7274/7672 
+none gt bin=bin load A=0.56 B=0.44 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 43.52 tok/s (token-weighted) | srv-2node-none-bs-gt-1111-194812
+   a: n=367 gfx 2384/2652/2740 상한 2542/2757/2827 활동 74/94/97 소켓W 67/70/70 gfxW 22/28/30 코어W 5/7/17 코어상한 1583/1922/4747 fclk 1604/1613/1657 uclk 1000/1000/1000 dramR 16083/56376/61991 dramW 3996/4123/4897 
+   b: n=368 gfx 2479/2645/2747 상한 2547/2739/2867 활동 73/94/97 소켓W 64/69/70 gfxW 25/30/32 코어W 2/4/10 코어상한 1569/1934/4951 fclk 1598/1601/1608 uclk 998/1000/1000 dramR 16912/57175/63061 dramW 4003/4182/4304 
+mtp gt-w bin=bin load A=0.56 B=0.39 rdma=3 trace=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 60.66 tok/s (token-weighted) | srv-2node-mtp-bs-gt-w-1111-195300
+   a: n=283 gfx 2503/2594/2677 상한 2521/2583/2900 활동 94/100/100 소켓W 68/70/70 gfxW 24/29/31 코어W 5/7/12 코어상한 1582/1918/4564 fclk 1605/1630/1688 uclk 1000/1000/1000 dramR 9635/31953/55789 dramW 7255/7831/8095 
+   b: n=276 gfx 2132/2199/2245 상한 2290/2478/2900 활동 64/77/82 소켓W 64/68/70 gfxW 24/29/30 코어W 4/6/13 코어상한 1570/1602/5010 fclk 1601/1603/1609 uclk 1000/1000/1000 dramR 5103/16990/57749 dramW 6301/7265/7694 
+none gt-w bin=bin load A=0.57 B=0.56 rdma=2 trace=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 43.54 tok/s (token-weighted) | srv-2node-none-bs-gt-w-1111-195752
+   a: n=368 gfx 2434/2666/2743 상한 2572/2763/2825 활동 74/94/97 소켓W 67/70/70 gfxW 22/28/30 코어W 5/7/16 코어상한 1579/1922/4585 fclk 1604/1615/1669 uclk 1000/1000/1000 dramR 16696/56141/61873 dramW 3965/4070/4861 
+   b: n=368 gfx 2490/2648/2730 상한 2570/2747/2898 활동 74/94/97 소켓W 64/69/70 gfxW 26/30/32 코어W 3/4/10 코어상한 1572/1934/4973 fclk 1600/1602/1609 uclk 1000/1000/1000 dramR 17613/57411/63006 dramW 4000/4183/4337 
+# 추론 감시 비교 (2026-11-11 19:59:56, RUNS="mtp:gt none:gt")
+
+기록 링을 켠 회라 tok/s 는 속도 회보다 ≈6% 낮다. 세션 폴더: runs/watch/<세션>/(report.html, receipt.md, stalls.txt).
+감시기 판: inferwatch iw-20261110-1 (reads ring format GGRPCTR1 v1..v1) (/data/parksThink/inferwatch-iw-20261110-1)
+
+| 설정 | 감시기 tok/s | ms/단계 | AR 지연 A→B 중앙 / p99 µs | B→A | 1 ms 넘는 기다림 ms/단계 | 그중 링크 / 상대 계산 (번) | 링크 늦음 1–2.5 / 2.5–3.5 / 3.5–7 / 7–12 / >12 ms (번) | 세션 |
+|---|---:|---:|---|---|---:|---|---|---|
+| mtp:gt | 203.2 | 10.87 | 30.1 / 478.9 | 29.5 / 53.1 | 0.01 | 5 / 4 | 3 / 0 / 2 / 0 / 0 | 20261111-195306 |
+| none:gt | 41.4 | 24.47 | 18.5 / 64.3 | 18.2 / 48.4 | 0.03 | 0 / 4 | 0 / 0 / 0 / 0 / 0 | 20261111-195757 |
+
+## 노드별 DRAM 읽기 (inferwatch dram-bytes, 기록 링 켠 회의 decode 단계, 쉬는 몫 뺌)
+
+| 회 | 노드 | GB/처리 토큰 | decode 중 GB/s | 239.7 대비 | 쉬는 몫 GB/s(중앙값, 3배 넘는 구간 수) | 처리 토큰 |
+|---|---|---:|---:|---:|---|---:|
+| mtp:gt | A | 0.584 | 118.6 | 0.495 | 0.574 (0) | 5332 |
+| mtp:gt | B | 0.484 | 98.3 | 0.41 | 1.487 (0) | 5332 |
+| none:gt | A | 3.213 | 133.2 | 0.556 | 0.518 (0) | 1429 |
+| none:gt | B | 3.194 | 132.4 | 0.552 | 1.452 (0) | 1429 |
+
+처리 토큰 = 감시 세션 decode 단계가 처리한 토큰(MTP 는 검증 묶음의 토큰까지 — 출력 토큰보다 많다). 85% 목표 값(none): 노드마다 GB/토큰 × 같은 구성 속도 회(기록 링 끔) tok/s ÷ 239.7.
+MTP 는 decode 중 GB/s(기록 링 켠 회) 를 본다. 자료: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/rebuild-1111/dram
+srv-2node-none-bs-gt-w-1111-195752-bench.txt: 6/6 same
+srv-2node-mtp-bs-gt-w-1111-195300-bench.txt: 6/6 same
+srv-2node-none-bs-gt-1111-194812-bench.txt: 6/6 same
+srv-2node-mtp-bs-gt-1111-194343-bench.txt: 6/6 same
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-none-bs-gt-1111-194812
+ggml_backend_meta_get_split_state: split state cache: 1.1 us per miss over 404000 misses
+ggml_backend_meta_get_split_state: split state cache: 1.1 us per miss over 406000 misses
+ggml_backend_meta_get_split_state: split state cache: 1.1 us per miss over 408000 misses
+ggml_backend_meta_get_split_state: split state cache: 1.1 us per miss over 410000 misses
+ggml_backend_meta_get_split_state: split state cache: 1.1 us per miss over 412000 misses
+ggml_backend_meta_get_split_state: split state cache: 1.1 us per miss over 414000 misses
+ggml_backend_meta_get_split_state: split state cache: 1.1 us per miss over 416000 misses
+ggml_backend_meta_get_split_state: split state cache: 1020697 hits, 416220 misses, 81 clears
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-gt-1111-194343
+ggml_backend_meta_get_split_state: split state cache: 1.1 us per miss over 378000 misses
+ggml_backend_meta_get_split_state: split state cache: 1.1 us per miss over 380000 misses
+ggml_backend_meta_get_split_state: split state cache: 1.1 us per miss over 382000 misses
+ggml_backend_meta_get_split_state: split state cache: 1.1 us per miss over 384000 misses
+ggml_backend_meta_get_split_state: split state cache: 1.1 us per miss over 386000 misses
+ggml_backend_meta_get_split_state: split state cache: 1.1 us per miss over 388000 misses
+ggml_backend_meta_get_split_state: split state cache: 1.1 us per miss over 390000 misses
+ggml_backend_meta_get_split_state: split state cache: 1.1 us per miss over 392000 misses
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/watch/20261111-195757: 본 모델 ubatch 1421 (decode 크기 1409: 다시 지음 23, 재사용 1386)
+  다시 지음: 그래프 준비 중앙 14.6 ms, 발행까지 중앙 25.5 ms (최대 39.9), 합 0.63 s, GRAPH_COMPUTE 간격 중앙 10 us; 크기 [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 4, 4, 4, 4, 4, 4]
+  재사용: 발행까지 중앙 0.47 ms
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/watch/20261111-195306: 본 모델 ubatch 499 (decode 크기 487: 다시 지음 19, 재사용 468)
+  다시 지음: 그래프 준비 중앙 24.0 ms, 발행까지 중앙 36.8 ms (최대 44.1), 합 0.66 s, GRAPH_COMPUTE 간격 중앙 11 us; 크기 [2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+  재사용: 발행까지 중앙 0.74 ms
+ALLDONE

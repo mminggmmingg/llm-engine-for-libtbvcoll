@@ -185,3 +185,11 @@
     워커가 서버에 이미 있는 같은 내용 그래프를 GRAPH_RECOMPUTE 로 바꿈(uid 기록은 실제로 보낸 그래프만 — 서버 저장 표와 같이 1024 에서 비움). 둘 다 지금은 느림.
   - 측정용: `GGML_RPC_SER_TIME=1`(워커의 직렬화·보내기 평균), `GGML_RPC_DEDUP_TIME=1`(직렬화 + '바로 한 번 더' 시간), `LLAMA_CPU_PROBE=N`(N 번째 decode 마다 시계 호출·레지스터 고리),
     도구 `tools/bench/rebuilds.py <감시 세션>`(다시 지은 본 모델 단계 수·비용).
+- 2026-11-11 저녁(다시 짓기의 남은 몫, RESULTS.md 11-11 18:00 절):
+  - **기본 켬:** `GGML_RPC_SER_CUT=<n>`(클라이언트 RPC 직렬화, 기본 2, `=0` 이면 예전처럼 소스를 끝까지) — 부분그래프 메시지에 노드 밖 소스를 n 단계까지만. 메시지 0.5–1.9 MB → 29 KB,
+    다시 짓기 90 → 32 ms, 출력 같음, MTP +2.8%, none +3.4%.
+  - **기본 켬:** `GGML_META_CACHE_KEEP`(클라이언트 메타 백엔드, 기본 1, `=0` 이면 예전처럼) — 분할 상태 캐시에서 바뀐 텐서의 항목만 다시 계산(다시 계산한 상태가 바뀌었을 때만 통째로
+    비움; 비교에서 data·extra 뺌). 다시 짓기 발행 29.6 → 20.7 ms, MTP +0.3%, 출력·분할 상태 같음. 메타 백엔드의 분할 상태 캐시·단순 텐서 표는 `std::unordered_map`(스위치 없음).
+  - 측정용: `GGML_RPC_GC_STATS=2`(서버, 새 그래프를 단계 안 순번 k 별로: 크기·받기·준비·풀기·발행·스레드 CPU·CPU 탐침), `LLAMA_GRAPH_TIME=1`(클라이언트, 다시 짓는 decode 크기
+    ubatch 의 메모리 적용·reset·build·sched alloc, 컨텍스트별), `GGML_META_TIME=1`(메타 백엔드 다시 짓기 블록·부분그래프 발행, 그래프 하나의 init_tensor 합),
+    `GGML_SCHED_TIME=1`(sched 분할·할당·재예약), `GGML_META_CACHE_DIGEST=1`(바깥에 돌려준 분할 상태의 누적 해시 — 두 회 비교용), `GGML_META_CACHE_STATS=1` 에 KEEP 통계·상태가 바뀐 텐서.

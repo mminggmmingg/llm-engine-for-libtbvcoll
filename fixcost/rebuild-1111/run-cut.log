@@ -1,0 +1,95 @@
+   (srv-2node-mtp-bs-cut-1111-182141: rdma=0 — 다시 1)
+mtp cut bin=bin load A=0.59 B=0.23 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 60.60 tok/s (token-weighted) | srv-2node-mtp-bs-cut-1111-182407
+   a: n=280 gfx 2240/2440/2535 상한 2180/2567/2880 활동 71/89/95 소켓W 67/69/70 gfxW 22/29/31 코어W 6/9/20 코어상한 1584/1923/4772 fclk 1607/1627/1678 uclk 1000/1000/1000 dramR 9937/31953/57253 dramW 7209/7792/8067 
+   b: n=277 gfx 2161/2223/2248 상한 2289/2481/2900 활동 64/77/82 소켓W 64/68/70 gfxW 24/29/30 코어W 4/6/13 코어상한 1577/1934/4973 fclk 1600/1601/1608 uclk 999/1000/1000 dramR 5720/17181/57547 dramW 6243/7253/7686 
+mtp cut-w bin=bin load A=0.59 B=0.35 rdma=3 trace=1 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 60.76 tok/s (token-weighted) | srv-2node-mtp-bs-cut-w-1111-182832
+   a: n=283 gfx 2507/2589/2666 상한 2511/2578/2900 활동 94/100/100 소켓W 68/70/70 gfxW 24/29/30 코어W 5/7/12 코어상한 1581/1920/4433 fclk 1607/1625/1679 uclk 1000/1000/1000 dramR 8410/31917/44879 dramW 7413/7922/8168 
+   b: n=274 gfx 2133/2204/2246 상한 2285/2471/2900 활동 64/77/82 소켓W 64/68/70 gfxW 24/29/30 코어W 4/6/13 코어상한 1574/1930/4994 fclk 1600/1604/1613 uclk 1000/1000/1000 dramR 5651/17132/57837 dramW 6336/7292/7701 
+# 추론 감시 비교 (2026-11-11 18:30:27, RUNS="mtp:cut")
+
+기록 링을 켠 회라 tok/s 는 속도 회보다 ≈6% 낮다. 세션 폴더: runs/watch/<세션>/(report.html, receipt.md, stalls.txt).
+감시기 판: inferwatch iw-20261110-1 (reads ring format GGRPCTR1 v1..v1) (/data/parksThink/inferwatch-iw-20261110-1)
+
+| 설정 | 감시기 tok/s | ms/단계 | AR 지연 A→B 중앙 / p99 µs | B→A | 1 ms 넘는 기다림 ms/단계 | 그중 링크 / 상대 계산 (번) | 링크 늦음 1–2.5 / 2.5–3.5 / 3.5–7 / 7–12 / >12 ms (번) | 세션 |
+|---|---:|---:|---|---|---:|---|---|---|
+| mtp:cut | 210.6 | 10.49 | 30.0 / 466.5 | 29.0 / 53.4 | 0.01 | 1 / 6 | 1 / 0 / 0 / 0 / 0 | 20261111-182838 |
+
+## 노드별 DRAM 읽기 (inferwatch dram-bytes, 기록 링 켠 회의 decode 단계, 쉬는 몫 뺌)
+
+| 회 | 노드 | GB/처리 토큰 | decode 중 GB/s | 239.7 대비 | 쉬는 몫 GB/s(중앙값, 3배 넘는 구간 수) | 처리 토큰 |
+|---|---|---:|---:|---:|---|---:|
+| mtp:cut | A | 0.583 | 122.9 | 0.513 | 0.627 (0) | 5332 |
+| mtp:cut | B | 0.484 | 101.9 | 0.425 | 1.374 (0) | 5332 |
+
+처리 토큰 = 감시 세션 decode 단계가 처리한 토큰(MTP 는 검증 묶음의 토큰까지 — 출력 토큰보다 많다). 85% 목표 값(none): 노드마다 GB/토큰 × 같은 구성 속도 회(기록 링 끔) tok/s ÷ 239.7.
+MTP 는 decode 중 GB/s(기록 링 켠 회) 를 본다. 자료: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/rebuild-1111/dram
+srv-2node-mtp-bs-cut-w-1111-182832-bench.txt: 6/6 same
+srv-2node-mtp-bs-cut-1111-182407-bench.txt: 6/6 same
+srv-2node-mtp-bs-gc2-w-1111-181623-bench.txt: 6/6 same
+srv-2node-mtp-bs-gc2-1111-181212-bench.txt: 6/6 same
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-cut-w-1111-182832 a
+[graph_compute by k] (us) 
+ k0+ n285 31KB recv 5 set 12 des 9 lau 704 cpu 719 probe 6.4 
+ k8+ n252 29KB recv 4 set 9 des 6 lau 85 cpu 101 probe 6.7 
+ k16+ n233 29KB recv 4 set 9 des 7 lau 85 cpu 101 probe 7.0 
+ k24+ n224 29KB recv 4 set 9 des 7 lau 87 cpu 103 probe 7.4 
+ k32+ n192 29KB recv 4 set 11 des 7 lau 83 cpu 100 probe 7.4 
+ k40+ n176 29KB recv 4 set 11 des 7 lau 75 cpu 93 probe 7.2 
+ k48+ n146 29KB recv 7 set 16 des 6 lau 68 cpu 89 probe 6.5 
+ k56+ n128 29KB recv 3 set 11 des 5 lau 66 cpu 82 probe 6.0 
+ k64+ n128 29KB recv 3 set 12 des 5 lau 62 cpu 79 probe 6.2 
+ k72+ n128 29KB recv 4 set 14 des 5 lau 63 cpu 82 probe 6.3 
+ k80+ n123 29KB recv 4 set 10 des 5 lau 56 cpu 72 probe 6.2 
+ k88+ n118 29KB recv 4 set 9 des 5 lau 53 cpu 68 probe 6.3 
+ k96+ n13 18KB recv 4 set 3 des 4 lau 65 cpu 71 probe 6.3
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-cut-w-1111-182832 b
+[graph_compute by k] (us) 
+ k0+ n300 31KB recv 7 set 5 des 5 lau 557 cpu 560 probe 4.3 
+ k8+ n241 29KB recv 7 set 5 des 4 lau 49 cpu 58 probe 4.4 
+ k16+ n228 29KB recv 7 set 7 des 4 lau 47 cpu 58 probe 4.4 
+ k24+ n216 29KB recv 7 set 6 des 4 lau 44 cpu 54 probe 4.3 
+ k32+ n200 29KB recv 7 set 7 des 4 lau 45 cpu 55 probe 4.5 
+ k40+ n180 29KB recv 7 set 7 des 4 lau 45 cpu 56 probe 4.8 
+ k48+ n149 29KB recv 7 set 11 des 4 lau 42 cpu 57 probe 4.6 
+ k56+ n128 29KB recv 7 set 7 des 4 lau 36 cpu 47 probe 4.3 
+ k64+ n128 29KB recv 6 set 6 des 3 lau 36 cpu 46 probe 4.4 
+ k72+ n128 29KB recv 6 set 7 des 4 lau 36 cpu 47 probe 4.4 
+ k80+ n128 29KB recv 3 set 10 des 3 lau 37 cpu 50 probe 4.4 
+ k88+ n109 29KB recv 3 set 6 des 3 lau 38 cpu 48 probe 4.6 
+ k96+ n11 18KB recv 3 set 1 des 2 lau 43 cpu 46 probe 4.3
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-cut-1111-182407 a
+[graph_compute by k] (us) 
+ k0+ n354 31KB recv 4 set 10 des 7 lau 572 cpu 588 probe 5.3 
+ k8+ n257 29KB recv 3 set 8 des 5 lau 64 cpu 78 probe 5.0 
+ k16+ n238 29KB recv 3 set 9 des 5 lau 61 cpu 75 probe 5.0 
+ k24+ n220 29KB recv 3 set 9 des 5 lau 58 cpu 71 probe 5.0 
+ k32+ n174 29KB recv 4 set 8 des 5 lau 54 cpu 67 probe 4.8 
+ k40+ n154 29KB recv 3 set 9 des 5 lau 54 cpu 68 probe 5.1 
+ k48+ n138 29KB recv 6 set 14 des 5 lau 56 cpu 75 probe 5.0 
+ k56+ n120 29KB recv 3 set 10 des 5 lau 49 cpu 63 probe 4.9 
+ k64+ n120 29KB recv 3 set 11 des 4 lau 46 cpu 61 probe 4.6 
+ k72+ n120 29KB recv 3 set 9 des 4 lau 45 cpu 57 probe 4.6 
+ k80+ n120 29KB recv 3 set 10 des 4 lau 44 cpu 58 probe 4.6 
+ k88+ n118 29KB recv 3 set 9 des 4 lau 43 cpu 56 probe 4.6 
+ k96+ n13 18KB recv 2 set 2 des 3 lau 56 cpu 61 probe 4.6
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-cut-1111-182407 b
+[graph_compute by k] (us) 
+ k0+ n424 31KB recv 7 set 5 des 5 lau 411 cpu 421 probe 4.5 
+ k8+ n259 29KB recv 7 set 5 des 4 lau 48 cpu 57 probe 4.4 
+ k16+ n232 29KB recv 7 set 6 des 4 lau 45 cpu 55 probe 4.3 
+ k24+ n198 29KB recv 7 set 6 des 4 lau 42 cpu 51 probe 4.3 
+ k32+ n160 29KB recv 7 set 6 des 4 lau 37 cpu 47 probe 4.3 
+ k40+ n144 29KB recv 7 set 6 des 4 lau 36 cpu 46 probe 4.4 
+ k48+ n135 29KB recv 7 set 10 des 4 lau 37 cpu 51 probe 4.4 
+ k56+ n120 29KB recv 7 set 6 des 3 lau 34 cpu 44 probe 4.3 
+ k64+ n120 29KB recv 6 set 6 des 4 lau 35 cpu 44 probe 4.3 
+ k72+ n120 29KB recv 6 set 6 des 3 lau 35 cpu 44 probe 4.4 
+ k80+ n115 29KB recv 3 set 7 des 3 lau 34 cpu 44 probe 4.4 
+ k88+ n107 29KB recv 3 set 6 des 3 lau 32 cpu 42 probe 4.4 
+ k96+ n12 18KB recv 2 set 1 des 2 lau 40 cpu 44 probe 4.3
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/watch/20261111-182838: 본 모델 ubatch 499 (decode 크기 487: 다시 지음 19, 재사용 468)
+  다시 지음: 그래프 준비 중앙 21.0 ms, 발행까지 중앙 32.3 ms (최대 39.1), 합 0.61 s, GRAPH_COMPUTE 간격 중앙 11 us; 크기 [2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+  재사용: 발행까지 중앙 0.84 ms
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/watch/20261111-181629: 본 모델 ubatch 499 (decode 크기 487: 다시 지음 19, 재사용 468)
+  다시 지음: 그래프 준비 중앙 18.6 ms, 발행까지 중앙 90.3 ms (최대 115.2), 합 1.75 s, GRAPH_COMPUTE 간격 중앙 287 us; 크기 [2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+  재사용: 발행까지 중앙 0.87 ms
