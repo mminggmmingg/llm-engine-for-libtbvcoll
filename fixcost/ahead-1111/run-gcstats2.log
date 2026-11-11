@@ -1,0 +1,11 @@
+mtp gc bin=bin load A=0.55 B=0.28 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1407, decode 59.13 tok/s (token-weighted) | srv-2node-mtp-bs-gc-1111-161730
+   a: n=291 gfx 2208/2440/2520 상한 2151/2553/2774 활동 70/89/95 소켓W 67/69/70 gfxW 21/28/31 코어W 7/10/22 코어상한 1579/1920/4873 fclk 1610/1630/1689 uclk 1000/1000/1000 dramR 9736/30574/54957 dramW 7344/7750/7906 
+   b: n=286 gfx 2182/2234/2267 상한 2286/2485/2900 활동 59/75/81 소켓W 64/68/70 gfxW 24/29/30 코어W 4/7/16 코어상한 1567/1604/5052 fclk 1609/1620/1653 uclk 999/1000/1000 dramR 5983/16199/58152 dramW 6369/7275/7672 
+== a
+[graph_compute stats] 1607 new graphs (556 identical to an earlier one), avg 72.4 nodes, 31172 bytes: setup 123.7 us, deserialize 184.2 us, first launch 362.2 us
+[graph_compute stats] 2146 new graphs (998 identical to an earlier one), avg 72.4 nodes, 31172 bytes: setup 115.8 us, deserialize 177.5 us, first launch 333.6 us
+[graph_compute stats] 2728 new graphs (1483 identical to an earlier one), avg 72.4 nodes, 31172 bytes: setup 104.2 us, deserialize 175.5 us, first launch 317.1 us
+== b
+[graph_compute stats] 1607 new graphs (556 identical to an earlier one), avg 72.4 nodes, 31172 bytes: setup 99.1 us, deserialize 138.8 us, first launch 298.6 us
+[graph_compute stats] 2146 new graphs (998 identical to an earlier one), avg 72.4 nodes, 31172 bytes: setup 92.6 us, deserialize 137.4 us, first launch 276.8 us
+[graph_compute stats] 2728 new graphs (1483 identical to an earlier one), avg 72.4 nodes, 31172 bytes: setup 83.3 us, deserialize 138.2 us, first launch 264.0 us
