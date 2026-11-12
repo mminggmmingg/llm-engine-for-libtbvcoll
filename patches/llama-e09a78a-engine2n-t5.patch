@@ -14201,7 +14201,7 @@ index 81af890..cb23593 100644
          memset(split_state.ne, 0, sizeof(split_state.ne));
          split_state.nr[0] = 1;
 diff --git a/src/models/qwen4exp.cpp b/src/models/qwen4exp.cpp
-index c3e2b01..cab0612 100644
+index c3e2b01..df44ada 100644
 --- a/src/models/qwen4exp.cpp
 +++ b/src/models/qwen4exp.cpp
 @@ -190,7 +190,12 @@ void llama_model_qwen4exp::load_arch_tensors(llama_model_loader & ml) {
@@ -14336,13 +14336,13 @@ index c3e2b01..cab0612 100644
      // the older pools come from the rows earlier ubatches wrote
      ggml_build_forward_expand(gf, kpool_cache.scatter_pooled(pooled_new, inp_kpool->new_pool_rep));
 +
-+    // engine2n: LLAMA_QSA_SHORT=1 — while every pool fits the budget (n_pool <= top_k/kpool, i.e. up to 2048 cells here), top_k picks all
++    // engine2n: LLAMA_QSA_SHORT=1 (default since 2026-11-12; =0 restores the indexer path) — while every pool fits the budget (n_pool <= top_k/kpool, i.e. up to 2048 cells here), top_k picks all
 +    // of them and the selection keeps exactly the visible ones: top_k_mask only asks whether a pick's score is above -inf, and the
 +    // indexer score is -inf exactly where pool_mask is. So score with pool_mask itself and skip the indexer query projection, its
 +    // norm and rope, the gather of all pooled keys, the weights and the lightning indexer. The cache writes above stay (later,
 +    // longer steps need them); the mask and the attention call are the same as before.
 +    // =2 (check only): the indexer still runs (its score is computed and dropped), only the mask comes from pool_mask
-+    static const int qsa_short = [] { const char * e = getenv("LLAMA_QSA_SHORT"); return e != nullptr ? atoi(e) : 0; }();
++    static const int qsa_short = [] { const char * e = getenv("LLAMA_QSA_SHORT"); return e != nullptr ? atoi(e) : 1; }();
 +    const bool qsa_all_pools = cparams.fused_top_k_mask && n_pool <= (int64_t) (hparams.indexer_top_k / kpool);
 +    if (qsa_short == 1 && qsa_all_pools) {
 +        const ggml_type type_mask_s = cparams.flash_attn ? GGML_TYPE_F16 : GGML_TYPE_F32;

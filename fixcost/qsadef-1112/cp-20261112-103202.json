@@ -1,0 +1,89 @@
+{
+  "schema_version": "2.1.0",
+  "kind": "inferwatch.critical_path_summary",
+  "generator": {
+    "name": "inferwatch",
+    "version": "iw-20261110-1"
+  },
+  "session_id": "20261112-103202",
+  "decode_steps": 2424,
+  "first_step_index": 0,
+  "paths_complete": 1936,
+  "ambiguous_edges": 5346,
+  "latency_ns_per_step": 10702464,
+  "classification": "derived",
+  "items": [
+    {
+      "category": "gpu_compute:B",
+      "ns_per_step": 3412135,
+      "share": 0.3188
+    },
+    {
+      "category": "gpu_compute:A",
+      "ns_per_step": 3281197,
+      "share": 0.3066
+    },
+    {
+      "category": "client_local",
+      "ns_per_step": 1628726,
+      "share": 0.1522
+    },
+    {
+      "category": "unattributed",
+      "ns_per_step": 931008,
+      "share": 0.0870
+    },
+    {
+      "category": "link",
+      "ns_per_step": 573130,
+      "share": 0.0536
+    },
+    {
+      "category": "output_layer_and_read:B",
+      "ns_per_step": 305713,
+      "share": 0.0286
+    },
+    {
+      "category": "host_launch_path",
+      "ns_per_step": 275169,
+      "share": 0.0257
+    },
+    {
+      "category": "proxy_post:A",
+      "ns_per_step": 128900,
+      "share": 0.0120
+    },
+    {
+      "category": "proxy_post:B",
+      "ns_per_step": 125053,
+      "share": 0.0117
+    },
+    {
+      "category": "output_reply",
+      "ns_per_step": 18988,
+      "share": 0.0018
+    },
+    {
+      "category": "client_after_output",
+      "ns_per_step": 11562,
+      "share": 0.0011
+    },
+    {
+      "category": "recv_after_post:A",
+      "ns_per_step": 6414,
+      "share": 0.0006
+    },
+    {
+      "category": "recv_after_post:B",
+      "ns_per_step": 4468,
+      "share": 0.0004
+    }
+  ],
+  "unknowns": [
+    "client_local: a step with no server command; what the client did inside it is not recorded (with MTP these are, by hypothesis, the draft model's steps on the client GPU)",
+    "kernel-level GPU times inside a subgraph are not recorded (v1 rings): gpu_compute is one block per allreduce, ending when the proxy thread saw the flag (polling delay included)",
+    "which client command started which server command is not recorded: host_launch_path is matched by time order (inferred)",
+    "token ids and text are not recorded: a step is one llama_decode call (with MTP a verify step holds several tokens)",
+    "CPU scheduling and per-message RDMA times are not recorded: host and link delays are not split further"
+  ]
+}
