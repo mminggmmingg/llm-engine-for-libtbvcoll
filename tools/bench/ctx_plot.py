@@ -1,5 +1,5 @@
-# 컨텍스트 길이 벤치(ctx_bench.py) 결과 → README 용 표(markdown)와 SVG 그림(밝은·어두운 테마). 표준 라이브러리만.
-#   ctx_plot.py <출력 폴더> none=<ctx.jsonl>[,<ctx.jsonl>...] mtp=<ctx.jsonl>[,...]
+# Context-length benchmark (ctx_bench.py) results -> README table (markdown) and SVG charts (light and dark). Standard library only.
+#   ctx_plot.py <outdir> none=<ctx.jsonl>[,...] mtp=<ctx.jsonl>[,...] [none_old=<ctx.jsonl>[,...]]  (none_old: dashed "before" line)
 # 같은 깊이가 여러 파일에 있으면 모두 모은다(평균 ± 표준편차). 그림: 깊이별 decode(tg) t/s, 문맥 채우기(ctx_pp) t/s.
 import json, os, statistics, sys
 
@@ -35,10 +35,10 @@ def lab(d):
 def fmt(m, s, n, nd=1, unit=""):
     if m is None:
         return "—"
-    return f"{m:.{nd}f}{unit}" + (f" ± {s:.{nd}f}" if s is not None else "") + ("" if n > 1 else " (1회)")
+    return f"{m:.{nd}f}{unit}" + (f" ± {s:.{nd}f}" if s is not None else "") + ("" if n > 1 else " (1 run)")
 
 # 표: 깊이마다 한 줄, none·MTP 나란히
-hdr = ("| 문맥 깊이 d (토큰) | 문맥 채우기 t/s | 채우는 시간 s | pp512 @ d t/s | tg128 @ d t/s (none) | tg128 @ d t/s (MTP) | MTP 채택률 |\n"
+hdr = ("| Context depth d (tokens) | Context fill t/s | Fill time s | pp512 @ d t/s | tg128 @ d t/s (none) | tg128 @ d t/s (MTP) | MTP acceptance |\n"
        "|---:|---:|---:|---:|---:|---:|---:|")
 lines = [hdr]
 for d in depths:
@@ -51,8 +51,8 @@ open(os.path.join(outdir, "ctx-table.md"), "w").write("\n".join(lines) + "\n")
 print("\n".join(lines))
 
 THEMES = {
-    "light": dict(bg="#ffffff", ink="#1f2328", muted="#59636e", grid="#d1d9e0", c={"blue": "#1f6feb", "orange": "#bc4c00", "green": "#1a7f37"}),
-    "dark": dict(bg="#0d1117", ink="#e6edf3", muted="#9198a1", grid="#3d444d", c={"blue": "#4493f8", "orange": "#f0883e", "green": "#3fb950"}),
+    "light": dict(bg="#ffffff", ink="#1f2328", muted="#59636e", grid="#d1d9e0", c={"blue": "#1f6feb", "orange": "#bc4c00", "green": "#1a7f37", "gray": "#8c959f"}),
+    "dark": dict(bg="#0d1117", ink="#e6edf3", muted="#9198a1", grid="#3d444d", c={"blue": "#4493f8", "orange": "#f0883e", "green": "#3fb950", "gray": "#6e7681"}),
 }
 
 def chart(name, title, ylab, series, theme):
@@ -84,16 +84,17 @@ def chart(name, title, ylab, series, theme):
         y += step
     for i, d in enumerate(xs):
         o.append(f'<text x="{px(i):.1f}" y="{H - B + 20}" font-size="12" text-anchor="middle" fill="{T["muted"]}">{lab(d)}</text>')
-    o.append(f'<text x="{(L + W - R) / 2:.0f}" y="{H - 10}" font-size="12" text-anchor="middle" fill="{T["muted"]}">문맥 깊이 d (토큰)</text>')
+    o.append(f'<text x="{(L + W - R) / 2:.0f}" y="{H - 10}" font-size="12" text-anchor="middle" fill="{T["muted"]}">context depth d (tokens)</text>')
     o.append(f'<text x="14" y="{(TOP + H - B) / 2:.0f}" font-size="12" text-anchor="middle" fill="{T["muted"]}" transform="rotate(-90 14 {(TOP + H - B) / 2:.0f})">{ylab}</text>')
     lx = L
     for m, k, name_, cn, _ in series:   # 범례(위), 끝 점에는 이름을 직접 붙임
         col = T["c"][cn]
-        o.append(f'<line x1="{lx}" x2="{lx + 18}" y1="44" y2="44" stroke="{col}" stroke-width="2"/><circle cx="{lx + 9}" cy="44" r="4" fill="{col}"/>')
+        dash = ' stroke-dasharray="5 4"' if cn == "gray" else ''
+        o.append(f'<line x1="{lx}" x2="{lx + 18}" y1="44" y2="44" stroke="{col}" stroke-width="2"{dash}/><circle cx="{lx + 9}" cy="44" r="4" fill="{col}"/>')
         o.append(f'<text x="{lx + 24}" y="48" font-size="12" fill="{T["ink"]}">{name_}</text>')
-        lx += 24 + 8 * len(name_) + 28
+        lx += 24 + 7 * len(name_) + 22
     if any(agg(modes.get(m, []), d, M[k])[1] is not None for m, k, *_ in series for d in xs):
-        o.append(f'<text x="{W - R}" y="48" font-size="11" text-anchor="end" fill="{T["muted"]}">세로 막대 = ±1 표준편차</text>')
+        o.append(f'<text x="{W - 16}" y="24" font-size="11" text-anchor="end" fill="{T["muted"]}">bars = ±1 standard deviation</text>')
     ends = []
     for m, k, name_, cn, short in series:
         col = T["c"][cn]
@@ -105,7 +106,8 @@ def chart(name, title, ylab, series, theme):
             pts.append((px(i), py(mu), sd))
         if not pts:
             continue
-        o.append(f'<polyline fill="none" stroke="{col}" stroke-width="2" points="' + " ".join(f"{a:.1f},{b:.1f}" for a, b, _ in pts) + '"/>')
+        dash = ' stroke-dasharray="5 4"' if cn == "gray" else ''
+        o.append(f'<polyline fill="none" stroke="{col}" stroke-width="2"{dash} points="' + " ".join(f"{a:.1f},{b:.1f}" for a, b, _ in pts) + '"/>')
         for i, (a, b, sd) in enumerate(pts):
             if sd:
                 mu = ymax * (1 - (b - TOP) / (H - TOP - B))
@@ -124,8 +126,10 @@ def chart(name, title, ylab, series, theme):
     open(os.path.join(outdir, f"{name}-{theme}.svg"), "w").write("\n".join(o) + "\n")
 
 for th in THEMES:
-    chart("ctx-decode", "디코드 속도 — 문맥 깊이 d 에서 128토큰 생성 (tg128 @ d)", "t/s",
-          [("none", "tg", "none (추측 없음)", "blue", "none"), ("mtp", "tg", "MTP (초안 3토큰)", "orange", "MTP")], th)
-    chart("ctx-prefill", "프롬프트 처리 속도 — 2노드 none", "t/s",
-          [("none", "ctx", "0 → d 채우기 평균", "blue", "채우기"), ("none", "pp", "d 뒤 512토큰 (pp512 @ d)", "green", "pp512")], th)
+    dec = [("none", "tg", "none (no speculation)", "blue", "none"), ("mtp", "tg", "MTP (3 draft tokens)", "orange", "MTP")]
+    if "none_old" in modes:   # the same benchmark before a change, dashed
+        dec.append(("none_old", "tg", "none, before", "gray", "before"))
+    chart("ctx-decode", "Decode speed at context depth d (tg128 @ d)", "t/s", dec, th)
+    chart("ctx-prefill", "Prompt processing, 2 nodes, none", "t/s",
+          [("none", "ctx", "fill 0 → d (average)", "blue", "fill"), ("none", "pp", "512 more tokens after d (pp512 @ d)", "green", "pp512")], th)
 print("written", outdir)

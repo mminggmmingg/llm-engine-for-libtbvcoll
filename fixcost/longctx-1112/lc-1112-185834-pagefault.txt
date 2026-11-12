@@ -1,0 +1,18 @@
+# lc 회(18:58, 인덱서 키 직접 읽기 첫 판 — 번호 목록을 복사하지 않고 읽음): 깊이 32768 의 pp512 요청 시작에서 두 노드 GPU page fault
+## server.log
+70:/data/parksThink/macos_reversing/codex/zbook-rdma/experiments/engine2n/llama.cpp/ggml/src/ggml-rpc/ggml-rpc.cpp:1059: Remote RPC server crashed or returned malformed response
+## rpc-a.log 끝
+runs/srv-2node-none-bs-lc-1112-185834/rpc-b.log:147:Memory access fault by GPU node-1 (Agent handle: 0xc7a1e80) on address 0x7bee335ce000. Reason: Page not present or supervisor privilege.
+## A·B journalctl -k 19:02:02 (amdgpu)
+Nov 12 19:02:02 park2 kernel: amdgpu 0000:c3:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:8 pasid:2485)
+Nov 12 19:02:02 park2 kernel: amdgpu 0000:c3:00.0:  Process ggml-rpc-server pid 1494976 thread ggml-rpc-server pid 1494976
+Nov 12 19:02:02 park2 kernel: amdgpu 0000:c3:00.0:   in page starting at address 0x00007c1f53efe000 from client 10
+Nov 12 19:02:02 park2 kernel: amdgpu 0000:c3:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00801030
+Nov 12 19:02:02 park2 kernel: amdgpu 0000:c3:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+Nov 12 19:02:02 park2 kernel: amdgpu 0000:c3:00.0:          MORE_FAULTS: 0x0
+Nov 12 19:02:02 parks-zbook kernel: amdgpu 0000:c3:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:8 pasid:1235)
+Nov 12 19:02:02 parks-zbook kernel: amdgpu 0000:c3:00.0:  Process ggml-rpc-server pid 1444228 thread ggml-rpc-server pid 1444228
+Nov 12 19:02:02 parks-zbook kernel: amdgpu 0000:c3:00.0:   in page starting at address 0x00007bee335ce000 from client 10
+Nov 12 19:02:02 parks-zbook kernel: amdgpu 0000:c3:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00801030
+Nov 12 19:02:02 parks-zbook kernel: amdgpu 0000:c3:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+Nov 12 19:02:02 parks-zbook kernel: amdgpu 0000:c3:00.0:          MORE_FAULTS: 0x0

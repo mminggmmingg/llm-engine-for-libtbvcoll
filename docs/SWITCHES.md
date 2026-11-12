@@ -216,3 +216,16 @@
   - `tools/bench/ctx_plot.py <출력 폴더> none=<jsonl,...> mtp=<jsonl,...>`: `ctx-table.md` 와 `ctx-{decode,prefill}-{light,dark}.svg`(표준 라이브러리만).
   - `tools/watch/ctxseg.py <감시기 세션> [AR 수=96] [간격 s=2] [단계 상한 ms=200] [AR 바이트=10240]`: 대리 스레드 AR 기록(ZC=3)에서 그 크기의 AR 을 96개씩 decode 단계로
     묶고 간격으로 깊이(측정)를 가른 뒤, 깊이마다 단계 시간과 AR 사이 구간별 GPU 계산 시간 중앙값(노드 A·B). 4토큰 MTP 검증은 AR 바이트 40960.
+- 2026-11-12 저녁(긴 문맥 디코드, 서버 CUDA 쪽 — 클라이언트 그래프 그대로, **기본 켬**, RESULTS.md 11-12 18:20 절):
+  - `GGML_CUDA_NO_FA_SKIP=1` 이면 끔: FA tile 커널(디코드·MTP 검증이 쓰는 것, 머리 크기 256 이하)이 마스크가 모든 질의에서 −inf 인 KV 묶음(RDNA 32칸)을
+    건너뛴다(`fattn-tile.cuh`). 그런 묶음은 KQ_max·KQ_sum·VKQ 를 바꾸지 않으므로 값 그대로. 컴파일 옵션 `GGML_E2N_FA_SKIP_ROWS=1` 이면 남은 묶음 안의
+    가려진 행도 읽지 않고 0 으로 두는데(값 그대로), 행 표시를 만드는 비용이 커서 32k·128k 모두 ≈4% 느려 기본 0.
+  - `GGML_CUDA_NO_IDX_GATHER_FUSE=1` 이면 끔: QSA 인덱서의 키 모으기 GET_ROWS(캐시의 f16 압축 키 → f32 사본)를 돌리지 않고, 1–7토큰 인덱서(vec 커널)가
+    캐시의 f16 행을 번호로 바로 읽는다(`lightning-indexer.cu` `ggml_cuda_lightning_indexer_rows`, 같은 float 로 같은 계산). 번호 목록은 모으기 자리에서
+    서버 전용 버퍼로 복사한다 — 그래프 할당기가 모으기 뒤 그 입력 자리를 다른 텐서에 줄 수 있어서(복사 없이 읽은 첫 판은 32k 에서 GPU page fault).
+  - `GGML_CUDA_NO_TOPK_1BLOCK=1` 이면 끔: TOP_K(열 1024 넘음)를 한 블록 radix select 커널 하나로(`top-k.cu` `top_k_radix_1block`) — 이전 radix 는 커널 11개,
+    문턱값과 같은 점수를 원자 연산 순서로 골라 긴 문맥 출력이 실행마다 달랐다. 새 커널은 같은 문턱·개수, 같은 점수는 열 순서로(결정적).
+    열 65,536 이하(256k 문맥의 QSA 풀 수)만 — 11-13 새벽까지는 열 2^24 이하 전부라 클라이언트 MTP 초안의 백엔드 샘플링 top-10(어휘 104,459열 1행)도
+    한 블록으로 가서 초안 단계가 느려졌다(중앙 2.35 → 1.96 ms 로 되돌림, MTP 짧은 문맥 61.1 → 63.5 t/s, RESULTS.md 11-13 02:12).
+  - 분석 도구: `tools/bench/kdepth.py <이름>=<prof2node 폴더> ...`(깊이별 디코드 커널 토큰당 시간, prof2node `BARGS="-p 0 -n 32 -d <깊이> -r 1"`).
+  - `tools/bench/mtpdepth.py <감시기 세션>/client.ring`: MTP 검증형·초안 단계 시간을 깊이(측정)별로(ctx_bench 감시기 회).

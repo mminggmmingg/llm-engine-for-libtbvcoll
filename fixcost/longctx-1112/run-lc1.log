@@ -1,0 +1,27 @@
+none lo bin=bin load A=0.58 B=0.29 rdma=2 trace=0 zc=ZC=3/ZC=3:  | srv-2node-none-bs-lo-1112-184123
+   a: n=726 gfx 2047/2121/2181 상한 2072/2305/2584 활동 74/79/81 소켓W 69/70/70 gfxW 21/22/24 코어W 13/16/20 코어상한 3102/3936/4430 fclk 1604/1608/1629 uclk 1000/1000/1000 dramR 31843/33926/37079 dramW 15668/17677/19799 
+   b: n=756 gfx 2213/2243/2297 상한 2308/2502/2722 활동 73/77/80 소켓W 68/70/70 gfxW 27/28/29 코어W 4/4/6 코어상한 1589/1954/4174 fclk 1603/1608/1616 uclk 1000/1000/1000 dramR 32656/35033/37297 dramW 15745/17514/19346 
+none lc bin=bin load A=0.56 B=0.48 rdma=2 trace=0 zc=ZC=3/ZC=3:  | srv-2node-none-bs-lc-1112-185834
+   a: n=720 gfx 2058/2130/2203 상한 2085/2310/2611 활동 74/79/82 소켓W 69/70/70 gfxW 21/23/24 코어W 13/16/21 코어상한 2834/3940/4465 fclk 1605/1609/1630 uclk 1000/1000/1000 dramR 31658/34132/36034 dramW 15636/17438/18904 
+   b: n=756 gfx 2212/2242/2270 상한 2294/2482/2706 활동 73/78/80 소켓W 68/70/70 gfxW 27/28/29 코어W 4/4/6 코어상한 1604/1955/4186 fclk 1604/1609/1618 uclk 1000/1000/1000 dramR 32909/34981/36866 dramW 15545/17482/18883 
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-none-bs-lo-1112-184123
+| depth | ctx_pp t/s | ctx 처리 s | pp512 @ d t/s | tg128 @ d t/s | 채택률 | (2) prompt_n |
+|---:|---:|---:|---:|---:|---:|---|
+| 8192 | 454.8 | 18.0 | 344.9 | 39.7 | - | [512] |
+| 32768 | 402.9 | 81.3 | 286.1 | 35.0 | - | [512] |
+| 131072 | 268.8 | 487.7 | 166.4 | 21.9 | - | [512] |
+CTXDONE
+{"depth": 8192, "rep": 0, "off": 0, "ctx_n": 8192, "ctx_ms": 18010.507, "ctx_wall_s": 18.17, "pp_n": 512, "pp_ms": 1484.454, "tg_n": 128, "tg_ms": 3222.824, "draft_n": null, "draft_acc": null, "wall_s": 4.71, "sha": "c25fa63a7d13227d"}
+{"depth": 32768, "rep": 0, "off": 1024, "ctx_n": 32768, "ctx_ms": 81328.507, "ctx_wall_s": 81.78, "pp_n": 512, "pp_ms": 1789.849, "tg_n": 128, "tg_ms": 3656.137, "draft_n": null, "draft_acc": null, "wall_s": 5.46, "sha": "a7c82fb1e3914e40"}
+{"depth": 131072, "rep": 0, "off": 2048, "ctx_n": 131072, "ctx_ms": 487704.429, "ctx_wall_s": 488.83, "pp_n": 512, "pp_ms": 3077.673, "tg_n": 128, "tg_ms": 5834.888, "draft_n": null, "draft_acc": null, "wall_s": 8.95, "sha": "bbf8c5fc776d301c"}
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-none-bs-lc-1112-185834
+{"depth": 8192, "rep": 0, "off": 0, "ctx_n": 8192, "ctx_ms": 18039.067, "ctx_wall_s": 18.2, "pp_n": 512, "pp_ms": 1427.846, "tg_n": 128, "tg_ms": 3158.602, "draft_n": null, "draft_acc": null, "wall_s": 4.59, "sha": "4d5e1dfb405a3a0e"}
+none lc bin=bin load A=0.59 B=0.12 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 46.07 tok/s (token-weighted) | srv-2node-none-bs-lc-1112-190533
+   a: n=348 gfx 2329/2605/2684 상한 2335/2699/2797 활동 74/94/97 소켓W 67/70/70 gfxW 21/28/29 코어W 5/7/17 코어상한 1579/1925/4651 fclk 1607/1623/1675 uclk 1000/1000/1000 dramR 1078/35308/64279 dramW 4073/4202/4986 
+   b: n=348 gfx 2464/2624/2705 상한 2530/2695/2822 활동 74/94/97 소켓W 65/69/70 gfxW 26/30/32 코어W 2/3/10 코어상한 1572/1938/4912 fclk 1599/1601/1609 uclk 999/1000/1000 dramR 1280/24171/63621 dramW 4138/4320/4442 
+mtp lc bin=bin load A=0.56 B=0.20 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 61.68 tok/s (token-weighted) | srv-2node-mtp-bs-lc-1112-191019
+   a: n=276 gfx 2231/2420/2501 상한 2173/2512/2820 활동 71/89/95 소켓W 66/69/70 gfxW 22/28/30 코어W 6/9/18 코어상한 1635/1930/4567 fclk 1607/1626/1678 uclk 1000/1000/1000 dramR 7413/33301/41970 dramW 7167/7750/8075 
+   b: n=269 gfx 2125/2182/2211 상한 2293/2453/2900 활동 63/75/79 소켓W 65/68/70 gfxW 25/29/31 코어W 4/6/13 코어상한 1582/1938/5000 fclk 1600/1602/1608 uclk 1000/1000/1000 dramR 5386/18771/57998 dramW 6229/7238/7661 
+srv-2node-none-bs-lc-1112-190533-bench.txt: 6/6 same (ref 1112 none)
+srv-2node-mtp-bs-lc-1112-191019-bench.txt: 6/6 same (ref 1112 mtp)
+ALLDONE
