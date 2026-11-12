@@ -1,0 +1,10 @@
+ggml_cuda_init: found 1 ROCm devices (Total VRAM: 114688 MiB):
+  Device 0: AMD Radeon Graphics, gfx1151 (0x1151), VMM: no, Wave Size: 32, VRAM: 114688 MiB
+libibverbs: Warning: couldn't load driver 'libodl_tb5-rdmav59.so': libodl_tb5-rdmav59.so: cannot open shared object file: No such file or directory
+RDMA probed: dev=usb4_rdma5 gid=1 RoCEv2 qpn=9219 inline=0
+RDMA activated: qpn=9219->9219 mtu=4096 rx_depth=48
+| model                          |       size |     params | backend    | ngl |     sm |  fa | dev          |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | --: | -----: | --: | ------------ | --------------: | -------------------: |
+| qwen4exp A3B IQ4_NL - 4.5 bpw  |  91.69 GiB |   176.94 B | ROCm,RPC   |  -1 | tensor |   1 | RPC0/RPC1    |  pp512 @ d32768 |        451.74 ± 0.00 |
+
+build: e09a78a (50)

@@ -1,0 +1,74 @@
+runs/prof2node-ppd32768-1113-025201: kernels 219975, busy 61.8 s, span 151.6 s, ubatches≈66, busy/ubatch 937 ms
+kernel                                                            ms   count      %    ms/ub
+mul_mat_q<                                                     25771   35287   41.7    390.5
+flash_attn_ext_f16<256, 256, 16, 4, false, false, false>       12110     791   19.6    183.5
+rms_norm_f32<1024, 1, true, true, false, false, fals            3020    6464    4.9     45.8
+mm_ids_helper<10>                                               3013    9300    4.9     45.6
+Cijk_Alik_Bljk_HB_MT128x128x32_MI16x16x16x1_SN_1LDSB0_AP        2890    6266    4.7     43.8
+Cijk_Alik_Bljk_SB_MT32x32x8_SN_1LDSB0_APM1_ABV0_ACED0_AF        1986    3100    3.2     30.1
+moe_weighted_reduction_f32                                      1708    3101    2.8     25.9
+dsv4_hc_pre_f32<true, false>                                    1697    6266    2.7     25.7
+gated_delta_net_cuda<128, false, false, 4, false>               1316    2375    2.1     19.9
+convert_unary_cont_vec4<float, __half>                          1229    6266    2.0     18.6
+quantize_mmq_q8_1<                                              1128   35287    1.8     17.1
+concat_dim0_tail_direct_f32                                      777    2375    1.3     11.8
+k_bin_bcast<&                                                    770    9767    1.2     11.7
+lightning_indexer_kernel_tile<8, 64, 128l, 4l,                   612     743    1.0      9.3
+cpy_scalar_contiguous<__hip_bfloat16, float>                     467    6265    0.8      7.1
+dequantize_block_q6_K<__half>                                    374    6266    0.6      5.7
+top_k_radix_1block                                               317     695    0.5      4.8
+unary_gated_op_kernel<&                                          281    6217    0.5      4.3
+ssm_conv_long_token_f32<true, 128ul, 4ul, 32l>                   211    2375    0.3      3.2
+cpy_scalar_contiguous<float, __hip_bfloat16>                     193    6266    0.3      2.9
+dsv4_hc_post_f32<false, true>                                    187     510    0.3      2.8
+cpy_scalar<&                                                     168     264    0.3      2.5
+k_shexp_gate_tail                                                161    3100    0.3      2.4
+concat_dim0_tail_f32                                             141      66    0.2      2.1
+Cijk_Alik_Bljk_BBS_BH_MT128x128x32_MI16x16x16x1_SN_1LDSB         139    1534    0.2      2.1
+rms_norm_f32<32, 1, true, true, false, false, false,             136    3166    0.2      2.1
+convert_unary_cont_vec4<__hip_bfloat16, float>                   112    4634    0.2      1.7
+rms_norm_mul_rope_multi_f32<128, false, float>                   105     791    0.2      1.6
+
+runs/prof2node-ppd131072-1113-025449: kernels 866188, busy 395.0 s, span 564.8 s, ubatches≈258, busy/ubatch 1531 ms
+kernel                                                            ms   count      %    ms/ub
+flash_attn_ext_f16<256, 256, 16, 4, false, false, false>      192198    3096   48.7    745.0
+mul_mat_q<                                                     98299  138030   24.9    381.0
+mm_ids_helper<10>                                              12590   36378    3.2     48.8
+rms_norm_f32<1024, 1, true, true, false, false, fals           11756   25284    3.0     45.6
+Cijk_Alik_Bljk_HB_MT128x128x32_MI16x16x16x1_SN_1LDSB0_AP       10603   24510    2.7     41.1
+lightning_indexer_kernel_tile<8, 64, 128l, 4l,                  9500    3048    2.4     36.8
+Cijk_Alik_Bljk_SB_MT32x32x8_SN_1LDSB0_APM1_ABV0_ACED0_AF        7346   12126    1.9     28.5
+moe_weighted_reduction_f32                                      6623   12127    1.7     25.7
+dsv4_hc_pre_f32<true, false>                                    6609   24510    1.7     25.6
+gated_delta_net_cuda<128, false, false, 4, false>               5513    9288    1.4     21.4
+convert_unary_cont_vec4<float, __half>                          4782   24510    1.2     18.5
+quantize_mmq_q8_1<                                              4618  138030    1.2     17.9
+top_k_radix_1block                                              3620    3000    0.9     14.0
+k_bin_bcast<&                                                   3032   39938    0.8     11.8
+concat_dim0_tail_direct_f32                                     2780    9288    0.7     10.8
+cpy_scalar_contiguous<__hip_bfloat16, float>                    1842   24509    0.5      7.1
+dequantize_block_q6_K<__half>                                   1470   24510    0.4      5.7
+top_k_mask_kernel<__half>                                       1269    3048    0.3      4.9
+unary_gated_op_kernel<&                                         1070   24317    0.3      4.1
+cpy_scalar<&                                                     788    1032    0.2      3.1
+ssm_conv_long_token_f32<true, 128ul, 4ul, 32l>                   769    9288    0.2      3.0
+k_get_rows_float<__half, float>                                  751    6144    0.2      2.9
+cpy_scalar_contiguous<float, __hip_bfloat16>                     727   24510    0.2      2.8
+dsv4_hc_post_f32<false, true>                                    596    1470    0.2      2.3
+k_shexp_gate_tail                                                589   12126    0.1      2.3
+Cijk_Alik_Bljk_BBS_BH_MT128x128x32_MI16x16x16x1_SN_1LDSB         544    6144    0.1      2.1
+concat_dim0_tail_f32                                             542     258    0.1      2.1
+rms_norm_f32<32, 1, true, true, false, false, false,             531   12384    0.1      2.1
+
+
+128k fill per ubatch (ubatch j covers cells up to ≈512*(j+1)): FA ms, all-kernel ms, wall ms (FA group start → next group start)
+ub    0: FA     6.3  kernels   724.6  wall  1185.1
+ub   32: FA   187.2  kernels   944.1  wall  1276.0
+ub   64: FA   387.9  kernels  1144.7  wall  1508.9
+ub   96: FA   584.5  kernels  1355.2  wall  1723.0
+ub  128: FA   787.5  kernels  1578.7  wall  1964.5
+ub  160: FA   976.8  kernels  1778.4  wall  2178.1
+ub  192: FA  1148.8  kernels  1964.1  wall  2375.0
+ub  224: FA  1310.6  kernels  2120.8  wall  2547.9
+ub  256: FA  1498.9  kernels  2342.5  wall  7539.2
+ub  256: FA  1498.9  kernels  2342.5  wall  7539.2
