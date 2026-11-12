@@ -3321,6 +3321,84 @@ index 1885e76..3a10b45 100644
 +std::function<void(const ggml_cuda_comm_out *)> ggml_cuda_seg_moe_make(ggml_backend_cuda_context & ctx, const ggml_tensor * dn,
 +        const void * y_dn, const ggml_tensor * sc, const ggml_tensor * si, const ggml_tensor * mm, ggml_tensor * pre, void * q8,
 +        const ggml_tensor * rt, const ggml_cuda_seg_moe_tail * tail);
+diff --git a/ggml/src/ggml-cuda/fattn-mma-f16.cuh b/ggml/src/ggml-cuda/fattn-mma-f16.cuh
+index 296aa2b..8961c77 100644
+--- a/ggml/src/ggml-cuda/fattn-mma-f16.cuh
++++ b/ggml/src/ggml-cuda/fattn-mma-f16.cuh
+@@ -1186,6 +1186,12 @@ template<int DKQ, int ncols> struct mma_tile_sizes {
+ };
+ #endif // defined(TURING_MMA_AVAILABLE)
+ 
++// engine2n: masked-chunk skip in process_tile, one copy per translation unit (set by ggml_cuda_flash_attn_ext_mma_f16_case).
++static __device__ int fattn_mma_skip_masked_d = 1;
++static __global__ void fattn_mma_set_skip_masked(const int v) {
++    fattn_mma_skip_masked_d = v;
++}
++
+ template<int DKQ, int DV, int ncols1, int ncols2, int nwarps, bool use_logit_softcap, bool V_is_K_view, bool use_sparse, bool needs_fixup, bool is_fixup>
+ static __device__ __forceinline__ void flash_attn_ext_f16_process_tile(
+         const float2 * const __restrict__ Q_f2,
+@@ -1331,6 +1337,25 @@ static __device__ __forceinline__ void flash_attn_ext_f16_process_tile(
+ 
+     int kb0 = kb0_start;
+ 
++    // engine2n (2026-11-13): skip the KV chunks whose mask is -inf for every query row of this tile (QSA prompt processing) —
++    // the same no-op argument as the tile kernel: KQ_max stays, the rescale is expf(0) = 1, row sums and VKQ gain exact zeros.
++    // Only without the multi-stage pipeline (it preloads chunk kb0+1 inside the iteration); the last chunk always runs (it
++    // carries the out-of-bounds handling). Rows past ne01 wrap like in load_mask, which only makes the test stricter.
++    // Off: GGML_CUDA_NO_FA_MMA_SKIP=1.
++    const bool e2n_skip = nstages <= 1 && !use_sparse && mask_h != nullptr && fattn_mma_skip_masked_d != 0;
++    auto e2n_dead = [&](const int kb) -> bool {
++        constexpr int nthr = nwarps*warp_size;
++        const int tid = threadIdx.y*warp_size + threadIdx.x;
++        int live = 0;
++        for (int idx = tid; idx < ncols1*nbatch_fa; idx += nthr) {
++            const int j      = idx / nbatch_fa;
++            const int i      = idx % nbatch_fa;
++            const int j_vram = fastmodulo(jt*ncols1 + j, ne01);
++            live |= __half2float(mask_h[int64_t(j_vram)*stride_mask + kb*nbatch_fa + i]) != -INFINITY;
++        }
++        return __syncthreads_or(live) == 0;
++    };
++
+     // Preload mask and K data for first iteration when using cp_async with multiple stages:
+     if constexpr (nstages > 1) {
+         static_assert(!use_sparse, "sparse gather not implemented for multi-stage loading");
+@@ -1350,6 +1375,9 @@ static __device__ __forceinline__ void flash_attn_ext_f16_process_tile(
+     if constexpr (ncols2 == 1 || use_sparse) {
+         constexpr bool oob_check = true;
+         for (; kb0 < kb0_stop-1; ++kb0) {
++            if (e2n_skip && e2n_dead(kb0)) {
++                continue;
++            }
+             constexpr bool last_iter = false;
+             constexpr int  k_VKQ_sup = nbatch_fa;
+             flash_attn_ext_f16_iter
+@@ -1370,6 +1398,9 @@ static __device__ __forceinline__ void flash_attn_ext_f16_process_tile(
+     } else {
+         constexpr bool oob_check = false;
+         for (; kb0 < kb0_stop-1; ++kb0) {
++            if (e2n_skip && e2n_dead(kb0)) {
++                continue;
++            }
+             constexpr bool last_iter = false;
+             constexpr int  k_VKQ_sup = nbatch_fa;
+             flash_attn_ext_f16_iter
+@@ -2008,6 +2039,14 @@ template <int DKQ, int DV, int ncols1, int ncols2>
+ void ggml_cuda_flash_attn_ext_mma_f16_case(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
+     const ggml_tensor * KQV = dst;
+     const int id = ggml_cuda_get_device();
++
++    // engine2n: GGML_CUDA_NO_FA_MMA_SKIP=1 turns the masked-chunk skip off (this translation unit's copy of the flag)
++    static const bool no_skip = getenv("GGML_CUDA_NO_FA_MMA_SKIP") != nullptr;
++    static bool no_skip_set = false;
++    if (no_skip && !no_skip_set) {
++        fattn_mma_set_skip_masked<<<1, 1, 0, ctx.stream()>>>(0);
++        no_skip_set = true;
++    }
+     const int cc = ggml_cuda_info().devices[id].cc;
+ 
+     constexpr int ncols = ncols1 * ncols2;
 diff --git a/ggml/src/ggml-cuda/fattn-tile.cuh b/ggml/src/ggml-cuda/fattn-tile.cuh
 index bd4a771..55afab0 100644
 --- a/ggml/src/ggml-cuda/fattn-tile.cuh

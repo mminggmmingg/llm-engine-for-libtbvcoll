@@ -27,7 +27,8 @@ Run one large MoE language model on **two laptops at once, with tensor paralleli
 | 128k | 21.7 → **31.1 t/s** (+43%) | 20.5 → **22.6 t/s** |
 | 254k (260,096 tokens, 1 run) | 14.9 → **26.4 t/s** (+77%) | 13.5 → **16.3 t/s** |
 
-- Filling a 128k-token context takes 8.5 minutes (256 t/s); prompt processing did not change.
+- Prompt processing at depth got the same kind of skip on 2026-11-13: filling 128k tokens is ≈20% faster (466 → 374 s), and 512
+  more tokens after 128k are 27% faster (alternating runs, same output).
 - Beyond ≈64k tokens, plain decoding is faster than MTP.
 
 - **Goal:** ≥ 85% of the per-node memory bandwidth (239.7 GB/s measured GPU read, 256 GB/s theoretical).
@@ -120,8 +121,20 @@ kernels described below. The dashed gray line is plain decoding (none) measured 
     chunk is skipped only when all 4 queries hide it.
   - The MTP head is a full-attention layer without an indexer (compress ratio 0), and it runs on node A only. Its draft steps
     slow from 2.9 to 6.6 ms each.
-- **Prompt processing** is unchanged within ±3%, because the batched flash-attention kernel (MMA) has no mask skip yet. 512 new
-  tokens run at 385 t/s with an empty cache and 161 t/s at 128k.
+- **Prompt processing** was unchanged by the kernels above (within ±3%). A kernel trace of a 128k fill then showed the batched
+  flash-attention kernel (MMA) taking 49% of the GPU time (`tools/bench/ppk.py`). On 2026-11-13 that kernel got the same skip:
+  a 64-token KV chunk is skipped when the mask hides it from all 16 queries of a tile (`GGML_CUDA_NO_FA_MMA_SKIP` turns it off).
+  Alternating runs at the same text position, identical output:
+
+  | Depth | Context fill, off → on | pp512 @ d, off → on |
+  |---:|---:|---:|
+  | 8k | 18.1 / 18.3 → 18.7 / 18.5 s | 1.43 / 1.45 → 1.45 / 1.45 s |
+  | 16k | 37.0 → 36.7 s (−1%) | 1.56 → 1.52 s (−3%) |
+  | 32k | 80.1 → 77.0 s (−4%) | 1.75 → 1.65 s (−6%) |
+  | 64k | 183.6 → 165.0 s (−10%) | 2.13 → 1.82 s (−14%) |
+  | 128k | 465.8 / 463.2 → 373.9 / 371.6 s (**−20%**) | 2.94 / 2.91 → 2.14 / 2.14 s (**−27%**) |
+
+  The context table above was measured before this change.
 
 ## How it works
 
@@ -149,8 +162,8 @@ node A: llama-server (client; the MTP drafts run on A's GPU)
 - **Fewer, fused kernels.** About 1,060 kernels per token (from 2,720), many groups fused on the server side by recognizing node
   patterns, so the client graph — and the output — stay the same.
 - **Long context.** The QSA layers attend to the top 512 blocks (of 4 tokens) picked by the indexer, plus the newest tokens.
-  The flash-attention kernel skips the KV blocks the mask hides, the indexer reads its keys straight from the cache, and the top-k
-  is one deterministic kernel (2026-11-12 evening, see above).
+  The flash-attention kernels (decode and prompt processing) skip the KV chunks the mask hides, the indexer reads its keys straight
+  from the cache, and the top-k is one deterministic kernel (2026-11-12/13, see above).
 - **Speculative decoding** with the model's MTP layer: drafts use a reduced 104,459-token vocabulary and a low-bit copy of the head;
   outputs are decided by the main model.
 - Step-by-step history with numbers: [docs/JOURNAL.md](docs/JOURNAL.md). Design notes: [DESIGN.md](DESIGN.md),
@@ -253,8 +266,8 @@ all-reduce latency and where the GPU waited. The reports' own text is in Korean.
 - Long context, decode: the indexer now reads 256 B of pooled key every 2 KB of cache row, ≈23 GB/s. At 128k it is the largest
   context-dependent cost (4.35 ms per token). Keeping the pooled keys in their own dense array would cut this to an estimated
   ≈40 µs per layer.
-- Long context, prompt processing: there is no mask skip in the batched attention kernel, so filling the context is slow —
-  8.5 minutes for 128k tokens, 24 minutes for 260k.
+- Long context, prompt processing is still slow: filling 128k tokens takes about 6 minutes even with the chunk skip, because a
+  64-token chunk can be skipped only when none of the 16 queries of a tile picked it.
 - MTP acceptance depends on the text, and beyond ≈64k tokens of context MTP is slower than plain decoding. There is no adaptive
   draft length and no automatic switch.
 - none and MTP outputs differ slightly since 2026-11-12 (see Output correctness). Draft lengths of 4 or more change outputs again

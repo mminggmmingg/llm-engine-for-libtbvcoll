@@ -1,0 +1,9 @@
+{"corpus": "corpus-llamacpp-e09a78a.txt", "corpus_sha256": "7dccee037059a590", "tokens_used": 134800, "depths": [65536, 131072], "reps": 1, "pp": 512, "tg": 128, "stride": 1024}
+{"warmup_pp_n": 128, "warmup_tg_n": 16}
+{"depth": 65536, "rep": 0, "off": 0, "ctx_n": 65536, "ctx_ms": 165016.712, "ctx_wall_s": 165.2, "pp_n": 512, "pp_ms": 1822.626, "tg_n": 128, "tg_ms": 3607.441, "draft_n": null, "draft_acc": null, "wall_s": 5.45, "sha": "18585fe8001e13d0"}
+{"depth": 131072, "rep": 0, "off": 1024, "ctx_n": 131072, "ctx_ms": 373943.895, "ctx_wall_s": 376.43, "pp_n": 512, "pp_ms": 2144.225, "tg_n": 128, "tg_ms": 4058.313, "draft_n": null, "draft_acc": null, "wall_s": 6.24, "sha": "42581bbabcd50644"}
+| depth | ctx_pp t/s | ctx 처리 s | pp512 @ d t/s | tg128 @ d t/s | 채택률 | (2) prompt_n |
+|---:|---:|---:|---:|---:|---:|---|
+| 65536 | 397.1 | 165.0 | 280.9 | 35.5 | - | [512] |
+| 131072 | 350.5 | 373.9 | 238.8 | 31.5 | - | [512] |
+CTXDONE

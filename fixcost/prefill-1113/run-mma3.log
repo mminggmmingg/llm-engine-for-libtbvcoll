@@ -1,0 +1,52 @@
+none mma bin=bin load A=0.59 B=0.37 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 46.17 tok/s (token-weighted) | srv-2node-none-bs-mma-1113-034933
+   a: n=347 gfx 2342/2600/2679 상한 2389/2692/2782 활동 75/94/97 소켓W 67/70/70 gfxW 22/28/29 코어W 5/7/16 코어상한 1583/1929/4592 fclk 1606/1618/1666 uclk 1000/1000/1000 dramR 1237/35315/64294 dramW 4104/4216/4974 
+   b: n=348 gfx 2459/2609/2692 상한 2527/2688/2883 활동 74/94/97 소켓W 64/69/70 gfxW 26/30/31 코어W 3/4/10 코어상한 1579/1938/4909 fclk 1596/1601/1609 uclk 997/1000/1000 dramR 1308/21534/62930 dramW 3965/4165/4292 
+mtp mma bin=bin load A=0.58 B=0.27 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 64.38 tok/s (token-weighted) | srv-2node-mtp-bs-mma-1113-035335
+   a: n=265 gfx 2221/2403/2484 상한 2186/2507/2658 활동 71/89/95 소켓W 66/69/70 gfxW 22/28/30 코어W 6/9/18 코어상한 1829/1958/4508 fclk 1608/1624/1672 uclk 1000/1000/1000 dramR 8039/35845/43780 dramW 7341/8036/8375 
+   b: n=262 gfx 2149/2213/2245 상한 2252/2438/2900 활동 64/78/82 소켓W 64/68/70 gfxW 25/29/30 코어W 4/6/13 코어상한 1577/1934/4998 fclk 1599/1600/1604 uclk 999/1000/1000 dramR 6672/21585/58915 dramW 6255/7324/7756 
+none mma-w bin=bin load A=0.59 B=0.39 rdma=2 trace=1 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 46.29 tok/s (token-weighted) | srv-2node-none-bs-mma-w-1113-035738
+   a: n=346 gfx 2355/2624/2690 상한 2443/2711/2801 활동 75/94/97 소켓W 66/70/70 gfxW 22/28/29 코어W 5/6/16 코어상한 1581/1925/4572 fclk 1605/1620/1667 uclk 1000/1000/1000 dramR 1079/32649/64389 dramW 4102/4219/5020 
+   b: n=347 gfx 2482/2633/2702 상한 2547/2702/2886 활동 74/94/97 소켓W 65/69/70 gfxW 26/30/32 코어W 3/4/10 코어상한 1579/1938/4932 fclk 1600/1602/1611 uclk 1000/1000/1000 dramR 1187/18287/61838 dramW 3988/4172/4341 
+mtp mma-w bin=bin load A=0.58 B=0.58 rdma=3 trace=1 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 64.16 tok/s (token-weighted) | srv-2node-mtp-bs-mma-w-1113-040221
+   a: n=268 gfx 2445/2548/2635 상한 2471/2534/2900 활동 93/100/100 소켓W 68/70/70 gfxW 24/28/30 코어W 5/7/12 코어상한 1577/1917/4513 fclk 1610/1633/1689 uclk 1000/1000/1000 dramR 8011/36088/43504 dramW 7512/8169/8426 
+   b: n=261 gfx 2128/2193/2219 상한 2262/2442/2900 활동 65/78/82 소켓W 64/68/70 gfxW 25/29/30 코어W 4/6/13 코어상한 1577/1934/5015 fclk 1601/1604/1613 uclk 1000/1000/1000 dramR 6860/21471/59536 dramW 6356/7344/7730 
+# 추론 감시 비교 (2026-11-13 04:04:15, RUNS="none:mma mtp:mma")
+
+기록 링을 켠 회라 tok/s 는 속도 회보다 ≈6% 낮다. 세션 폴더: runs/watch/<세션>/(report.html, receipt.md, stalls.txt).
+감시기 판: inferwatch iw-20261110-1 (reads ring format GGRPCTR1 v1..v1) (/data/parksThink/inferwatch-iw-20261110-1)
+
+| 설정 | 감시기 tok/s | ms/단계 | AR 지연 A→B 중앙 / p99 µs | B→A | 1 ms 넘는 기다림 ms/단계 | 그중 링크 / 상대 계산 (번) | 링크 늦음 1–2.5 / 2.5–3.5 / 3.5–7 / 7–12 / >12 ms (번) | 세션 |
+|---|---:|---:|---|---|---:|---|---|---|
+| none:mma | 43.7 | 23.23 | 18.4 / 66.0 | 18.1 / 39.1 | 0.02 | 0 / 5 | 0 / 0 / 0 / 0 / 0 | 20261113-035743 |
+| mtp:mma | 216.4 | 10.21 | 32.5 / 473.6 | 29.8 / 44.8 | 0.01 | 4 / 5 | 3 / 1 / 0 / 0 / 0 | 20261113-040226 |
+
+## 노드별 DRAM 읽기 (inferwatch dram-bytes, 기록 링 켠 회의 decode 단계, 쉬는 몫 뺌)
+
+| 회 | 노드 | GB/처리 토큰 | decode 중 GB/s | 239.7 대비 | 쉬는 몫 GB/s(중앙값, 3배 넘는 구간 수) | 처리 토큰 |
+|---|---|---:|---:|---:|---|---:|
+| none:mma | A | 3.184 | 139.0 | 0.58 | 0.43 (0) | 1427 |
+| none:mma | B | 3.184 | 139.0 | 0.58 | 0.171 (4) | 1427 |
+| mtp:mma | A | 0.595 | 128.8 | 0.537 | 0.44 (0) | 5354 |
+| mtp:mma | B | 0.482 | 104.3 | 0.435 | 0.189 (7) | 5354 |
+
+처리 토큰 = 감시 세션 decode 단계가 처리한 토큰(MTP 는 검증 묶음의 토큰까지 — 출력 토큰보다 많다). 85% 목표 값(none): 노드마다 GB/토큰 × 같은 구성 속도 회(기록 링 끔) tok/s ÷ 239.7.
+MTP 는 decode 중 GB/s(기록 링 켠 회) 를 본다. 자료: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/prefill-1113/dram
+srv-2node-none-bs-mma-1113-034933-bench.txt: 6/6 same (ref 1112 none)
+srv-2node-mtp-bs-mma-1113-035335-bench.txt: 6/6 same (ref 1112 mtp)
+srv-2node-none-bs-mma-w-1113-035738-bench.txt: 6/6 same (ref 1112 none)
+srv-2node-mtp-bs-mma-w-1113-040221-bench.txt: 6/6 same (ref 1112 mtp)
+none nomma bin=bin load A=0.58 B=0.13 rdma=2 trace=0 zc=ZC=3/ZC=3:  | srv-2node-none-bs-nomma-1113-040732
+   a: n=704 gfx 2066/2130/2184 상한 2061/2322/2551 활동 78/80/81 소켓W 70/70/70 gfxW 21/23/25 코어W 12/15/20 코어상한 2751/3912/4384 fclk 1605/1608/1616 uclk 1000/1000/1000 dramR 31090/33688/35461 dramW 15189/16710/18614 
+   b: n=769 gfx 2240/2265/2288 상한 2293/2474/2721 활동 76/80/82 소켓W 69/70/70 gfxW 28/28/29 코어W 4/4/5 코어상한 1598/1953/4061 fclk 1603/1606/1613 uclk 1000/1000/1000 dramR 32144/34533/36581 dramW 15017/16714/18755 
+none mma bin=bin load A=0.58 B=0.26 rdma=2 trace=0 zc=ZC=3/ZC=3:  | srv-2node-none-bs-mma-1113-042305
+   a: n=727 gfx 2051/2120/2173 상한 2069/2278/2529 활동 77/79/81 소켓W 70/70/70 gfxW 21/23/25 코어W 12/16/21 코어상한 2703/3868/4387 fclk 1603/1607/1613 uclk 1000/1000/1000 dramR 33319/34601/36208 dramW 16562/17452/18759 
+   b: n=762 gfx 2213/2239/2280 상한 2280/2473/2699 활동 76/79/80 소켓W 70/70/70 gfxW 28/28/29 코어W 4/4/5 코어상한 1594/1954/3715 fclk 1604/1608/1613 uclk 1000/1000/1000 dramR 34447/35740/37233 dramW 16529/17538/18663 
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-none-bs-nomma-1113-040732
+{'depth': 65536, 'off': 0, 'ctx_ms': 183630.416, 'ctx_n': 65536, 'pp_ms': 2125.009, 'pp_n': 512, 'tg_ms': 3636.0, 'sha': '18585fe8001e13d0'}
+{'depth': 131072, 'off': 1024, 'ctx_ms': 465770.639, 'ctx_n': 131072, 'pp_ms': 2939.241, 'pp_n': 512, 'tg_ms': 4064.28, 'sha': '42581bbabcd50644'}
+0
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-none-bs-mma-1113-042305
+{'depth': 65536, 'off': 0, 'ctx_ms': 165016.712, 'ctx_n': 65536, 'pp_ms': 1822.626, 'pp_n': 512, 'tg_ms': 3607.441, 'sha': '18585fe8001e13d0'}
+{'depth': 131072, 'off': 1024, 'ctx_ms': 373943.895, 'ctx_n': 131072, 'pp_ms': 2144.225, 'pp_n': 512, 'tg_ms': 4058.313, 'sha': '42581bbabcd50644'}
+0
+ALLDONE

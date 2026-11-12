@@ -227,5 +227,8 @@
     문턱값과 같은 점수를 원자 연산 순서로 골라 긴 문맥 출력이 실행마다 달랐다. 새 커널은 같은 문턱·개수, 같은 점수는 열 순서로(결정적).
     열 65,536 이하(256k 문맥의 QSA 풀 수)만 — 11-13 새벽까지는 열 2^24 이하 전부라 클라이언트 MTP 초안의 백엔드 샘플링 top-10(어휘 104,459열 1행)도
     한 블록으로 가서 초안 단계가 느려졌다(중앙 2.35 → 1.96 ms 로 되돌림, MTP 짧은 문맥 61.1 → 63.5 t/s, RESULTS.md 11-13 02:12).
+  - `GGML_CUDA_NO_FA_MMA_SKIP=1` 이면 끔(2026-11-13, 기본 켬): 묶음 처리 FA(MMA, `fattn-mma-f16.cuh` process_tile — 프롬프트 처리가 쓰는 것)도 타일의 모든 질의 행에서
+    마스크가 −inf 인 KV 묶음(nbatch_fa 칸)을 건너뛴다. 묶음마다 블록이 마스크 행을 읽어 `__syncthreads_or` 로 판정. 다단 파이프라인(nstages > 1, NVIDIA cp.async)과
+    sparse 경로에서는 안 쓰고, 마지막 묶음은 늘 계산. 값 그대로(8k·16k·32k·128k sha 같음). 128k 채우기 −20%, pp512 @ 128k −27%(RESULTS.md 11-13 03:1x).
   - 분석 도구: `tools/bench/kdepth.py <이름>=<prof2node 폴더> ...`(깊이별 디코드 커널 토큰당 시간, prof2node `BARGS="-p 0 -n 32 -d <깊이> -r 1"`).
   - `tools/bench/mtpdepth.py <감시기 세션>/client.ring`: MTP 검증형·초안 단계 시간을 깊이(측정)별로(ctx_bench 감시기 회).

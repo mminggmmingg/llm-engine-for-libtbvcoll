@@ -1,0 +1,17 @@
+none mma bin=bin load A=0.55 B=0.16 rdma=2 trace=0 zc=ZC=3/ZC=3:  | srv-2node-none-bs-mma-1113-032500
+   a: n=712 gfx 1990/2062/2175 상한 2002/2303/2624 활동 70/78/80 소켓W 68/70/70 gfxW 20/22/24 코어W 13/20/23 코어상한 2940/4181/4565 fclk 1605/1610/1650 uclk 1000/1000/1000 dramR 32316/34387/38918 dramW 9527/18177/18922 
+   b: n=756 gfx 2197/2240/2286 상한 2309/2531/2775 활동 69/76/79 소켓W 66/70/70 gfxW 26/28/29 코어W 4/4/8 코어상한 1599/1954/4546 fclk 1603/1608/1619 uclk 1000/1000/1000 dramR 33164/35334/39577 dramW 9845/18075/18731 
+none nomma bin=bin load A=0.57 B=0.17 rdma=2 trace=0 zc=ZC=3/ZC=3:  | srv-2node-none-bs-nomma-1113-033645
+   a: n=719 gfx 2010/2088/2205 상한 2062/2308/2662 활동 70/78/80 소켓W 68/70/70 gfxW 20/22/25 코어W 12/19/23 코어상한 2471/4139/4488 fclk 1605/1611/1647 uclk 1000/1000/1000 dramR 31721/34687/39164 dramW 9635/18095/19091 
+   b: n=758 gfx 2202/2248/2301 상한 2299/2500/2723 활동 70/77/80 소켓W 66/70/70 gfxW 26/29/29 코어W 4/4/7 코어상한 1599/1955/4476 fclk 1603/1607/1617 uclk 1000/1000/1000 dramR 32916/35674/39640 dramW 9768/18046/18839 
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-none-bs-mma-1113-032500
+{'depth': 8192, 'off': 0, 'ctx_ms': 18512.398, 'ctx_n': 8192, 'pp_ms': 1449.498, 'pp_n': 512, 'tg_ms': 3150.337, 'sha': '0628b4700e3acbcd'}
+{'depth': 16384, 'off': 1024, 'ctx_ms': 36651.623, 'ctx_n': 16384, 'pp_ms': 1521.523, 'pp_n': 512, 'tg_ms': 3248.627, 'sha': '4332eeba8bc7f53e'}
+{'depth': 131072, 'off': 2048, 'ctx_ms': 371645.337, 'ctx_n': 131072, 'pp_ms': 2138.114, 'pp_n': 512, 'tg_ms': 4017.053, 'sha': '73d1dfcef41676c9'}
+0
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-none-bs-nomma-1113-033645
+{'depth': 8192, 'off': 0, 'ctx_ms': 18263.398, 'ctx_n': 8192, 'pp_ms': 1453.416, 'pp_n': 512, 'tg_ms': 3158.527, 'sha': '0628b4700e3acbcd'}
+{'depth': 16384, 'off': 1024, 'ctx_ms': 37029.934, 'ctx_n': 16384, 'pp_ms': 1561.511, 'pp_n': 512, 'tg_ms': 3238.666, 'sha': '4332eeba8bc7f53e'}
+{'depth': 131072, 'off': 2048, 'ctx_ms': 463170.647, 'ctx_n': 131072, 'pp_ms': 2909.477, 'pp_n': 512, 'tg_ms': 4070.696, 'sha': '73d1dfcef41676c9'}
+0
+ALLDONE

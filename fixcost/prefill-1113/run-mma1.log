@@ -1,0 +1,15 @@
+none mma bin=bin load A=0.56 B=0.10 rdma=2 trace=0 zc=ZC=3/ZC=3:  | srv-2node-none-bs-mma-1113-031231
+   a: n=720 gfx 2021/2095/2180 상한 2041/2282/2603 활동 72/79/80 소켓W 69/70/70 gfxW 20/22/25 코어W 12/18/22 코어상한 2732/4052/4459 fclk 1604/1608/1637 uclk 1000/1000/1000 dramR 32681/34493/36394 dramW 15648/17904/18564 
+   b: n=758 gfx 2202/2239/2272 상한 2303/2492/2721 활동 72/77/79 소켓W 68/70/70 gfxW 27/28/29 코어W 4/4/7 코어상한 1602/1955/4487 fclk 1604/1608/1614 uclk 1000/1000/1000 dramR 33683/35434/37529 dramW 15497/17852/18798 
+none nomma bin=bin load A=0.58 B=0.20 rdma=2 trace=0 zc=ZC=3/ZC=3:  | srv-2node-none-bs-nomma-1113-031858
+   a: n=724 gfx 2059/2113/2189 상한 2062/2310/2626 활동 73/79/81 소켓W 69/70/70 gfxW 22/23/25 코어W 13/17/20 코어상한 2637/3923/4450 fclk 1605/1609/1631 uclk 1000/1000/1000 dramR 32057/34033/36065 dramW 15734/17565/18656 
+   b: n=765 gfx 2231/2257/2299 상한 2310/2499/2753 활동 73/78/81 소켓W 68/70/70 gfxW 27/29/29 코어W 4/4/6 코어상한 1593/1955/4267 fclk 1601/1606/1612 uclk 1000/1000/1000 dramR 33377/35004/37715 dramW 15943/17692/18868 
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-none-bs-mma-1113-031231
+{'depth': 8192, 'off': 0, 'ctx_ms': 18692.943, 'ctx_n': 8192, 'pp_ms': 1445.625, 'pp_n': 512, 'tg_ms': 3152.264, 'sha': '0628b4700e3acbcd'}
+{'depth': 32768, 'off': 1024, 'ctx_ms': 76994.477, 'ctx_n': 32768, 'pp_ms': 1649.667, 'pp_n': 512, 'tg_ms': 3369.079, 'sha': 'fb7b1054adbd331e'}
+0
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-none-bs-nomma-1113-031858
+{'depth': 8192, 'off': 0, 'ctx_ms': 18092.047, 'ctx_n': 8192, 'pp_ms': 1425.424, 'pp_n': 512, 'tg_ms': 3155.041, 'sha': '0628b4700e3acbcd'}
+{'depth': 32768, 'off': 1024, 'ctx_ms': 80065.675, 'ctx_n': 32768, 'pp_ms': 1749.834, 'pp_n': 512, 'tg_ms': 3362.98, 'sha': 'fb7b1054adbd331e'}
+0
+ALLDONE
