@@ -1,5 +1,5 @@
 # 컨텍스트 길이별 속도(llama-bench -d / llama-benchy 방식, 표준 라이브러리만): 깊이 d 마다
-#   (1) 문맥 채우기: 글의 토큰 d 개를 처음부터 처리 → ctx_pp(tok/s), 걸린 시간(= 그 길이 문서의 첫 토큰까지 시간에 가까움)
+#   (1) 문맥 채우기: 글의 토큰 d 개를 처음부터 처리 → ctx_pp(t/s), 걸린 시간(= 그 길이 문서의 첫 토큰까지 시간에 가까움)
 #   (2) 그 문맥 뒤에 다음 글 PP 토큰을 더 넣고(앞 d 는 서버 캐시) TG 토큰을 greedy 로 생성 → pp<PP> @ d, tg<TG> @ d
 # 값은 서버가 잰 timings(prompt_n·prompt_ms·predicted_n·predicted_ms, MTP 면 draft_n·draft_n_accepted). 측정마다 글의 다른 자리
 # (측정 번호 × STRIDE 토큰)에서 시작해서 앞 측정의 캐시를 쓰지 않는다(첫 토큰부터 달라 공통 앞부분이 없음 — (1)의 prompt_n = d 로 확인).
@@ -60,7 +60,7 @@ def ms(v):
     v = [x for x in v if x is not None]
     if not v: return "-"
     return f"{statistics.mean(v):.1f}" + (f" ± {statistics.stdev(v):.1f}" if len(v) > 1 else "")
-print(f"| depth | ctx_pp tok/s | ctx 처리 s | pp{PP} @ d tok/s | tg{TG} @ d tok/s | 채택률 | (2) prompt_n |")
+print(f"| depth | ctx_pp t/s | ctx 처리 s | pp{PP} @ d t/s | tg{TG} @ d t/s | 채택률 | (2) prompt_n |")
 print("|---:|---:|---:|---:|---:|---:|---|")
 for d in depths:
     rr = [r for r in rows if r["depth"] == d]

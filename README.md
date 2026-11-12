@@ -7,7 +7,7 @@ HP ZBook Ultra G1a(AMD Strix Halo, Radeon 8060S gfx1151, 메모리 128 GB) 두 �
 
 ## 결과 (2026-11-12)
 
-| 구성 | 디코드 tok/s | 비고 |
+| 구성 | 디코드 t/s | 비고 |
 |---|---:|---|
 | 2노드 TP | **46.4** | 토큰마다 노드 하나가 가중치 2.83 GB 를 읽음 → 노드당 131 GB/s, 메모리 대역폭의 55%(DRAM 실측 읽기 A 3.18 · B 3.17 GB/토큰 기준 61.6 · 61.4%). 11-12 오후 번갈아 2쌍 평균(46.43) |
 | 2노드 TP + MTP 추측 디코딩 | **63.6** | 초안 3토큰(모델의 MTP 층), 채택률 0.64. 11-12 오후 번갈아 3쌍 평균(63.62) |
@@ -15,12 +15,12 @@ HP ZBook Ultra G1a(AMD Strix Halo, Radeon 8060S gfx1151, 메모리 128 GB) 두 �
 
 - 측정: llama-server, greedy(temperature 0), 프롬프트 6개(영어 글·코드·한국어·수학·JSON·요약) × 최대 256 토큰, 서버가 잰 디코드 속도의 토큰 가중 평균.
   프롬프트가 짧은(수백 토큰) 경우의 값이다.
-- **긴 문맥:** 문맥 깊이 32k 에서 none 34.6 · MTP 40.5, 128k 에서 21.7 · 20.5, 최대(260,096)에서 14.9 · 13.5 tok/s.
-  문맥을 처음 채우는 데 128k 는 8.5 분(256 tok/s), 260k 는 23.6 분(184 tok/s).
+- **긴 문맥:** 문맥 깊이 32k 에서 none 34.6 · MTP 40.5, 128k 에서 21.7 · 20.5, 최대(260,096)에서 14.9 · 13.5 t/s.
+  문맥을 처음 채우는 데 128k 는 8.5 분(256 t/s), 260k 는 23.6 분(184 t/s).
   깊이에 따라 늘어나는 시간의 94% 가 전체 attention(QSA) 층 12개다 — 아래 [컨텍스트 길이별 성능](#컨텍스트-길이별-성능-2026-11-12).
 - **출력 확인:** 최적화마다 같은 프롬프트의 출력 해시가 기준과 같은지 본다. 기준은 모드(none·MTP)별로 둔다 — 아래 [출력이 그대로인지 확인하는 법](#출력이-그대로인지-확인하는-법).
 - **목표: 노드당 메모리 대역폭의 85% 이상.** 기준은 1노드 GPU 읽기 실측 239.7 GB/s(이론 256 GB/s). 지금 61.6 · 61.4% 이고,
-  지금 읽는 바이트(≈3.18 GB/토큰)로 85% 는 none ≈64 tok/s 다.
+  지금 읽는 바이트(≈3.18 GB/토큰)로 85% 는 none ≈64 t/s 다.
 - 비효율 전수 조사(2026-11-08): 토큰 24.04 ms 중 가중치 읽기 최소 시간 11.72 ms, 나머지 12.3 ms 가 커널 사이 빈틈 3.95 · 행렬곱 대역폭 손실 3.71 ·
   행렬곱 밖 커널 2.84 · AR 기다림 1.15 · 토큰 경계 0.67 ms — [docs/INEFFICIENCY_20261108.md](docs/INEFFICIENCY_20261108.md). 그 뒤 개선은 아래 표.
 - 다음 단계 설계: 구간별 큰 커널(AR 사이 부분그래프 하나 = 상주 블록 커널 하나, 동기화 0.3–0.7 µs, 가중치 앞서 읽기·MALL) — [docs/DESIGN_megakernel.md](docs/DESIGN_megakernel.md).
@@ -30,7 +30,7 @@ HP ZBook Ultra G1a(AMD Strix Halo, Radeon 8060S gfx1151, 메모리 128 GB) 두 �
 
 문맥(KV 캐시)이 이미 d 토큰 차 있을 때의 속도. 깊이 0–128k 는 3회씩, 260,096 은 1회 쟀다. 구성은 위 결과와 같은 기본 빌드다.
 
-| 문맥 깊이 d (토큰) | 문맥 채우기 tok/s | 채우는 시간 s | pp512 @ d tok/s | tg128 @ d tok/s (none) | tg128 @ d tok/s (MTP) | MTP 채택률 |
+| 문맥 깊이 d (토큰) | 문맥 채우기 t/s | 채우는 시간 s | pp512 @ d t/s | tg128 @ d t/s (none) | tg128 @ d t/s (MTP) | MTP 채택률 |
 |---:|---:|---:|---:|---:|---:|---:|
 | 0 | — | — | 407.1 ± 10.4 | **43.8 ± 0.3** | **49.5 ± 1.5** | 51% ± 4 |
 | 4,096 (4k) | 450.8 ± 3.7 | 9.1 ± 0.1 | 357.7 ± 2.1 | **40.1 ± 0.2** | **51.4 ± 2.9** | 62% ± 6 |
@@ -45,12 +45,12 @@ HP ZBook Ultra G1a(AMD Strix Halo, Radeon 8060S gfx1151, 메모리 128 GB) 두 �
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/ctx/ctx-decode-dark.svg">
-  <img alt="문맥 깊이별 디코드 속도: none 은 깊이 0에서 43.8, 32k 34.6, 128k 21.7, 254k 14.9 tok/s 로 꾸준히 내려가고, MTP 는 채택률에 따라 들쭉날쭉하다가 64k 부터 none 보다 조금 낮다" src="docs/ctx/ctx-decode-light.svg">
+  <img alt="문맥 깊이별 디코드 속도: none 은 깊이 0에서 43.8, 32k 34.6, 128k 21.7, 254k 14.9 t/s 로 꾸준히 내려가고, MTP 는 채택률에 따라 들쭉날쭉하다가 64k 부터 none 보다 조금 낮다" src="docs/ctx/ctx-decode-light.svg">
 </picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/ctx/ctx-prefill-dark.svg">
-  <img alt="문맥 깊이별 프롬프트 처리 속도: 0에서 d까지 채우는 평균 속도는 4k 451, 128k 256, 254k 184 tok/s로, 깊이 d 뒤 512토큰 처리 속도는 407에서 128k 157, 254k 102 tok/s로 내려간다" src="docs/ctx/ctx-prefill-light.svg">
+  <img alt="문맥 깊이별 프롬프트 처리 속도: 0에서 d까지 채우는 평균 속도는 4k 451, 128k 256, 254k 184 t/s로, 깊이 d 뒤 512토큰 처리 속도는 407에서 128k 157, 254k 102 t/s로 내려간다" src="docs/ctx/ctx-prefill-light.svg">
 </picture>
 
 **용어**(llama-bench 와 같은 이름)
@@ -77,7 +77,7 @@ HP ZBook Ultra G1a(AMD Strix Halo, Radeon 8060S gfx1151, 메모리 128 GB) 두 �
 - 원자료: `fixcost/ctx-1112/`(run-ctx·run-max2 .sh·log, 회별 `*-ctx.jsonl`·bench.txt, 감시기 비교표·영수증, 실패한 회의 기록), 표·그림 `docs/ctx/`(`tools/bench/ctx_plot.py`).
 
 **읽는 법**
-- **none 디코드는 깊어질수록 느려진다**: 43.8(0) → 34.6(32k, −21%) → 21.7(128k, −50%) → 14.9 tok/s(254k). 한 토큰 시간으로는 깊이에 거의 정비례한다
+- **none 디코드는 깊어질수록 느려진다**: 43.8(0) → 34.6(32k, −21%) → 21.7(128k, −50%) → 14.9 t/s(254k). 한 토큰 시간으로는 깊이에 거의 정비례한다
   (22.8 → 46.1 → 67.1 ms). 3회 편차가 ±0.3 이하라 글 내용과 상관없다.
 - **늘어나는 시간은 거의 다 QSA 층 12개다.** 감시기 기록(기록 링 켠 none 회, AR 사이 구간마다 GPU 계산 시간 중앙값, 노드 A)으로 나누면:
 
@@ -100,10 +100,10 @@ HP ZBook Ultra G1a(AMD Strix Halo, Radeon 8060S gfx1151, 메모리 128 GB) 두 �
   - 검증 단계의 QSA 층은 층당 0.36 → 1.21 → 3.36 ms 로, 4토큰이라 1토큰의 1.7배다.
   - A GPU 혼자 도는 초안 쪽(초안 3번 + 따라잡기)도 21 → 28 → 51 ms 로 는다.
   - 그래서 주기당 필요한 토큰이 2.3 → 2.5 → 2.7 개로 늘고, none 을 이기는 채택률이 ≈43% → 51% → 57% 로 오른다(초안 3개 기준 어림).
-  - 그 감시기 회의 128k 처럼 채택률이 94% 면 MTP 30.3 tok/s 로 none 보다 40% 빠르고, 표의 128k 처럼 50% 면 조금 느리다.
-- **프롬프트 처리**: 문맥 채우기 평균은 4k–8k 에서 451 tok/s, 128k 에서 256 tok/s(채우는 데 8.5 분). 깊이 d 뒤 512토큰은 407(0) → 157 tok/s(128k).
+  - 그 감시기 회의 128k 처럼 채택률이 94% 면 MTP 30.3 t/s 로 none 보다 40% 빠르고, 표의 128k 처럼 50% 면 조금 느리다.
+- **프롬프트 처리**: 문맥 채우기 평균은 4k–8k 에서 451 t/s, 128k 에서 256 t/s(채우는 데 8.5 분). 깊이 d 뒤 512토큰은 407(0) → 157 t/s(128k).
   MTP 회는 깊을수록 조금 느리다(64k −4%, 128k −5%, 254k −6%) — 초안 쪽도 문맥을 처리하는 몫으로 본다(추론).
-- **최대 깊이 260,096(1회)**: none 14.9 · MTP 13.5 tok/s(채택률 67%). 문맥 채우기 183.6 tok/s 로 23.6 분, pp512 @ d 102.2 tok/s.
+- **최대 깊이 260,096(1회)**: none 14.9 · MTP 13.5 t/s(채택률 67%). 문맥 채우기 183.6 t/s 로 23.6 분, pp512 @ d 102.2 t/s.
   none 의 첫 260k 회는 채우기 ≈16분째 클라이언트 ↔ B RPC 의 RDMA 연결 오류로 끊겨 같은 조건으로 다시 쟀다(아래 한계).
 - 깊이 0 의 none 43.8 이 위 결과(46.4)보다 낮은 것은 조건이 달라서다(프롬프트 512토큰, 생성 128토큰, 다른 글). 같은 표 안에서만 비교한다.
 
@@ -161,7 +161,7 @@ HP ZBook Ultra G1a(AMD Strix Halo, Radeon 8060S gfx1151, 메모리 128 GB) 두 �
 - 토큰당 읽는 가중치: 디코드 1단계에 노드 하나가 읽는 양(`tools/bytes_per_token.py 512 10 loaded tp=2`). 나뉘는 텐서(attention·GDN 투영, 활성 전문가, 출력층)는
   절반, 두 노드에 복제되는 텐서(hyper-connection, shared expert, 라우터, indexer)는 전부. KV 캐시·GDN 상태·임베딩 조회는 뺐다. MTP 는 한 단계에 여러 토큰을 검증하므로
   이 값이 생성 토큰당 양은 아니다.
-- 환산 GB/s = 노드당 GB × tok/s(MTP 없음). DRAM 실측(inferwatch `dram-bytes`, perf amd_df)은 이보다 노드당 ≈0.35 GB/토큰 많다 — 절반은 AR 을 기다리는 동안의
+- 환산 GB/s = 노드당 GB × t/s(MTP 없음). DRAM 실측(inferwatch `dram-bytes`, perf amd_df)은 이보다 노드당 ≈0.35 GB/토큰 많다 — 절반은 AR 을 기다리는 동안의
   가중치 미리 읽기(같은 바이트를 두 번 읽음), 나머지는 GDN 상태·활성값·문맥(RESULTS.md 2026-11-11 03:02).
 
 큰 단계만 간추리면(자세한 수치·실패한 시도는 RESULTS.md):
@@ -226,7 +226,7 @@ HP ZBook Ultra G1a(AMD Strix Halo, Radeon 8060S gfx1151, 메모리 128 GB) 두 �
 기록 링을 모아 `runs/watch/<시각>/report.html`(타임라인 + 영수증 표)과 `receipt.md` 를 만든다. 대표 넷을 `docs/watch/` 에 둔다 — HTML 은 받아서 브라우저로 연다(각 ≈11 MB).
 11-05 – 11-07 의 기록이라 지금 기본보다 느리다. 최근 회의 비교표는 `fixcost/*/watch-summary-*.md`(예: [11-12 융합](fixcost/fuse-1112/watch-summary-1112-133002.md)).
 
-| 보고서 | 상황 | 디코드 tok/s (서버 측정) |
+| 보고서 | 상황 | 디코드 t/s (서버 측정) |
 |---|---|---:|
 | [none, 묶기 10개 뒤](docs/watch/20261105-0217-none-fusions.html) · [영수증](docs/watch/20261105-0217-none-fusions-receipt.md) · [그림](docs/watch/20261105-0217-none-fusions.png) | 11-05 02:17, 1토큰 디코드 | 35.4 |
 | [none, 서버 쪽 argmax 뒤](docs/watch/20261105-2003-none-argmax.html) · [영수증](docs/watch/20261105-2003-none-argmax-receipt.md) · [그림](docs/watch/20261105-2003-none-argmax.png) | 11-05 20:03, AR 이 호스트 왕복(ZC=1) | 36.45 |
@@ -280,7 +280,7 @@ llama-quantize --allow-requantize --pure --tensor-type-file fixcost/dvocab-1106/
 ## 측정 방법
 
 - `run_server.sh`(= `tools/bench/srv-probe.sh`)가 두 rpc-server 와 llama-server 를 띄우고 `tools/spec_bench.py` 로 6 프롬프트를 돌린 뒤 내린다.
-  결과는 `runs/srv-<topo>-<spec>-<시각>/results.jsonl`(프롬프트별 tok/s, 초안 수·채택 수, 출력 해시)과 두 노드의 GPU 클럭·전력 기록.
+  결과는 `runs/srv-<topo>-<spec>-<시각>/results.jsonl`(프롬프트별 t/s, 초안 수·채택 수, 출력 해시)과 두 노드의 GPU 클럭·전력 기록.
   `BENCH=` 를 주면 다른 클라이언트(예: 컨텍스트 길이별 `tools/bench/ctx_bench.py`)를 같은 서버 구성으로 돌린다.
 - 끔/켬 비교는 `tools/bench/node-ab.sh`: 구성마다 서버·클라이언트 환경을 주고 번갈아 돌린다. 두 노드 부하가 낮을 때 시작하고, all-reduce 링크가 RDMA 로
   안 붙은 회는 다시 돌린다. 속도 회는 기록 링을 끄고 재고, 이어서 구성마다 추론 감시 세션을 하나씩 남겨 비교표(단계 시간, AR 지연, 1 ms 넘는 기다림의 원인,
@@ -302,7 +302,7 @@ llama-quantize --allow-requantize --pure --tensor-type-file fixcost/dvocab-1106/
 | **H5 + 불러올 때 가중치 합치기** (같은 날 같은 조건 끔 → 켬) | 4.82 / 2.96 | 2.1179 | (llama-bench 19.5 → 21.0, 그래프 끔 21.8) | 32.6 → **33.4** | 24.4 → **25.9** | 34.3 → **36.4** |
 | (참고) halogen 자체 체크포인트, 개발사 측정 | — | — | 35.4 | 55–57 | — | — |
 
-- tok/s, llama-server 6 프롬프트. 1노드 값은 A 의 '느린 상태'(TB 활동 없음, 빠른 상태에서는 ≈+20%). 2노드는 B rank 0, 발행 겹치기 2, 서버 HIP 그래프 끔, FFN 320/320.
+- t/s, llama-server 6 프롬프트. 1노드 값은 A 의 '느린 상태'(TB 활동 없음, 빠른 상태에서는 ≈+20%). 2노드는 B rank 0, 발행 겹치기 2, 서버 HIP 그래프 끔, FFN 320/320.
 - 토큰당 읽는 가중치는 이때 엔진(라우터 F32) 기준 `tools/bytes_per_token.py 512 10 [tp=2]`. 합치기는 H5 에서 바이트가 거의 안 바뀐다(hc inject 만 Q8_0 → Q6_K).
   Q8_0 은 노드당 읽는 양이 H5 의 1.45배인데 2노드 디코드는 18% 만 느림 — 2노드는 가중치보다 고정비에 묶여 있었다.
 - 비트 배분(`tools/make_mix.py`, `quant/`): 전문가 IQ4_XS(down IQ4_NL), o_proj Q8_0, hyper-connection Q6_K/Q8_0, 몸통 4-bit(H) 또는 Q5_0(H5), imatrix.

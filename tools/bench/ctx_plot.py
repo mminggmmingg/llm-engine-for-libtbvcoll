@@ -1,6 +1,6 @@
 # 컨텍스트 길이 벤치(ctx_bench.py) 결과 → README 용 표(markdown)와 SVG 그림(밝은·어두운 테마). 표준 라이브러리만.
 #   ctx_plot.py <출력 폴더> none=<ctx.jsonl>[,<ctx.jsonl>...] mtp=<ctx.jsonl>[,...]
-# 같은 깊이가 여러 파일에 있으면 모두 모은다(평균 ± 표준편차). 그림: 깊이별 decode(tg) tok/s, 문맥 채우기(ctx_pp) tok/s.
+# 같은 깊이가 여러 파일에 있으면 모두 모은다(평균 ± 표준편차). 그림: 깊이별 decode(tg) t/s, 문맥 채우기(ctx_pp) t/s.
 import json, os, statistics, sys
 
 outdir = sys.argv[1]
@@ -38,7 +38,7 @@ def fmt(m, s, n, nd=1, unit=""):
     return f"{m:.{nd}f}{unit}" + (f" ± {s:.{nd}f}" if s is not None else "") + ("" if n > 1 else " (1회)")
 
 # 표: 깊이마다 한 줄, none·MTP 나란히
-hdr = ("| 문맥 깊이 d (토큰) | 문맥 채우기 tok/s | 채우는 시간 s | pp512 @ d tok/s | tg128 @ d tok/s (none) | tg128 @ d tok/s (MTP) | MTP 채택률 |\n"
+hdr = ("| 문맥 깊이 d (토큰) | 문맥 채우기 t/s | 채우는 시간 s | pp512 @ d t/s | tg128 @ d t/s (none) | tg128 @ d t/s (MTP) | MTP 채택률 |\n"
        "|---:|---:|---:|---:|---:|---:|---:|")
 lines = [hdr]
 for d in depths:
@@ -124,8 +124,8 @@ def chart(name, title, ylab, series, theme):
     open(os.path.join(outdir, f"{name}-{theme}.svg"), "w").write("\n".join(o) + "\n")
 
 for th in THEMES:
-    chart("ctx-decode", "디코드 속도 — 문맥 깊이 d 에서 128토큰 생성 (tg128 @ d)", "tok/s",
+    chart("ctx-decode", "디코드 속도 — 문맥 깊이 d 에서 128토큰 생성 (tg128 @ d)", "t/s",
           [("none", "tg", "none (추측 없음)", "blue", "none"), ("mtp", "tg", "MTP (초안 3토큰)", "orange", "MTP")], th)
-    chart("ctx-prefill", "프롬프트 처리 속도 — 2노드 none", "tok/s",
+    chart("ctx-prefill", "프롬프트 처리 속도 — 2노드 none", "t/s",
           [("none", "ctx", "0 → d 채우기 평균", "blue", "채우기"), ("none", "pp", "d 뒤 512토큰 (pp512 @ d)", "green", "pp512")], th)
 print("written", outdir)
