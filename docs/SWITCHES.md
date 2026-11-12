@@ -208,3 +208,11 @@
   - `GGML_CUDA_NO_PLE_FUSE=1` 이면 끔: PLE(1층) 게이트 SCALE → SGN·ABS → CLAMP → SQRT → MUL → SIGMOID → MUL 과 PLE conv 섞기(CONCAT → 상태 꼬리 CPY → 탭마다
     VIEW·TRANSPOSE·CONT·가중치 VIEW·CONT·RESHAPE·MUL·ADD → SILU·CONT·RESHAPE → ADD → ADD)를 커널 둘로(`unary.cu` `ggml_cuda_op_ple_gate`·`ggml_cuda_op_ple_conv_mix`).
   - 진단: `GGML_CUDA_FUSE_COUNT=1`(2000 후보마다 세 융합의 토큰 수별 성공/후보 수를 stderr 로), `GGML_CUDA_NODES_DUMP=<이름 조각>[,...]`(그 이름의 노드가 든 그래프 전체를 한 번 출력).
+- 2026-11-12 오후(측정 도구, 컨텍스트 길이별 — README "컨텍스트 길이별 성능", RESULTS.md 11-12 14:40 절):
+  - `tools/bench/ctx_corpus.sh <llama.cpp 폴더> <커밋> <출력 .txt>`: 상류 커밋의 docs/**/*.md·tools/server/README.md(앞) + src/*.cpp(뒤)를 이은 글, sha256 출력.
+  - `tools/bench/ctx_bench.py <서버 URL> <글> <깊이,...> <회 수> <결과 jsonl> [PP=512] [TG=128]`: llama-bench `-d` 방식 — 깊이마다 문맥 채우기(`n_predict 0`),
+    이어서 PP 토큰 + TG 생성(`cache_prompt`, greedy, `ignore_eos`). `CTX_STRIDE`(기본 1024, 측정마다 글 시작 자리를 옮김). 기록 링 켠 회(`TRACE=1`)는
+    `CTX_WATCH_DEPTHS`(기본 0,32768,131072) 1회씩. srv-probe·node-ab 에는 `BENCH="tools/bench/ctx_bench.py ... {OUT}/ctx.jsonl"` 과 `SRV_EXTRA="-c 262144"`.
+  - `tools/bench/ctx_plot.py <출력 폴더> none=<jsonl,...> mtp=<jsonl,...>`: `ctx-table.md` 와 `ctx-{decode,prefill}-{light,dark}.svg`(표준 라이브러리만).
+  - `tools/watch/ctxseg.py <감시기 세션> [AR 수=96] [간격 s=2] [단계 상한 ms=200] [AR 바이트=10240]`: 대리 스레드 AR 기록(ZC=3)에서 그 크기의 AR 을 96개씩 decode 단계로
+    묶고 간격으로 깊이(측정)를 가른 뒤, 깊이마다 단계 시간과 AR 사이 구간별 GPU 계산 시간 중앙값(노드 A·B). 4토큰 MTP 검증은 AR 바이트 40960.

@@ -1,0 +1,15 @@
+# none 260096 첫 회(17:02 시작) 실패 기록 — 서버 로그 오류 줄, 두 rpc-server 로그 끝, A 커널 기록(17:20:25–17:20:45, 재전송·ACK 줄 개수만)
+## server.log (경과 시각 m.ss.ms)
+124:/data/parksThink/macos_reversing/codex/zbook-rdma/experiments/engine2n/llama.cpp/ggml/src/ggml-rpc/ggml-rpc.cpp:1078: Remote RPC server crashed or returned malformed response
+125:17.57.356.060 E RDMA CQ wc error: status=5 (Work Request Flushed Error) vendor_err=0x0
+## rpc-a.log 끝
+[comm_prof]   per allreduce: wait-for-cmd 951.0us | SET_TENSOR 0.17x 232.5us GRAPH_COMPUTE 1.01x 196.9us COMM_ALLREDUCE 1.00x 37770.2us
+Client connection closed
+## rpc-b.log 끝
+Client connection closed
+## A journalctl -k 17:20:25–17:20:45
+      6 callbacks suppressed
+     30 native ACK matched after retry qpn
+     30 native retransmit qpn
+## B journalctl -k 같은 구간
+      2 native RX reorder discarded qpn
