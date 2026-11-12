@@ -3052,3 +3052,23 @@ attention·GDN 1.00, 활성 전문가 0.64, hyper-connection 0.61(복제), share
   감시기: none 23.45 ms/단계(밤 켬 23.03), AR 지연 A→B 중앙 18.5 µs, 1 ms 넘는 기다림 0.05 ms/단계; critical path GPU 계산 B 9.14 · A 8.46, 링크 1.66, 출력층 B 1.01 ms/단계.
   MTP 10.70 ms/단계. DRAM(none): A 3.182 / B 3.147 GB/토큰 → 85% 목표 값 A 60.4%, B 59.8%(11-11 밤 58.7 / 58.1%).
 - 품질 근거는 02:13 절: Q8_0 원본 기준 KLD 가 끔/켬 똑같고, 갈린 자리는 거의 동점이다.
+
+## 2026-11-12 11:30–14:35 — 감시기로 찾은 다음 비효율: PLE(1층) 원소별 사슬, 12층이 같은 값을 다시 만드는 QSA 마스크 — 서버 쪽 노드 패턴 융합 3개(값 그대로) none +2.1%, MTP +1.6%
+사용자: "감시기로 다음 비효율점 찾아서 개선해". 자료 `fixcost/fuse-1112/`(run-nodes·run-fuse·run-count·run-fuse2 .sh·log, 회별 파일, cp-*.json, watch-summary·watch-receipt, dram/).
+- **찾은 것(감시기, GPU 도장으로 AR 사이 구간마다 GPU 시간):** 1층(GDN + PLE n-gram 갈래) 구간이 691 µs — 다른 GDN 구간 ≈210 µs. rocprof 로 보니
+  PLE 갈래가 행렬곱 2개 + 원소별 커널 ≈31개(게이트 SCALE·SGN·ABS·CLAMP·SQRT·MUL·SIGMOID·MUL, conv 탭마다 VIEW·TRANSPOSE·CONT·가중치 CONT·MUL·ADD 등).
+  또 짧은 문맥 QSA 마스크(`LLAMA_QSA_SHORT`)는 층마다 FILL·CPY·TOP_K·TOP_K_MASK 5커널인데 12층 모두 같은 값을 만든다.
+- **고친 것: 클라이언트 그래프는 그대로 두고 서버 CUDA 쪽에서 노드 패턴을 알아보고 커널 하나로**(그래프 모양을 바꾸면 출력이 바뀌는 엔진이라 — 11-12 02:13 절).
+  각 융합은 원래 연산의 식·순서를 그대로(`#pragma clang fp contract(off)`, 바이어스 0 일 때만 등) 쓰고, 중간 텐서가 범위 밖에서 안 읽히는지·출력이 입력과 겹치지 않는지 확인한다.
+  - QSA 마스크(`top-k-mask.cu` `ggml_cuda_op_qsa_all_pools_mask`): 5 → 1커널/층. PLE 게이트(`unary.cu` `ggml_cuda_op_ple_gate`): 8 → 1.
+    PLE conv 섞기(`ggml_cuda_op_ple_conv_mix`, 채널마다 스레드 하나 — 상태 꼬리 저장, 탭 곱합, SILU, 두 ADD): ≈40 → 1.
+  - 토큰당 커널 1134 → 1060(rocprof tg32 43.21 → 44.11). 끄기 `GGML_CUDA_NO_QSA_MASK_FUSE=1`, `GGML_CUDA_NO_PLE_FUSE=1`.
+- **출력: 모든 회(29회 — 관문·번갈아·감시기·진단) 모드별 새 기준과 6/6 같음.**
+- **none, 번갈아 2쌍: 45.48 · 45.47 (45.48) → 46.30 · 46.55 (46.43), +2.1%.** 감시기 23.85 → 22.65 ms/단계. GPU 구간: PLE 구간 A −132 µs · B −154 µs,
+  QSA 층 구간 ≈−20 µs 씩. DRAM(켬, none): A 3.178 / B 3.171 GB/토큰 → 85% 목표 값 **A 61.6%, B 61.4%**(아침 60.4 / 59.8%).
+- MTP 첫 비교(3쌍)는 차이 없음(63.59 / 63.46). 융합 횟수(`GGML_CUDA_FUSE_COUNT=1`)를 세어 보니 MTP 에서 PLE conv 융합이 **0번** —
+  MTP 는 GDN·PLE conv 상태를 되돌리기 칸(`n_rs_seq+1`)마다 저장해서(`build_conv_state_at`, TAG_RECURRENT_ROLLBACK_SPLITS) 상태 꼬리 VIEW·CONT·VIEW·CPY 묶음이
+  여러 번 나오는데 매처가 하나만 받았다. 여러 칸(≤8)을 받게 고침 → MTP 4토큰 검증에서 471/471.
+- **MTP, 고친 빌드로 번갈아 3쌍: 63.75 · 62.20 · 61.99 (62.65) → 63.08 · 63.32 · 64.47 (63.62), +1.6%(2쌍 이김 — 잡음 ±1.5% 와 비슷한 크기).**
+  감시기 10.46 → 10.20 ms/단계. 오늘 낮 MTP 는 끔/켬 모두 63 안팎으로 아침 한 회(61.44)보다 높다 — 날·시간대 흔들림으로 봄.
+- 진단 스위치: `GGML_CUDA_FUSE_COUNT=1`(토큰 수별 성공/후보, PLE conv 가 멈춘 검사 번호), `GGML_CUDA_NODES_DUMP=<이름 조각>`(서버가 받은 그래프 노드 목록).

@@ -1,0 +1,27 @@
+mtp fc bin=bin load A=0.58 B=0.21 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 63.47 tok/s (token-weighted) | srv-2node-mtp-bs-fc-1112-133503
+   a: n=268 gfx 2204/2400/2473 상한 2101/2496/2838 활동 72/89/95 소켓W 67/70/70 gfxW 22/28/30 코어W 6/9/20 코어상한 1589/2084/4866 fclk 1605/1621/1669 uclk 1000/1000/1000 dramR 7592/34415/43654 dramW 7364/7905/8317 
+   b: n=264 gfx 2167/2218/2253 상한 2262/2437/2900 활동 65/78/82 소켓W 65/69/70 gfxW 25/29/30 코어W 3/6/13 코어상한 1570/1931/5030 fclk 1599/1601/1606 uclk 999/1000/1000 dramR 6175/20545/59007 dramW 6458/7458/7924 
+none fc bin=bin load A=0.58 B=0.29 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 46.56 tok/s (token-weighted) | srv-2node-none-bs-fc-1112-133915
+   a: n=343 gfx 2378/2635/2707 상한 2392/2710/2795 활동 75/94/97 소켓W 67/70/70 gfxW 22/28/29 코어W 5/6/16 코어상한 1578/1924/4643 fclk 1606/1619/1661 uclk 1000/1000/1000 dramR 978/23766/63200 dramW 3863/3981/4776 
+   b: n=345 gfx 2479/2621/2706 상한 2532/2697/2818 활동 75/94/97 소켓W 65/69/70 gfxW 26/30/32 코어W 2/3/9 코어상한 1565/1933/4865 fclk 1599/1600/1606 uclk 998/1000/1000 dramR 1917/13813/61234 dramW 4197/4411/4569 
+srv-2node-mtp-bs-fc-1112-133503-bench.txt: 6/6 same (ref 1112 mtp)
+srv-2node-none-bs-fc-1112-133915-bench.txt: 6/6 same (ref 1112 none)
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-fc-1112-133503
+-- a
+e2n fuse qsa_mask: T2 12/12 T4 5650/5650 T9 144/144
+e2n fuse ple_gate: T2 1/1 T4 471/471 T9 12/12
+e2n fuse ple_conv: T2 0/37 T4 0/17423 T9 0/6250
+-- b
+e2n fuse qsa_mask: T2 12/12 T4 5650/5650 T9 144/144
+e2n fuse ple_gate: T2 1/1 T4 471/471 T9 12/12
+e2n fuse ple_conv: T2 0/37 T4 0/17423 T9 0/6250
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-none-bs-fc-1112-133915
+-- a
+e2n fuse qsa_mask: T1 16501/16502 T2 24/24 T4 72/72 T9 144/144
+e2n fuse ple_gate: T1 1376/1376 T2 2/2 T4 6/6 T9 12/12
+e2n fuse ple_conv: T1 1376/50882 T2 2/74 T4 6/222 T9 0/684
+-- b
+e2n fuse qsa_mask: T1 16501/16502 T2 24/24 T4 72/72 T9 144/144
+e2n fuse ple_gate: T1 1376/1376 T2 2/2 T4 6/6 T9 12/12
+e2n fuse ple_conv: T1 1376/50882 T2 2/74 T4 6/222 T9 0/684
+ALLDONE

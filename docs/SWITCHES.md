@@ -202,3 +202,9 @@
     인덱서 점수 대신 pool_mask 로 같은 마스크(인덱서 q 사영·norm/rope·풀 키 모으기·인덱서 생략). none +3.5%, MTP +2.0%. `=2`·`=3` 은 원인 가르기용(인덱서 돌리고 마스크만 바꿈 /
     쓰지 않는 노드 하나 추가). 출력 기준 해시가 바뀜: 새 기준은 모드별(none·MTP 출력이 서로 다름) — `fixcost/gluhc-1108/hashchk.py`(이전 기준은 `HASHREF=1108`, `=0` 에서 그대로).
   - 진단: `EVALCB_GEN=<n>`(llama-eval-callback 이 prompt 뒤 greedy n 단계), `GGML_META_MIRROR_READ=<j>`(MIRRORED 텐서를 단순 백엔드 j 에서 읽기).
+- 2026-11-12 낮(감시기 기반, RESULTS.md 11-12 11:30 절) — 서버 CUDA 쪽 노드 패턴 융합(그래프는 그대로, 출력 비트 동일, **기본 켬**):
+  - `GGML_CUDA_NO_QSA_MASK_FUSE=1` 이면 끔: QSA 짧은 문맥 마스크 FILL → CPY(pool_mask f16→f32) → TOP_K(모든 풀) → TOP_K_MASK 를 커널 하나로
+    (`top-k-mask.cu` `ggml_cuda_op_qsa_all_pools_mask`, 층마다 5커널 → 1).
+  - `GGML_CUDA_NO_PLE_FUSE=1` 이면 끔: PLE(1층) 게이트 SCALE → SGN·ABS → CLAMP → SQRT → MUL → SIGMOID → MUL 과 PLE conv 섞기(CONCAT → 상태 꼬리 CPY → 탭마다
+    VIEW·TRANSPOSE·CONT·가중치 VIEW·CONT·RESHAPE·MUL·ADD → SILU·CONT·RESHAPE → ADD → ADD)를 커널 둘로(`unary.cu` `ggml_cuda_op_ple_gate`·`ggml_cuda_op_ple_conv_mix`).
+  - 진단: `GGML_CUDA_FUSE_COUNT=1`(2000 후보마다 세 융합의 토큰 수별 성공/후보 수를 stderr 로), `GGML_CUDA_NODES_DUMP=<이름 조각>[,...]`(그 이름의 노드가 든 그래프 전체를 한 번 출력).
