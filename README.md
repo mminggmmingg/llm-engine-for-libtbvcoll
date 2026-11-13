@@ -27,8 +27,8 @@ Run one large MoE language model on **two laptops at once, with tensor paralleli
 | 128k | 21.7 → **31.1 t/s** (+43%) | 20.5 → **22.6 t/s** |
 | 254k (260,096 tokens, 1 run) | 14.9 → **26.4 t/s** (+77%) | 13.5 → **16.3 t/s** |
 
-- Prompt processing at depth got the same kind of skip on 2026-11-13: filling 128k tokens is ≈20% faster (466 → 374 s), and 512
-  more tokens after 128k are 27% faster (alternating runs, same output).
+- Prompt processing at depth got the same kind of skip on 2026-11-13: filling 128k tokens went from 282 to **352 t/s** (+25%),
+  and 512 more tokens after 128k from 175 to **239 t/s** (+37%) (alternating runs, same output).
 - Beyond ≈64k tokens, plain decoding is faster than MTP.
 
 - **Goal:** ≥ 85% of the per-node memory bandwidth (239.7 GB/s measured GPU read, 256 GB/s theoretical).
@@ -124,17 +124,18 @@ kernels described below. The dashed gray line is plain decoding (none) measured 
 - **Prompt processing** was unchanged by the kernels above (within ±3%). A kernel trace of a 128k fill then showed the batched
   flash-attention kernel (MMA) taking 49% of the GPU time (`tools/bench/ppk.py`). On 2026-11-13 that kernel got the same skip:
   a 64-token KV chunk is skipped when the mask hides it from all 16 queries of a tile (`GGML_CUDA_NO_FA_MMA_SKIP` turns it off).
-  Alternating runs at the same text position, identical output:
+  Alternating runs at the same text position, identical output (two values = two pairs):
 
-  | Depth | Context fill, off → on | pp512 @ d, off → on |
+  | Depth | Context fill t/s, off → on | pp512 @ d t/s, off → on |
   |---:|---:|---:|
-  | 8k | 18.1 / 18.3 → 18.7 / 18.5 s | 1.43 / 1.45 → 1.45 / 1.45 s |
-  | 16k | 37.0 → 36.7 s (−1%) | 1.56 → 1.52 s (−3%) |
-  | 32k | 80.1 → 77.0 s (−4%) | 1.75 → 1.65 s (−6%) |
-  | 64k | 183.6 → 165.0 s (−10%) | 2.13 → 1.82 s (−14%) |
-  | 128k | 465.8 / 463.2 → 373.9 / 371.6 s (**−20%**) | 2.94 / 2.91 → 2.14 / 2.14 s (**−27%**) |
+  | 8k | 452.8 / 448.5 → 438.2 / 442.5 (−2%) | 359.2 / 352.3 → 354.2 / 353.2 (−1%) |
+  | 16k | 442.5 → 447.0 (+1%) | 327.9 → 336.5 (+3%) |
+  | 32k | 409.3 → 425.6 (+4%) | 292.6 → 310.4 (+6%) |
+  | 64k | 356.9 → 397.1 (+11%) | 240.9 → 280.9 (+17%) |
+  | 128k | 283.0 / 281.4 → 352.7 / 350.5 (**+25%**) | 176.0 / 174.2 → 239.5 / 238.8 (**+37%**) |
 
-  The context table above was measured before this change.
+  t/s = tokens / the server's own prompt time; a 128k fill takes 372 s with the skip (464 s without). The context table above
+  was measured before this change, at other text positions.
 
 ## How it works
 
@@ -266,8 +267,8 @@ all-reduce latency and where the GPU waited. The reports' own text is in Korean.
 - Long context, decode: the indexer now reads 256 B of pooled key every 2 KB of cache row, ≈23 GB/s. At 128k it is the largest
   context-dependent cost (4.35 ms per token). Keeping the pooled keys in their own dense array would cut this to an estimated
   ≈40 µs per layer.
-- Long context, prompt processing is still slow: filling 128k tokens takes about 6 minutes even with the chunk skip, because a
-  64-token chunk can be skipped only when none of the 16 queries of a tile picked it.
+- Long context, prompt processing is still slow: filling 128k tokens runs at ≈350 t/s (about 6 minutes) even with the chunk skip,
+  because a 64-token chunk can be skipped only when none of the 16 queries of a tile picked it.
 - MTP acceptance depends on the text, and beyond ≈64k tokens of context MTP is slower than plain decoding. There is no adaptive
   draft length and no automatic switch.
 - none and MTP outputs differ slightly since 2026-11-12 (see Output correctness). Draft lengths of 4 or more change outputs again
