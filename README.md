@@ -114,13 +114,33 @@ kernels described below. The dashed gray line is plain decoding (none) measured 
 - **Deterministic outputs at long context.** The old top-k broke ties between equal scores in atomic order, during prompt
   processing too, so the same request could produce different text at 32k (two different hashes were seen). With the new top-k,
   4 repeated runs gave identical output at 8k and 32k, and 128k matched with the other two changes switched off.
-- **MTP at long context.** MTP is faster up to 32k, equal at 64k and slower beyond (inference watcher, steps split by depth with
-  `tools/watch/ctxseg.py`):
-  - The attention part of a 4-token verification step grows from 4.2 to 25.8 ms between depth 0 and 128k, against 2.8 → 10.7 ms
-    for a 1-token step. Likely cause (from the code, not measured per kernel): each of the 4 queries picks its own 512 blocks, and a
-    chunk is skipped only when all 4 queries hide it.
-  - The MTP head is a full-attention layer without an indexer (compress ratio 0), and it runs on node A only. Its draft steps
-    slow from 2.9 to 6.6 ms each.
+- **MTP at long context: why 45–50 t/s and not 63.5.** MTP speed = tokens per cycle (1 + accepted drafts) ÷ cycle time
+  (one 4-token verification on both nodes + 3 draft steps on A). Depth rows are the runs of the context table; the short-prompt row
+  is the 2026-11-13 check below, with the same server settings:
+
+  | Depth | Tokens per cycle | Cycle | MTP | none, per token | Tokens per cycle MTP needs to beat none |
+  |---:|---:|---:|---:|---:|---:|
+  | short prompts (6, same server `-c 262144`) | 3.02 | 47.4 ms | 61.9 t/s | 21.6 ms | 2.2 |
+  | 0 (512–640 tokens) | 2.57 | 54.2 ms | 47.3 t/s | 22.5 ms | 2.4 |
+  | 32k | 3.03 | 68.2 ms | 44.4 t/s | 26.7 ms | 2.6 |
+  | 64k | 2.87 | 82.7 ms | 34.7 t/s | 28.7 ms | 2.9 |
+  | 128k | 2.64 | 116.5 ms | 22.6 t/s | 32.1 ms | 3.6 |
+  | 254k | 2.91 | 179.0 ms | 16.3 t/s | 37.9 ms | 4.7 (more than the maximum of 4) |
+
+  - **Acceptance depends on the text.** The short-prompt figure is pulled up by three easy prompts (math, JSON, summary:
+    acceptance 0.73–0.86, 70–78 t/s). Prose, code and Korean (≈0.54) run at 57–58 t/s even at short context, and the context
+    benchmark's text (llama.cpp docs and source) behaves like them.
+  - **The cycle grows with depth** (inference watcher, steps split by depth with `tools/watch/ctxseg.py`):
+    - The attention part of a 4-token verification step grows from 4.2 to 25.8 ms between depth 0 and 128k, against
+      2.8 → 10.7 ms for a 1-token step. Likely cause (from the code, not measured per kernel): each of the 4 queries picks its own
+      512 blocks, and a chunk is skipped only when all 4 queries hide it.
+    - The MTP head is a full-attention layer without an indexer (compress ratio 0), and it runs on node A only. Its draft steps
+      slow from 2.9 to 6.6 ms each.
+  - Even at depth 0 the cycle is longer than with the short prompts (2026-11-13 check, same build and server, alternating):
+    51.5 vs 47.4 ms, and none is 22.5 vs 21.6 ms per token. The server context size is not the cause at depth 0 (`-c 8192` and
+    `-c 262144` give the same 49.5 t/s). Whether the text or the position (512–640 tokens vs. fewer than 400) causes it is not
+    separated yet.
+  - The table's MTP column predates the top-k fix; today's build gives 49.5 t/s at depth 0 (47.3 in the table).
 - **Prompt processing** was unchanged by the kernels above (within ±3%). A kernel trace of a 128k fill then showed the batched
   flash-attention kernel (MMA) taking 49% of the GPU time (`tools/bench/ppk.py`). On 2026-11-13 that kernel got the same skip:
   a 64-token KV chunk is skipped when the mask hides it from all 16 queries of a tile (`GGML_CUDA_NO_FA_MMA_SKIP` turns it off).
@@ -174,7 +194,7 @@ node A: llama-server (client; the MTP drafts run on A's GPU)
 
 - Every change is checked against reference hashes of the 6 benchmark outputs (256 tokens each), per mode:
   - none: `6c1596 ce5ae3 ecfc02 810ea2 a27f06 e0ee11`
-  - MTP (3 drafts): `d28991 344aad 5942d0 412ba5 a27f06 e0ee11`
+  - MTP (3 drafts): `d28991 344aa8 5942d0 412ba5 a27f06 e0ee11`
   - check with `python3 -I fixcost/gluhc-1108/hashchk.py runs/.../bench.txt` (the mode is read from the file name).
 - **Why two references.** This engine is sensitive to graph shape: adding one unused node to the graph changes the logits slightly
   (first at layer 39, ≈1e-3) and greedy text then diverges at near-ties. The short-context QSA shortcut (2026-11-12) changed the graph
