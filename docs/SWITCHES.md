@@ -232,3 +232,17 @@
     sparse 경로에서는 안 쓰고, 마지막 묶음은 늘 계산. 값 그대로(8k·16k·32k·128k sha 같음). 128k 채우기 −20%, pp512 @ 128k −27%(RESULTS.md 11-13 03:1x).
   - 분석 도구: `tools/bench/kdepth.py <이름>=<prof2node 폴더> ...`(깊이별 디코드 커널 토큰당 시간, prof2node `BARGS="-p 0 -n 32 -d <깊이> -r 1"`).
   - `tools/bench/mtpdepth.py <감시기 세션>/client.ring`: MTP 검증형·초안 단계 시간을 깊이(측정)별로(ctx_bench 감시기 회).
+- 2026-11-14(긴 문맥 디코드 2, RESULTS.md 11-14 절):
+  - `GGML_CUDA_NO_IDX_DENSE=1` 이면 끔(기본 켬, HIP 그래프를 끈 서버에서만): QSA 인덱서 키 전용 배열(`lightning-indexer.cu` `e2n_kpool_*`). 층마다 풀 키를
+    `D[p] = pooled[pool_cells[p]]` 로 촘촘히 두고, 인덱서 모으기 자리에서 바뀐 풀만 복사(`prev[p] != cell` 또는 그 칸이 그래프 안 SET_ROWS 로 쓰였을 때 —
+    그래프 시작 때 `ggml_cuda_e2n_kpool_prepass` 가 표시). 그래프 밖 쓰기(버퍼 set/memset/cpy/clear, 해제)는 겹치면 무효 → 다음 갱신이 전체 복사.
+    값 그대로. 4토큰 인덱서 128k 15.5 → 2.4 ms, none 128k +9%, MTP 128k +10%.
+  - `GGML_CUDA_NO_IDX_MULTIQ=1` 이면 끔: 전용 배열을 읽는 vec 인덱서가 키를 한 번 읽어 묶음의 모든 토큰을 채점(`ALL_BATCH`) — 끄면 토큰마다 블록.
+  - `GGML_CUDA_IDX_DENSE_VERIFY=1`(점검, 느림): 갱신마다 배열을 캐시와 비교해 어긋난 칸 수를 로그(2의 거듭제곱 번째와 어긋날 때).
+  - `LLAMA_SPEC_MAX_CTX=<n>`(클라이언트, 기본 65536, 0 = 늘 초안): 문맥이 n 토큰 이상이면 초안 없이 디코드(`server-context.cpp` `get_n_draft_max`).
+    매 단계 보므로 긴 생성은 문턱을 넘을 때 한 번 바뀐다(그래프 한 번 다시 만듦). 출력은 어느 쪽이든 본 모델의 것.
+  - `GGML_CUDA_FA_MASK_DUMP=<폴더>`(점검): 서버가 FA 마스크(f16)를 `mask-<n>-kv<칸>-q<질의>-<이름>.f16` 로 씀 — KV 칸 수 `GGML_CUDA_FA_MASK_DUMP_MIN_KV`
+    (기본 16384) 이상, 질의 8개 이하 / 넘음 각각 `GGML_CUDA_FA_MASK_DUMP_N`(기본 24)개까지. 분석 `tools/bench/masksim.py`.
+  - 컴파일 매크로 `MMVQ_RDNA2_NC4_WARPS` / `MMVQ_RDNA2_NC4_ROWS`(측정 빌드 전용, 기본 0 = 워프 1·행 1): gfx1151 2–4열 mmvq 블록 배치를 모든 형식에 강제.
+    형식별 기본은 `mmvq.cu` `mmvq_rdna2_nc4_geo`. 비교 스크립트 `fixcost/mmvqgeo-1114/run-sweep.sh`(test-backend-ops 에 TP 반쪽 모양 추가).
+  - 도구: `tools/bench/outsum.py label=<회 폴더>[,<DRAM 접두>]` — 출력 t/s, 가중치 기준 GB/s, DRAM GB/s(A/B), 출력 토큰당 DRAM GB.

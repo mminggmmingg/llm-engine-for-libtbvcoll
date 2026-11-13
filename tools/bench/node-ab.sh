@@ -63,6 +63,7 @@ one_run() {  # $1 = spec:cfg, $2 = 기록 링 0|1 (비면 TR_<cfg>, 없으면 TR
   scp -q parks-zbook@10.99.0.2:/home/parks-zbook/engine2n/bin/rpc-server.log $d/rpc-b.log; grep comm_prof $d/rpc-a.log > $OUT/$n-prof-a.txt; grep comm_prof $d/rpc-b.log > $OUT/$n-prof-b.txt
   echo "$spec $cfg$3 bin=$(basename $BIN) load A=$a B=$b rdma=$(grep -cE "RDMA activated|allreduce link on .* [(]RDMA[)]" $d/rpc-a.log) trace=$TRACE zc=$(grep -o 'ZC=[0-9]' $d/rpc-a.log | head -1)/$(grep -o 'ZC=[0-9]' $d/rpc-b.log | head -1): $(echo "$out" | grep TOTAL) | $n"
   for x in a b; do echo "   $x: $(python3 -I gmsum.py $d/gm-$x.txt | cut -d'|' -f1)"; done
+  LAST_D=$d; python3 -I outsum.py "$spec:$cfg$3=$d" 2>/dev/null | tail -n +3 | sed 's/^/   out /'   # 출력 토큰 t/s · 가중치 기준 GB/s (2026-11-14)
   c=$(python3 -I profsum.py $OUT/$n-prof-a.txt 2>/dev/null | grep -o 'cycle *[0-9.]*'); [ -n "$c" ] && echo "   cyc: $c"
 }
 [ "${SPEED:-1}" != 0 ] && for run in ${RUNS:?}; do one_run $run "" ""; done   # SPEED=0: 감시기 회만
@@ -80,7 +81,7 @@ if [ "${WATCH:-1}" != 0 ]; then
     [ "$DRAM" = 1 ] && ! { has a && has b; } && exit 1
     [ -n "$DN" ] && { DRAMD=$OUT/dram; mkdir -p $DRAMD; }
   fi
-  seen=" "; pairs=(); drams=()
+  seen=" "; pairs=(); drams=(); outs=()
   for run in $RUNS; do
     case "$seen" in *" $run "*) continue ;; esac
     seen="$seen$run "
@@ -100,6 +101,7 @@ if [ "${WATCH:-1}" != 0 ]; then
       done
       drams+=("$run=$f")
     fi
+    o="$run=$LAST_D"; [ -n "$DRAMD" ] && { [ -f $f-a.json ] || [ -f $f-b.json ]; } && o="$o,$f"; outs+=("$o")
   done
   [ $started = 1 ] && kill "$(cat $W/daemon.pid)" 2>/dev/null   # inferwatch.sh stop 은 pid 파일을 지우므로 쓰지 않는다
   if [ ${#pairs[@]} -gt 0 ]; then
@@ -117,6 +119,8 @@ print("| %s | %s | %s | %s | %s | %s (%s) | %s |"%(sys.argv[2],d["node"],d["gb_p
         echo; echo "처리 토큰 = 감시 세션 decode 단계가 처리한 토큰(MTP 는 검증 묶음의 토큰까지 — 출력 토큰보다 많다). 85% 목표 값(none): 노드마다 GB/토큰 × 같은 구성 속도 회(기록 링 끔) tok/s ÷ 239.7."
         echo "MTP 는 decode 중 GB/s(기록 링 켠 회) 를 본다. 자료: $DRAMD"
       fi
+      echo; echo "## 출력 토큰 기준 (tools/bench/outsum.py — MTP 는 출력 토큰으로 센 t/s, 가중치 기준 GB/s = t/s × 노드당 2.83 GB, DRAM 은 잰 노드만)"; echo
+      python3 -I outsum.py "${outs[@]}" 2>/dev/null
       for p in "${pairs[@]}"; do cp ${p#*=}receipt.md $OUT/watch-receipt-$(basename ${p#*=}).md; done; } > $sum
     cat $sum
   fi

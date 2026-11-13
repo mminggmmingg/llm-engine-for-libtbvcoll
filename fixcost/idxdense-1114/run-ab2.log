@@ -1,0 +1,17 @@
+mtp dn bin=bin load A=0.57 B=0.12 rdma=3 trace=0 zc=ZC=3/ZC=3:  | srv-2node-mtp-bs-dn-1114-035543
+   a: n=771 gfx 2058/2132/2201 상한 2047/2343/2557 활동 76/81/84 소켓W 68/70/70 gfxW 22/24/25 코어W 10/13/17 코어상한 1946/3225/4478 fclk 1613/1624/1643 uclk 1000/1000/1000 dramR 33431/35692/37771 dramW 15741/17802/19267 
+   b: n=767 gfx 1948/2139/2231 상한 2262/2427/2900 활동 64/76/81 소켓W 62/68/69 gfxW 23/26/27 코어W 6/8/10 코어상한 1936/1956/4982 fclk 1606/1610/1615 uclk 1000/1000/1000 dramR 30399/35798/38399 dramW 14245/17672/19302 
+mtp do bin=bin load A=0.55 B=0.22 rdma=3 trace=0 zc=ZC=3/ZC=3:  | srv-2node-mtp-bs-do-1114-041014
+   a: n=772 gfx 2092/2161/2223 상한 2074/2357/2578 활동 78/82/85 소켓W 69/70/70 gfxW 22/24/26 코어W 9/12/17 코어상한 1939/3022/4431 fclk 1611/1618/1631 uclk 1000/1000/1000 dramR 33987/36016/37852 dramW 15980/17943/19484 
+   b: n=768 gfx 1990/2172/2250 상한 2251/2427/2900 활동 67/77/82 소켓W 63/68/69 gfxW 23/26/28 코어W 6/7/9 코어상한 1933/1956/4949 fclk 1605/1610/1616 uclk 1000/1000/1000 dramR 31189/36383/38794 dramW 14733/17956/19535 
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-dn-1114-035543
+{"depth": 0, "rep": 0, "off": 0, "pp_n": 512, "pp_ms": 1283.302, "tg_n": 128, "tg_ms": 2587.572, "draft_n": 153, "draft_acc": 78, "wall_s": 4.02, "sha": "18bdf8f0cf7b44f0"}
+{"depth": 65536, "rep": 0, "off": 1024, "ctx_n": 65536, "ctx_ms": 170147.452, "ctx_wall_s": 170.34, "pp_n": 512, "pp_ms": 1886.609, "tg_n": 128, "tg_ms": 3991.888, "draft_n": 150, "draft_acc": 79, "wall_s": 5.9, "sha": "bf159b54fd5f505e"}
+{"depth": 131072, "rep": 0, "off": 2048, "ctx_n": 131072, "ctx_ms": 394220.723, "ctx_wall_s": 398.21, "pp_n": 512, "pp_ms": 2280.426, "tg_n": 128, "tg_ms": 3466.827, "draft_n": 102, "draft_acc": 96, "wall_s": 5.79, "sha": "73d1dfcef41676c9"}
+0
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-do-1114-041014
+{"depth": 0, "rep": 0, "off": 0, "pp_n": 512, "pp_ms": 1249.326, "tg_n": 128, "tg_ms": 2588.51, "draft_n": 153, "draft_acc": 78, "wall_s": 3.99, "sha": "18bdf8f0cf7b44f0"}
+{"depth": 65536, "rep": 0, "off": 1024, "ctx_n": 65536, "ctx_ms": 167783.898, "ctx_wall_s": 167.98, "pp_n": 512, "pp_ms": 1787.895, "tg_n": 128, "tg_ms": 4004.905, "draft_n": 150, "draft_acc": 79, "wall_s": 5.82, "sha": "bf159b54fd5f505e"}
+{"depth": 131072, "rep": 0, "off": 2048, "ctx_n": 131072, "ctx_ms": 391443.767, "ctx_wall_s": 394.07, "pp_n": 512, "pp_ms": 2229.164, "tg_n": 128, "tg_ms": 3807.478, "draft_n": 102, "draft_acc": 96, "wall_s": 6.09, "sha": "73d1dfcef41676c9"}
+0
+ALLDONE

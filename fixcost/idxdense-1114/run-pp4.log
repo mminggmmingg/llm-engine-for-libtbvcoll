@@ -1,0 +1,31 @@
+== depth 0 01:27:49
+| qwen4exp A3B IQ4_NL - 4.5 bpw  |  91.69 GiB |   176.94 B | ROCm,RPC   |  -1 | tensor |   1 | RPC0/RPC1    |             pp4 |        105.58 ± 0.00 |
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/tools/bench/prof2node.sh: line 36: 19218 Killed                     env $(echo $ENV) /opt/rocm/bin/rocprofv3 ${PROFARGS:---kernel-trace --memory-copy-trace} --output-format csv -d $O/prof -o a -- "$BIN/ggml-rpc-server" -H 127.0.0.1 -p 50052 > rpc-a.log 2>&1
+a_kernel_trace.csv
+a_memory_copy_trace.csv
+bench.txt
+prof
+rpc-a.log
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-pp4d0-1114-012749
+rc=0 01:29:37
+== depth 32768 01:29:42
+| qwen4exp A3B IQ4_NL - 4.5 bpw  |  91.69 GiB |   176.94 B | ROCm,RPC   |  -1 | tensor |   1 | RPC0/RPC1    |    pp4 @ d32768 |         68.32 ± 0.00 |
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/tools/bench/prof2node.sh: line 36: 19758 Killed                     env $(echo $ENV) /opt/rocm/bin/rocprofv3 ${PROFARGS:---kernel-trace --memory-copy-trace} --output-format csv -d $O/prof -o a -- "$BIN/ggml-rpc-server" -H 127.0.0.1 -p 50052 > rpc-a.log 2>&1
+a_kernel_trace.csv
+a_memory_copy_trace.csv
+bench.txt
+prof
+rpc-a.log
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-pp4d32768-1114-012942
+rc=0 01:32:14
+== depth 131072 01:32:20
+| qwen4exp A3B IQ4_NL - 4.5 bpw  |  91.69 GiB |   176.94 B | ROCm,RPC   |  -1 | tensor |   1 | RPC0/RPC1    |   pp4 @ d131072 |         57.57 ± 0.00 |
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/tools/bench/prof2node.sh: line 36: 20478 Killed                     env $(echo $ENV) /opt/rocm/bin/rocprofv3 ${PROFARGS:---kernel-trace --memory-copy-trace} --output-format csv -d $O/prof -o a -- "$BIN/ggml-rpc-server" -H 127.0.0.1 -p 50052 > rpc-a.log 2>&1
+a_kernel_trace.csv
+a_memory_copy_trace.csv
+bench.txt
+prof
+rpc-a.log
+/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/prof2node-pp4d131072-1114-013220
+rc=0 01:40:18
+ALLDONE
