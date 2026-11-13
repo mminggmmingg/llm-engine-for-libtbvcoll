@@ -1,0 +1,11 @@
+{"corpus": "corpus-llamacpp-e09a78a.txt", "corpus_sha256": "7dccee037059a590", "tokens_used": 135824, "depths": [0, 32768, 131072], "reps": 1, "pp": 512, "tg": 128, "stride": 1024}
+{"warmup_pp_n": 128, "warmup_tg_n": 16}
+{"depth": 0, "rep": 0, "off": 0, "pp_n": 512, "pp_ms": 1277.111, "tg_n": 128, "tg_ms": 2663.16, "draft_n": 153, "draft_acc": 78, "wall_s": 4.09, "sha": "18bdf8f0cf7b44f0"}
+{"depth": 32768, "rep": 0, "off": 1024, "ctx_n": 32768, "ctx_ms": 76802.544, "ctx_wall_s": 76.97, "pp_n": 512, "pp_ms": 1633.423, "tg_n": 128, "tg_ms": 2356.205, "draft_n": 102, "draft_acc": 95, "wall_s": 4.0, "sha": "a7c82fb1e3914e40"}
+{"depth": 131072, "rep": 0, "off": 2048, "ctx_n": 131072, "ctx_ms": 367447.03, "ctx_wall_s": 368.61, "pp_n": 512, "pp_ms": 2027.408, "tg_n": 128, "tg_ms": 3831.195, "draft_n": null, "draft_acc": null, "wall_s": 5.9, "sha": "73d1dfcef41676c9"}
+| depth | ctx_pp t/s | ctx 처리 s | pp512 @ d t/s | tg128 @ d t/s | 채택률 | (2) prompt_n |
+|---:|---:|---:|---:|---:|---:|---|
+| 0 | - | - | 400.9 | 48.1 | 51.0% | [512] |
+| 32768 | 426.7 | 76.8 | 313.5 | 54.3 | 93.1% | [512] |
+| 131072 | 356.7 | 367.4 | 252.5 | 33.4 | - | [512] |
+CTXDONE

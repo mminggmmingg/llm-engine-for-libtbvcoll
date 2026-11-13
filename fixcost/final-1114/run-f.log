@@ -1,0 +1,11 @@
+none f bin=bin load A=0.55 B=0.26 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 46.27 tok/s (token-weighted) | srv-2node-none-bs-f-1114-071144
+   a: n=346 gfx 2362/2607/2671 상한 2502/2691/2773 활동 75/95/97 소켓W 67/70/70 gfxW 22/27/29 코어W 5/7/16 코어상한 1583/1925/4553 fclk 1603/1616/1662 uclk 1000/1000/1000 dramR 1110/36950/64634 dramW 3878/3993/4773 
+   b: n=346 gfx 2485/2637/2711 상한 2553/2699/2891 활동 75/94/97 소켓W 65/69/70 gfxW 26/30/32 코어W 3/4/10 코어상한 1574/1936/4902 fclk 1600/1600/1605 uclk 998/1000/1000 dramR 983/20271/62502 dramW 4045/4167/4307 
+   out | none:f | 46.27 | 130.9 |  |  |
+mtp f bin=bin load A=0.58 B=0.38 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 62.80 tok/s (token-weighted) | srv-2node-mtp-bs-f-1114-071531
+   a: n=269 gfx 2251/2440/2517 상한 2231/2525/2782 활동 72/90/95 소켓W 67/69/70 gfxW 23/29/31 코어W 6/9/18 코어상한 1579/1923/4710 fclk 1606/1623/1669 uclk 1000/1000/1000 dramR 7864/34024/41994 dramW 7012/7545/7809 
+   b: n=266 gfx 2157/2215/2249 상한 2282/2467/2900 활동 65/77/81 소켓W 65/69/70 gfxW 25/29/31 코어W 4/6/13 코어상한 1576/1933/5006 fclk 1600/1600/1607 uclk 999/1000/1000 dramR 5932/19440/58942 dramW 6270/7211/7605 
+   out | mtp:f | 62.80 | 177.7 |  |  |
+srv-2node-none-bs-f-1114-071144-bench.txt: 6/6 same (ref 1112 none)
+srv-2node-mtp-bs-f-1114-071531-bench.txt: 6/6 same (ref 1112 mtp)
+ALLDONE

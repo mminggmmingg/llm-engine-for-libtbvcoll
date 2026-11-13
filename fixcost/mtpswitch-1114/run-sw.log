@@ -1,0 +1,53 @@
+mtp sw bin=bin load A=0.59 B=0.22 rdma=3 trace=0 zc=ZC=3/ZC=3:  | srv-2node-mtp-bs-sw-1114-045137
+   a: n=768 gfx 2036/2114/2199 상한 2030/2310/2542 활동 77/81/84 소켓W 68/69/70 gfxW 21/23/25 코어W 10/14/19 코어상한 1946/3637/4401 fclk 1614/1622/1636 uclk 1000/1000/1000 dramR 33364/35362/37509 dramW 15726/17764/19222 
+   b: n=768 gfx 1949/2151/2236 상한 2250/2426/2900 활동 65/76/81 소켓W 62/68/69 gfxW 23/26/27 코어W 6/8/10 코어상한 1936/1956/4952 fclk 1605/1610/1615 uclk 1000/1000/1000 dramR 30343/35839/38511 dramW 14434/17749/19262 
+   out | mtp:sw tg128 @ 0 | 49.85 | 141.1 |  |  |
+   out | mtp:sw tg128 @ 65536 | 34.96 | 98.9 |  |  |
+   out | mtp:sw tg128 @ 131072 | 28.69 | 81.2 |  |  |
+   (DRAM: 노드 A 못 잼 — amd_df·perf_event_paranoid ≤ 0·perf(B 는 감시기 사본도) 중 하나 없음, inferwatch docs/DRAM.md 1절. 그 노드 값은 비움)
+   (DRAM: 노드 B 못 잼 — amd_df·perf_event_paranoid ≤ 0·perf(B 는 감시기 사본도) 중 하나 없음, inferwatch docs/DRAM.md 1절. 그 노드 값은 비움)
+mtp sw-w bin=bin load A=0.57 B=0.37 rdma=3 trace=1 zc=ZC=3/ZC=3:  | srv-2node-mtp-bs-sw-w-1114-050558
+   a: n=765 gfx 2041/2138/2206 상한 2007/2356/2558 활동 77/81/84 소켓W 68/70/70 gfxW 22/24/25 코어W 9/12/17 코어상한 1942/3042/4435 fclk 1608/1617/1630 uclk 1000/1000/1000 dramR 33332/35773/38009 dramW 15233/17925/19519 
+   b: n=752 gfx 1969/2169/2249 상한 2232/2408/2898 활동 66/77/82 소켓W 63/68/69 gfxW 23/26/28 코어W 6/7/10 코어상한 1933/1958/4951 fclk 1605/1609/1615 uclk 1000/1000/1000 dramR 30776/36171/38917 dramW 14449/17923/19583 
+   out | mtp:sw-w tg128 @ 0 | 49.37 | 139.7 |  |  |
+   out | mtp:sw-w tg128 @ 32768 | 54.95 | 155.5 |  |  |
+   out | mtp:sw-w tg128 @ 131072 | 31.53 | 89.2 |  |  |
+# 추론 감시 비교 (2026-11-14 05:15:36, RUNS="mtp:sw")
+
+기록 링을 켠 회라 tok/s 는 속도 회보다 ≈6% 낮다. 세션 폴더: runs/watch/<세션>/(report.html, receipt.md, stalls.txt).
+감시기 판: inferwatch iw-20261110-1 (reads ring format GGRPCTR1 v1..v1) (/data/parksThink/inferwatch-iw-20261110-1)
+
+| 설정 | 감시기 tok/s | ms/단계 | AR 지연 A→B 중앙 / p99 µs | B→A | 1 ms 넘는 기다림 ms/단계 | 그중 링크 / 상대 계산 (번) | 링크 늦음 1–2.5 / 2.5–3.5 / 3.5–7 / 7–12 / >12 ms (번) | 세션 |
+|---|---:|---:|---|---|---:|---|---|---|
+| mtp:sw | 92.6 | 19.58 | 21.0 / 187.2 | 22.2 / 71.6 | 0.07 | 5 / 8 | 5 / 0 / 0 / 0 / 0 | 20261114-050644 |
+
+## 출력 토큰 기준 (tools/bench/outsum.py — MTP 는 출력 토큰으로 센 t/s, 가중치 기준 GB/s = t/s × 노드당 2.83 GB, DRAM 은 잰 노드만)
+
+| run | output t/s | weight-based GB/s per node (x 2.83 GB) | DRAM GB/s A / B | DRAM GB per output token A / B |
+|---|---:|---:|---|---|
+| mtp:sw tg128 @ 0 | 49.37 | 139.7 |  |  |
+| mtp:sw tg128 @ 32768 | 54.95 | 155.5 |  |  |
+| mtp:sw tg128 @ 131072 | 31.53 | 89.2 |  |  |
+mtp sw bin=bin load A=0.59 B=0.36 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 64.19 tok/s (token-weighted) | srv-2node-mtp-bs-sw-1114-051827
+   a: n=265 gfx 2215/2376/2463 상한 2200/2481/2769 활동 71/88/94 소켓W 66/69/70 gfxW 22/28/30 코어W 6/9/18 코어상한 1718/1932/4595 fclk 1605/1620/1670 uclk 1000/1000/1000 dramR 8151/35688/43473 dramW 7133/7781/8075 
+   b: n=261 gfx 2162/2214/2240 상한 2257/2454/2875 활동 64/77/82 소켓W 65/68/70 gfxW 25/29/30 코어W 4/6/13 코어상한 1579/1936/4982 fclk 1599/1601/1607 uclk 998/1000/1000 dramR 6267/20804/58325 dramW 6287/7269/7733 
+   out | mtp:sw | 64.19 | 181.7 |  |  |
+srv-2node-mtp-bs-sw-1114-051827-bench.txt: 6/6 same (ref 1112 mtp)
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-sw-1114-045137
+{"depth": 0, "rep": 0, "off": 0, "pp_n": 512, "pp_ms": 1469.751, "tg_n": 128, "tg_ms": 2567.95, "draft_n": 153, "draft_acc": 78, "wall_s": 4.19, "sha": "18bdf8f0cf7b44f0"}
+{"depth": 65536, "rep": 0, "off": 1024, "ctx_n": 65536, "ctx_ms": 169879.72, "ctx_wall_s": 170.07, "pp_n": 512, "pp_ms": 1856.366, "tg_n": 128, "tg_ms": 3661.783, "draft_n": null, "draft_acc": null, "wall_s": 5.54, "sha": "c570f8c5a646f3c5"}
+{"depth": 131072, "rep": 0, "off": 2048, "ctx_n": 131072, "ctx_ms": 393410.643, "ctx_wall_s": 395.94, "pp_n": 512, "pp_ms": 2284.69, "tg_n": 128, "tg_ms": 4461.267, "draft_n": null, "draft_acc": null, "wall_s": 6.8, "sha": "73d1dfcef41676c9"}
+CTXDONE
+4.08.155.819 I slot get_n_draft_: id  0 | task 100 | context 66048 >= LLAMA_SPEC_MAX_CTX 65536: decoding without drafts from here
+0
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-sw-w-1114-050558
+{"depth": 0, "rep": 0, "off": 0, "pp_n": 512, "pp_ms": 1316.16, "tg_n": 128, "tg_ms": 2592.734, "draft_n": 153, "draft_acc": 78, "wall_s": 4.07, "sha": "18bdf8f0cf7b44f0"}
+{"depth": 32768, "rep": 0, "off": 1024, "ctx_n": 32768, "ctx_ms": 77734.632, "ctx_wall_s": 77.95, "pp_n": 512, "pp_ms": 1648.023, "tg_n": 128, "tg_ms": 2329.23, "draft_n": 102, "draft_acc": 95, "wall_s": 3.99, "sha": "a7c82fb1e3914e40"}
+{"depth": 131072, "rep": 0, "off": 2048, "ctx_n": 131072, "ctx_ms": 390557.562, "ctx_wall_s": 391.73, "pp_n": 512, "pp_ms": 2238.537, "tg_n": 128, "tg_ms": 4060.222, "draft_n": null, "draft_acc": null, "wall_s": 6.34, "sha": "73d1dfcef41676c9"}
+CTXDONE
+9.20.498.610 I slot get_n_draft_: id  0 | task 188 | context 131584 >= LLAMA_SPEC_MAX_CTX 65536: decoding without drafts from here
+0
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-sw-1114-051827
+TOTAL tokens 1405, decode 64.19 tok/s (token-weighted)
+0
+ALLDONE

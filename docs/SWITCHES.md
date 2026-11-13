@@ -241,8 +241,11 @@
   - `GGML_CUDA_IDX_DENSE_VERIFY=1`(점검, 느림): 갱신마다 배열을 캐시와 비교해 어긋난 칸 수를 로그(2의 거듭제곱 번째와 어긋날 때).
   - `LLAMA_SPEC_MAX_CTX=<n>`(클라이언트, 기본 65536, 0 = 늘 초안): 문맥이 n 토큰 이상이면 초안 없이 디코드(`server-context.cpp` `get_n_draft_max`).
     매 단계 보므로 긴 생성은 문턱을 넘을 때 한 번 바뀐다(그래프 한 번 다시 만듦). 출력은 어느 쪽이든 본 모델의 것.
+    같이, 모든 토큰이 문턱 위치 이상인 묶음은 초안 헤드(`common_speculative_process`)를 건너뛴다 — 안 그러면 초안 없이도 헤드가 토큰마다 돌았다
+    (128k +5.9 ms/토큰). `LLAMA_SPEC_PROCESS_ALL=1` 이면 예전처럼 늘 헤드에 넣음. 확인 도구 `tools/bench/spec_hole.py`.
   - `GGML_CUDA_FA_MASK_DUMP=<폴더>`(점검): 서버가 FA 마스크(f16)를 `mask-<n>-kv<칸>-q<질의>-<이름>.f16` 로 씀 — KV 칸 수 `GGML_CUDA_FA_MASK_DUMP_MIN_KV`
     (기본 16384) 이상, 질의 8개 이하 / 넘음 각각 `GGML_CUDA_FA_MASK_DUMP_N`(기본 24)개까지. 분석 `tools/bench/masksim.py`.
-  - 컴파일 매크로 `MMVQ_RDNA2_NC4_WARPS` / `MMVQ_RDNA2_NC4_ROWS`(측정 빌드 전용, 기본 0 = 워프 1·행 1): gfx1151 2–4열 mmvq 블록 배치를 모든 형식에 강제.
-    형식별 기본은 `mmvq.cu` `mmvq_rdna2_nc4_geo`. 비교 스크립트 `fixcost/mmvqgeo-1114/run-sweep.sh`(test-backend-ops 에 TP 반쪽 모양 추가).
+  - 컴파일 매크로 `MMVQ_RDNA2_NC4_WARPS` / `MMVQ_RDNA2_NC4_ROWS`(측정 빌드 전용, 기본 0 = 워프 1·행 1): gfx1151 2–4열 mmvq 블록 배치를 모든 형식에 강제
+    (`mmvq.cu` `mmvq_rdna2_nc4_geo`, 형식별 기본은 모두 1·1). 비교 스크립트 `fixcost/mmvqgeo-1114/run-sweep.sh`(test-backend-ops 에 TP 반쪽 모양 추가).
+    11-14: 4열 마이크로벤치는 2행이 Q6_K −11% 등으로 빨랐지만 MTP 전체는 3쌍 모두 −1.2% → 기본 그대로(RESULTS.md 11-14 06:07 절).
   - 도구: `tools/bench/outsum.py label=<회 폴더>[,<DRAM 접두>]` — 출력 t/s, 가중치 기준 GB/s, DRAM GB/s(A/B), 출력 토큰당 DRAM GB.

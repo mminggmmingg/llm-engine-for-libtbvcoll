@@ -1,0 +1,70 @@
+mtp sk bin=bin load A=0.44 B=0.13 rdma=3 trace=0 zc=ZC=3/ZC=3:  | srv-2node-mtp-bs-sk-1114-052342
+   a: n=774 gfx 2058/2132/2199 상한 2008/2340/2551 활동 77/81/84 소켓W 68/70/70 gfxW 22/24/25 코어W 10/13/17 코어상한 1944/3280/4442 fclk 1613/1622/1637 uclk 1000/1000/1000 dramR 33660/35636/37425 dramW 16247/17716/19167 
+   b: n=772 gfx 1944/2154/2241 상한 2256/2420/2900 활동 66/77/81 소켓W 62/68/69 gfxW 22/26/27 코어W 6/7/9 코어상한 1604/1956/4958 fclk 1605/1609/1614 uclk 1000/1000/1000 dramR 30869/35738/38231 dramW 15162/17706/19288 
+mtp sk bin=bin load A=0.58 B=0.26 rdma=3 trace=0 zc=ZC=3/ZC=3:  | srv-2node-mtp-bs-sk-1114-053816
+   a: n=771 gfx 2095/2155/2216 상한 2080/2340/2532 활동 78/82/85 소켓W 69/70/70 gfxW 22/24/26 코어W 10/12/16 코어상한 1945/3184/4386 fclk 1611/1619/1630 uclk 1000/1000/1000 dramR 33895/35997/38033 dramW 15990/17933/19427 
+   b: n=770 gfx 1991/2172/2252 상한 2249/2418/2894 활동 66/77/81 소켓W 63/68/69 gfxW 23/26/28 코어W 6/7/10 코어상한 1938/1959/4942 fclk 1606/1610/1615 uclk 1000/1000/1000 dramR 31126/36295/38799 dramW 14592/17920/19548 
+   out | mtp:sk tg128 @ 0 | 48.28 | 136.6 |  |  |
+   out | mtp:sk tg128 @ 65536 | 36.06 | 102.0 |  |  |
+   out | mtp:sk tg128 @ 131072 | 33.27 | 94.1 |  |  |
+   (DRAM: 노드 A 못 잼 — amd_df·perf_event_paranoid ≤ 0·perf(B 는 감시기 사본도) 중 하나 없음, inferwatch docs/DRAM.md 1절. 그 노드 값은 비움)
+   (DRAM: 노드 B 못 잼 — amd_df·perf_event_paranoid ≤ 0·perf(B 는 감시기 사본도) 중 하나 없음, inferwatch docs/DRAM.md 1절. 그 노드 값은 비움)
+mtp sk-w bin=bin load A=0.59 B=0.23 rdma=3 trace=1 zc=ZC=3/ZC=3:  | srv-2node-mtp-bs-sk-w-1114-055157
+   a: n=773 gfx 2090/2146/2210 상한 2046/2349/2546 활동 78/82/85 소켓W 69/70/70 gfxW 22/24/25 코어W 10/12/16 코어상한 1949/3317/4391 fclk 1611/1618/1631 uclk 1000/1000/1000 dramR 33913/35849/37871 dramW 16046/17911/19396 
+   b: n=770 gfx 1985/2167/2246 상한 2246/2428/2900 활동 67/77/81 소켓W 63/68/69 gfxW 23/26/27 코어W 6/7/10 코어상한 1938/1959/4951 fclk 1605/1609/1615 uclk 1000/1000/1000 dramR 31093/36274/38811 dramW 14837/17938/19591 
+   out | mtp:sk-w tg128 @ 0 | 48.06 | 136.0 |  |  |
+   out | mtp:sk-w tg128 @ 32768 | 54.32 | 153.7 |  |  |
+   out | mtp:sk-w tg128 @ 131072 | 33.41 | 94.6 |  |  |
+# 추론 감시 비교 (2026-11-14 06:01:08, RUNS="mtp:sk")
+
+기록 링을 켠 회라 tok/s 는 속도 회보다 ≈6% 낮다. 세션 폴더: runs/watch/<세션>/(report.html, receipt.md, stalls.txt).
+감시기 판: inferwatch iw-20261110-1 (reads ring format GGRPCTR1 v1..v1) (/data/parksThink/inferwatch-iw-20261110-1)
+
+| 설정 | 감시기 tok/s | ms/단계 | AR 지연 A→B 중앙 / p99 µs | B→A | 1 ms 넘는 기다림 ms/단계 | 그중 링크 / 상대 계산 (번) | 링크 늦음 1–2.5 / 2.5–3.5 / 3.5–7 / 7–12 / >12 ms (번) | 세션 |
+|---|---:|---:|---|---|---:|---|---|---|
+| mtp:sk | 91.4 | 21.63 | 20.6 / 212.0 | 22.0 / 74.7 | 0.03 | 0 / 5 | 0 / 0 / 0 / 0 / 0 | 20261114-055247 |
+
+## 출력 토큰 기준 (tools/bench/outsum.py — MTP 는 출력 토큰으로 센 t/s, 가중치 기준 GB/s = t/s × 노드당 2.83 GB, DRAM 은 잰 노드만)
+
+| run | output t/s | weight-based GB/s per node (x 2.83 GB) | DRAM GB/s A / B | DRAM GB per output token A / B |
+|---|---:|---:|---|---|
+| mtp:sk tg128 @ 0 | 48.06 | 136.0 |  |  |
+| mtp:sk tg128 @ 32768 | 54.32 | 153.7 |  |  |
+| mtp:sk tg128 @ 131072 | 33.41 | 94.6 |  |  |
+mtp sk bin=bin load A=0.56 B=0.34 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 64.11 tok/s (token-weighted) | srv-2node-mtp-bs-sk-1114-060429
+   a: n=265 gfx 2217/2385/2465 상한 2196/2478/2673 활동 72/89/94 소켓W 67/69/70 gfxW 22/28/30 코어W 6/9/19 코어상한 1585/1928/4726 fclk 1604/1619/1661 uclk 1000/1000/1000 dramR 8276/35608/43366 dramW 7133/7772/8064 
+   b: n=262 gfx 2160/2214/2246 상한 2251/2445/2898 활동 65/78/82 소켓W 65/68/70 gfxW 25/29/30 코어W 4/6/13 코어상한 1581/1938/4960 fclk 1599/1600/1605 uclk 999/1000/1000 dramR 5972/21056/58535 dramW 6233/7256/7721 
+   out | mtp:sk | 64.11 | 181.4 |  |  |
+srv-2node-mtp-bs-sk-1114-060429-bench.txt: 6/6 same (ref 1112 mtp)
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-sk-1114-052342
+{"req": "A", "prompt": 49664, "cache_prompt": false, "prompt_n": 49664, "prompt_ms": 124002.724, "tg_n": 128, "tg_ms": 2704.795, "draft_n": 105, "draft_acc": 93, "wall_s": 126.72, "sha": "b1ea8f46e256d55f"}
+{"req": "B", "prompt": 131072, "cache_prompt": false, "prompt_n": 131072, "prompt_ms": 370245.791, "tg_n": 16, "tg_ms": 526.235, "draft_n": null, "draft_acc": null, "wall_s": 370.81, "sha": "813e7e63e609bbcb"}
+{"req": "C", "prompt": 49664, "cache_prompt": true, "prompt_n": 49664, "prompt_ms": 126459.787, "tg_n": 128, "tg_ms": 2712.018, "draft_n": 105, "draft_acc": 95, "wall_s": 135.74, "sha": "b1ea8f46e256d55f"}
+C vs A: output same, drafts 105/93 -> 105/95 (different), C prompt_n 49664
+HOLEDONE
+6.06.960.954 I srv        decode: batch at positions >= LLAMA_SPEC_MAX_CTX 65536: the draft head skips it from here
+9.23.739.247 I slot get_n_draft_: id  0 | task 62 | context 131072 >= LLAMA_SPEC_MAX_CTX 65536: decoding without drafts from here
+0
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-sk-1114-053816
+{"depth": 0, "rep": 0, "off": 0, "pp_n": 512, "pp_ms": 1278.715, "tg_n": 128, "tg_ms": 2651.03, "draft_n": 153, "draft_acc": 78, "wall_s": 4.08, "sha": "18bdf8f0cf7b44f0"}
+{"depth": 65536, "rep": 0, "off": 1024, "ctx_n": 65536, "ctx_ms": 168170.097, "ctx_wall_s": 168.36, "pp_n": 512, "pp_ms": 1743.589, "tg_n": 128, "tg_ms": 3550.003, "draft_n": null, "draft_acc": null, "wall_s": 5.32, "sha": "c570f8c5a646f3c5"}
+{"depth": 131072, "rep": 0, "off": 2048, "ctx_n": 131072, "ctx_ms": 371661.146, "ctx_wall_s": 374.18, "pp_n": 512, "pp_ms": 2105.032, "tg_n": 128, "tg_ms": 3847.48, "draft_n": null, "draft_acc": null, "wall_s": 5.99, "sha": "73d1dfcef41676c9"}
+| 131072 | 352.7 | 371.7 | 243.2 | 33.3 | - | [512] |
+CTXDONE
+4.05.681.011 I srv        decode: batch at positions >= LLAMA_SPEC_MAX_CTX 65536: the draft head skips it from here
+4.07.205.713 I slot get_n_draft_: id  0 | task 100 | context 66048 >= LLAMA_SPEC_MAX_CTX 65536: decoding without drafts from here
+0
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-sk-w-1114-055157
+{"depth": 0, "rep": 0, "off": 0, "pp_n": 512, "pp_ms": 1277.111, "tg_n": 128, "tg_ms": 2663.16, "draft_n": 153, "draft_acc": 78, "wall_s": 4.09, "sha": "18bdf8f0cf7b44f0"}
+{"depth": 32768, "rep": 0, "off": 1024, "ctx_n": 32768, "ctx_ms": 76802.544, "ctx_wall_s": 76.97, "pp_n": 512, "pp_ms": 1633.423, "tg_n": 128, "tg_ms": 2356.205, "draft_n": 102, "draft_acc": 95, "wall_s": 4.0, "sha": "a7c82fb1e3914e40"}
+{"depth": 131072, "rep": 0, "off": 2048, "ctx_n": 131072, "ctx_ms": 367447.03, "ctx_wall_s": 368.61, "pp_n": 512, "pp_ms": 2027.408, "tg_n": 128, "tg_ms": 3831.195, "draft_n": null, "draft_acc": null, "wall_s": 5.9, "sha": "73d1dfcef41676c9"}
+| 131072 | 356.7 | 367.4 | 252.5 | 33.4 | - | [512] |
+CTXDONE
+5.34.965.848 I srv        decode: batch at positions >= LLAMA_SPEC_MAX_CTX 65536: the draft head skips it from here
+8.52.747.656 I slot get_n_draft_: id  0 | task 188 | context 131584 >= LLAMA_SPEC_MAX_CTX 65536: decoding without drafts from here
+0
+== /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/runs/srv-2node-mtp-bs-sk-1114-060429
+{"id": "summary", "n": 201, "tps": 69.20273945964425, "draft_n": 189, "draft_acc": 138, "prompt_tps": 102.76816324517196, "wall_s": 3.8, "sha": "e0ee1132bffdb4f3"}
+TOTAL tokens 1405, decode 64.11 tok/s (token-weighted)
+0
+ALLDONE

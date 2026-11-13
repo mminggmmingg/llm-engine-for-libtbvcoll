@@ -8715,7 +8715,7 @@ index f2fc951..f645bc3 100644
 +void ggml_cuda_e2n_kpool_note_write(const void * p, size_t n, bool freed);
 +void ggml_cuda_lightning_indexer_dense(ggml_backend_cuda_context & ctx, ggml_tensor * dst, const half * k_dense, int64_t n_kv);
 diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
-index 930f1ad..eadbd27 100644
+index 930f1ad..5516c2d 100644
 --- a/ggml/src/ggml-cuda/mmvq.cu
 +++ b/ggml/src/ggml-cuda/mmvq.cu
 @@ -1,9 +1,13 @@
@@ -8732,7 +8732,7 @@ index 930f1ad..eadbd27 100644
  #include <type_traits>
  
  // only enabled on DGX Spark, where it is a gain on every type below. On the higher-bandwidth parts the kernel
-@@ -449,6 +453,23 @@ static constexpr __device__ int get_mmvq_mmid_max_batch_for_device() {
+@@ -449,6 +453,27 @@ static constexpr __device__ int get_mmvq_mmid_max_batch_for_device() {
  #endif
  }
  
@@ -8747,6 +8747,10 @@ index 930f1ad..eadbd27 100644
 +    if (MMVQ_RDNA2_NC4_WARPS > 0 || MMVQ_RDNA2_NC4_ROWS > 0) {
 +        return (MMVQ_RDNA2_NC4_WARPS > 0 ? MMVQ_RDNA2_NC4_WARPS : 1)*16 + (MMVQ_RDNA2_NC4_ROWS > 0 ? MMVQ_RDNA2_NC4_ROWS : 1);
 +    }
++    // engine2n (2026-11-14, fixcost/mmvqgeo-1114): test-backend-ops perf on the TP-half shapes (5120x2560, 2560x5120, output head
++    // 124160x2560) gained at 4 columns with two rows per block (Q6_K -11%, IQ4_XS -8/-16%, Q5_0 -8%, IQ4_NL -2/-4%, values the same),
++    // but the whole MTP decode was 1.2% slower in 3 alternating pairs (62.0/61.8/62.1 vs 62.7/62.7/62.8 t/s, hashes 6/6), likely the many
++    // small matrices losing half their blocks (not measured). So one warp and one row for every type; the knob stays for measurements.
 +    switch (type) {
 +        default:
 +            return 1*16 + 1;
@@ -8756,7 +8760,7 @@ index 930f1ad..eadbd27 100644
  static constexpr __host__ __device__ int calc_nwarps(ggml_type type, int ncols_dst, mmvq_parameter_table_id table_id, bool small_k = false, bool halve_iters = false) {
      if (table_id == MMVQ_PARAMETERS_GENERIC) {
          switch (ncols_dst) {
-@@ -575,6 +596,11 @@ static constexpr __host__ __device__ int calc_nwarps(ggml_type type, int ncols_d
+@@ -575,6 +600,11 @@ static constexpr __host__ __device__ int calc_nwarps(ggml_type type, int ncols_d
          }
          return generic;
      }
@@ -8768,7 +8772,7 @@ index 930f1ad..eadbd27 100644
      return 1;
  }
  
-@@ -592,7 +618,27 @@ static constexpr __host__ __device__ bool mmvq_two_rows_ncols1(ggml_type type) {
+@@ -592,7 +622,27 @@ static constexpr __host__ __device__ bool mmvq_two_rows_ncols1(ggml_type type) {
      }
  }
  
@@ -8796,7 +8800,7 @@ index 930f1ad..eadbd27 100644
      if (table_id == MMVQ_PARAMETERS_GENERIC || table_id == MMVQ_PARAMETERS_GCN || table_id == MMVQ_PARAMETERS_TURING || table_id == MMVQ_PARAMETERS_GB10) {
          switch (ncols_dst) {
              case 1:
-@@ -1031,6 +1077,460 @@ static __global__ void mul_mat_vec_q_moe(
+@@ -1031,6 +1081,460 @@ static __global__ void mul_mat_vec_q_moe(
      }
  }
  
@@ -9257,7 +9261,7 @@ index 930f1ad..eadbd27 100644
  template<ggml_type type>
  static std::pair<dim3, dim3> calc_launch_params(
          const int ncols_dst, const int nrows_x, const int nchannels_dst, const int nsamples_or_ntokens,
-@@ -1055,7 +1555,9 @@ static void mul_mat_vec_q_switch_fusion(
+@@ -1055,7 +1559,9 @@ static void mul_mat_vec_q_switch_fusion(
  
      const bool has_fusion = fusion.gate != nullptr || fusion.x_bias != nullptr || fusion.gate_bias != nullptr ||
                              fusion.x_scale != nullptr || fusion.gate_scale != nullptr;
@@ -9268,7 +9272,7 @@ index 930f1ad..eadbd27 100644
          if (has_fusion) {
              const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(block_nums, block_dims, nbytes_shared, stream);
              ggml_cuda_kernel_launch(mul_mat_vec_q<type, c_ncols_dst, true, small_k, halve_iters>, launch_params,
-@@ -1066,7 +1568,7 @@ static void mul_mat_vec_q_switch_fusion(
+@@ -1066,7 +1572,7 @@ static void mul_mat_vec_q_switch_fusion(
          }
      }
  
@@ -9277,7 +9281,7 @@ index 930f1ad..eadbd27 100644
  
      const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(block_nums, block_dims, nbytes_shared, stream);
      ggml_cuda_kernel_launch(mul_mat_vec_q<type, c_ncols_dst, false, small_k, halve_iters>, launch_params,
-@@ -1093,6 +1595,125 @@ static void mul_mat_vec_q_moe_launch(
+@@ -1093,6 +1599,125 @@ static void mul_mat_vec_q_moe_launch(
      const bool has_fusion = fusion.gate != nullptr || fusion.x_bias != nullptr || fusion.gate_bias != nullptr ||
                              fusion.x_scale != nullptr || fusion.gate_scale != nullptr;
  
@@ -9403,7 +9407,7 @@ index 930f1ad..eadbd27 100644
      if (has_fusion) {
          ggml_cuda_kernel_launch(mul_mat_vec_q_moe<type, rows_per_block, true>, launch_params,
              vx, vy, ids, fusion, dst, ncols_x, nchannels_y, nrows_x,
-@@ -1452,6 +2073,523 @@ static void mul_mat_vec_q_switch_type(
+@@ -1452,6 +2077,523 @@ static void mul_mat_vec_q_switch_type(
      }
  }
  
@@ -9927,7 +9931,7 @@ index 930f1ad..eadbd27 100644
  void ggml_cuda_mul_mat_vec_q(
          ggml_backend_cuda_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1, const ggml_tensor * ids, ggml_tensor * dst,
          const ggml_cuda_mm_fusion_args_host * fusion) {
-@@ -1478,12 +2616,34 @@ void ggml_cuda_mul_mat_vec_q(
+@@ -1478,12 +2620,34 @@ void ggml_cuda_mul_mat_vec_q(
      const int32_t *  ids_d = ids ? (const int32_t *)  ids->data : nullptr;
      float         *  dst_d =       (float         *)  dst->data;
  
@@ -9963,7 +9967,7 @@ index 930f1ad..eadbd27 100644
          // Scale fusion is only allowed for NVFP4 currently as the cost of checking this at run-time in the prologue is
          // non-negligible for some models such as gpt-oss-20b
          GGML_ASSERT((fusion->x_scale == nullptr && fusion->gate_scale == nullptr) || src0->type == GGML_TYPE_NVFP4);
-@@ -1549,12 +2709,76 @@ void ggml_cuda_mul_mat_vec_q(
+@@ -1549,12 +2713,76 @@ void ggml_cuda_mul_mat_vec_q(
      }
  
      const int64_t ne10_padded = GGML_PAD(ne10, MATRIX_ROW_PADDING);
@@ -10043,7 +10047,7 @@ index 930f1ad..eadbd27 100644
      }
  
      const int64_t s01 = src0->nb[1] / ts_src0;
-@@ -1579,8 +2803,68 @@ void ggml_cuda_mul_mat_vec_q(
+@@ -1579,8 +2807,68 @@ void ggml_cuda_mul_mat_vec_q(
  
      const int64_t ids_stride = ids ? ids->nb[1] / ggml_type_size(ids->type) : 0;
  
@@ -16195,20 +16199,25 @@ index e2c3daf..73e2418 100644
  }
  
 diff --git a/tools/server/server-context.cpp b/tools/server/server-context.cpp
-index 2bd1ab9..4451d48 100644
+index 2bd1ab9..570e9d5 100644
 --- a/tools/server/server-context.cpp
 +++ b/tools/server/server-context.cpp
-@@ -45,6 +45,9 @@
+@@ -45,6 +45,14 @@
  
  constexpr int HTTP_POLLING_SECONDS = 1;
  
 +// engine2n: context length from which the server decodes without drafts (LLAMA_SPEC_MAX_CTX overrides; 0 = always draft)
 +constexpr int LLAMA_SPEC_MAX_CTX_DEFAULT = 65536;
 +
++static int server_spec_max_ctx() {
++    static const int v = [] { const char * e = getenv("LLAMA_SPEC_MAX_CTX"); return e != nullptr ? atoi(e) : LLAMA_SPEC_MAX_CTX_DEFAULT; }();
++    return v;
++}
++
  static common_speculative_output_limits server_output_limits(const common_params & params) {
      if (!params.mmproj.path.empty()) {
          const auto mcaps = mtmd_get_cap_from_file(params.mmproj.path.c_str());
-@@ -583,12 +586,31 @@ struct server_slot {
+@@ -583,12 +591,31 @@ struct server_slot {
              return 0;
          }
  
@@ -16217,7 +16226,7 @@ index 2bd1ab9..4451d48 100644
 +        // 2.6 tokens to beat plain decoding at 32k, 3.1 at 64k and 3.7 (of at most 4) at 128k (2 nodes, 11-14), while text like
 +        // code and prose gives 2.6-2.9. Checked every step, so a long generation switches to plain decoding once, when it crosses
 +        // the threshold (one graph rebuild); the output is the main model's either way.
-+        static const int spec_max_ctx = [] { const char * e = getenv("LLAMA_SPEC_MAX_CTX"); return e != nullptr ? atoi(e) : LLAMA_SPEC_MAX_CTX_DEFAULT; }();
++        const int spec_max_ctx = server_spec_max_ctx();
 +        if (spec_max_ctx > 0 && prompt.n_tokens() >= spec_max_ctx) {
 +            static bool logged = false;
 +            if (!logged) {
@@ -16241,7 +16250,7 @@ index 2bd1ab9..4451d48 100644
              n_draft_max = std::min(n_draft_max, n_remaining() - 1);
          }
  
-@@ -1092,6 +1114,10 @@ private:
+@@ -1092,6 +1119,10 @@ private:
  
      common_speculative_ptr spec;
  
@@ -16252,7 +16261,7 @@ index 2bd1ab9..4451d48 100644
      bool add_bos_token = true;
  
      int32_t n_ctx; // total context for all clients / slots
-@@ -2055,7 +2081,9 @@ private:
+@@ -2055,7 +2086,9 @@ private:
          // initialize samplers
          if (task.need_sampling()) {
              try {
@@ -16263,7 +16272,7 @@ index 2bd1ab9..4451d48 100644
              } catch (std::exception & e) {
                  std::string err_msg = std::string("Failed to initialize samplers: ") + e.what();
                  send_error(task, err_msg, ERROR_TYPE_INVALID_REQUEST);
-@@ -3930,7 +3958,10 @@ private:
+@@ -3930,7 +3963,10 @@ private:
                      GGML_ASSERT(ckpt.load_dft(ctx_dft, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY));
                  }
  
@@ -16275,7 +16284,7 @@ index 2bd1ab9..4451d48 100644
                      GGML_ABORT("failed to remove sequence %d\n", slot.id);
                  }
              }
-@@ -4691,6 +4722,18 @@ private:
+@@ -4691,6 +4727,18 @@ private:
          int ret = 0;
          queue_tasks.yield_to_queue([&]() {
              ret = llama_process(ctx_tgt, LLAMA_PROCESS_TYPE_DECODE, batch.view.get());
@@ -16294,6 +16303,33 @@ index 2bd1ab9..4451d48 100644
              if (ret == 0 && has_output) {
                  llama_synchronize(ctx_tgt);
              }
+@@ -4752,7 +4800,25 @@ private:
+         // TODO: avoid restoring the draft context and re-evaluating the drafted tokens when not needed [TAG_SPEC_AVOID_DRAFT_REEVAL]
+         //       for now, always re-evaluate for simplicity
+         //       ref: https://github.com/ggml-org/llama.cpp/pull/22728#issuecomment-4400925384
+-        if (spec) {
++        // engine2n (2026-11-14): past LLAMA_SPEC_MAX_CTX no slot drafts (get_n_draft_max), so the draft head need not see those tokens:
++        // skip it when every token of the batch lies at or past the threshold (LLAMA_SPEC_PROCESS_ALL=1 keeps the upstream behaviour).
++        // Its cache then lacks those positions, which only a draft at or past the threshold would read; a later request below the
++        // threshold keeps only a shorter prefix. Without this, decoding without drafts still ran the MTP head's full attention for every
++        // token (2 nodes, 128k: 34.9 ms per token vs 29.0 for a plain server).
++        bool spec_process = spec != nullptr;
++        if (spec_process && server_spec_max_ctx() > 0 && batch.view.size() > 0) {
++            static const bool process_all = [] { const char * e = getenv("LLAMA_SPEC_PROCESS_ALL"); return e != nullptr && atoi(e) != 0; }();
++            spec_process = process_all;
++            for (int32_t i = 0; i < batch.view.size() && !spec_process; ++i) {
++                spec_process = batch.view.tokens[i].pos[0] < server_spec_max_ctx();
++            }
++            static bool logged = false;
++            if (!spec_process && !logged) {
++                logged = true;
++                SRV_INF("batch at positions >= LLAMA_SPEC_MAX_CTX %d: the draft head skips it from here\n", server_spec_max_ctx());
++            }
++        }
++        if (spec_process) {
+             bool ok = true;
+             queue_tasks.yield_to_queue([&]() {
+                 ok = common_speculative_process(spec.get(), batch.view);
 diff --git a/ggml/src/ggml-cuda/hc-mix.cu b/ggml/src/ggml-cuda/hc-mix.cu
 new file mode 100644
 index 0000000..78a57f8

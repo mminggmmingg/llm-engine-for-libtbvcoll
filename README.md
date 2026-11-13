@@ -29,7 +29,10 @@ Run one large MoE language model on **two laptops at once, with tensor paralleli
 
 - Prompt processing at depth got the same kind of skip on 2026-11-13: filling 128k tokens went from 282 to **352 t/s** (+25%),
   and 512 more tokens after 128k from 175 to **239 t/s** (+37%) (alternating runs, same output).
-- Beyond ≈64k tokens, plain decoding is faster than MTP.
+- Beyond ≈64k tokens, plain decoding is faster than MTP, so since 2026-11-14 the server stops drafting from 64k tokens on
+  (`LLAMA_SPEC_MAX_CTX`, default 65536): 64k with MTP 32.1 → 36.1 t/s.
+- 2026-11-14: a dense copy of the indexer's keys made decoding at 128k another 9% faster (none 31.6 → 34.5 t/s, MTP 33.6 → 36.9 t/s,
+  alternating runs, same output). The tables below predate it.
 
 - **Goal:** ≥ 85% of the per-node memory bandwidth (239.7 GB/s measured GPU read, 256 GB/s theoretical).
   Today 61.2% / 61.6% (nodes A / B, counting the measured 3.17 / 3.19 GB of DRAM reads per token); 85% would be ≈ 64 t/s without MTP.
@@ -111,6 +114,29 @@ kernels described below. The dashed gray line is plain decoding (none) measured 
   3. Top-k is one radix-select kernel per row (was 11 kernels). It returns the same elements and breaks ties by column order.
      It is used only for rows of up to 64k columns (the QSA pools). For a whole-vocabulary row, such as the top-10 sampling of
      each MTP draft, the original multi-block kernel is faster. The first version used it there too and cost MTP 4%.
+  4. **Dense indexer keys (2026-11-14).** The indexer's keys sit in the cache 256 B every 2 KB, and in a 4-token MTP verification
+     each query read them again: 15.5 ms of the 4-token batch at 128k, more than flash attention. The server now keeps a dense copy
+     of each layer's pooled keys. It copies only pools that changed: it marks the cache rows the graph writes and invalidates the copy
+     on any other write. One kernel block scores all tokens of the batch per key load. The 4-token indexer at 128k takes 2.4 ms,
+     outputs are bit-identical (checked against the cache after every update, with MTP rollbacks), and decode t/s goes off → on:
+
+     | Depth | none | MTP |
+     |---:|---:|---:|
+     | 32k | 38.1 → 38.9 (+2%) | 41.3 → 42.2 (+2%) |
+     | 64k | 35.8 → 37.6 (+5%) | 32.0 → 32.1 (±0) |
+     | 128k | 31.6 → 34.5 (+9%) | 33.6 → 36.9 (+10%) |
+
+  5. **MTP switches itself off past 64k (2026-11-14, client side).** MTP pays off only while a cycle yields enough tokens: 2.6 at
+     32k, 3.1 at 64k and 3.7 of at most 4 at 128k, against 2.6–2.9 for code and prose. From `LLAMA_SPEC_MAX_CTX` tokens (default
+     65536, 0 = always draft) the server decodes without drafts, and the MTP head also skips those tokens. Without that skip, decoding
+     without drafts still ran the head's full attention for every token and was 17% slower than plain decoding at 128k. Now 64k: 36.1 t/s
+     (MTP 32.1, none 37.6); 128k fill 394 → 372 s, the same as a plain server. Text that MTP predicts almost perfectly loses
+     (one 128k position: 36.9 → 33.3 t/s).
+- **Where flash attention still wastes work (2026-11-14, measured offline from dumped masks).** A query sees 2,050 of 120k–131k
+  cells. Skipping by chunks, the prefill kernel (16 queries × 64 cells) still computes 33.5% of the chunks, 19.7× the cells a query
+  needs. The 4-token verification (4 × 32) computes 11.3%, 7.2×; its 4 queries share only half of their blocks. Gathering the union of a
+  tile's selected cells, as upstream's NVIDIA-only sparse path does, would read 4.9× less in prefill (`tools/bench/masksim.py`,
+  RESULTS.md 2026-11-14).
 - **Deterministic outputs at long context.** The old top-k broke ties between equal scores in atomic order, during prompt
   processing too, so the same request could produce different text at 32k (two different hashes were seen). With the new top-k,
   4 repeated runs gave identical output at 8k and 32k, and 128k matched with the other two changes switched off.
