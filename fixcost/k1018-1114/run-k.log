@@ -1,0 +1,71 @@
+== 2026-11-14 09:34:02 status (A 7.0.0-1018-oem, B 7.0.0-1018-oem)
+A: srcversion=979EBFFB0F4CE450B056AC3 rx_wq_poll=2 ports_active=2
+B: srcversion=979EBFFB0F4CE450B056AC3 rx_wq_poll=2 ports_active=2
+== integrity
+usb4_rdma0 q1: client usb4_rdma0 QP=1 회차=200: WRITE 144.9 MiB, READ 137.3 MiB, 불일치 0 B, 보호바이트 0 B → PASS | srv: PASS
+usb4_rdma0 q4: client usb4_rdma0 QP=4 회차=200: WRITE 251.6 MiB, READ 231.2 MiB, 불일치 0 B, 보호바이트 0 B → PASS | srv: PASS
+usb4_rdma5 q1: client usb4_rdma5 QP=1 회차=200: WRITE 111.5 MiB, READ 111.2 MiB, 불일치 0 B, 보호바이트 0 B → PASS | srv: PASS
+usb4_rdma5 q4: client usb4_rdma5 QP=4 회차=200: WRITE 267.3 MiB, READ 233.2 MiB, 불일치 0 B, 보호바이트 0 B → PASS | srv: PASS
+== latency 10 KB (no spinners, both nodes on CPU 20)
+k1018-usb4_rdma0 n  99997 med 18.9 p99 22.0 p99.9 31.6 max 2158 | >0.2ms 13 >1ms 3 >2.5ms 0 | big: 1523 2065 2158
+k1018-usb4_rdma5 n  99997 med 17.5 p99 21.1 p99.9 25.3 max 111 | >0.2ms 0 >1ms 0 >2.5ms 0 | big: 
+== engine 09:35:32
+none f bin=bin load A=0.59 B=0.14 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 46.43 tok/s (token-weighted) | srv-2node-none-bs-f-1114-093629
+   a: n=345 gfx 2357/2615/2681 상한 2539/2699/2823 활동 75/94/97 소켓W 67/70/70 gfxW 21/28/29 코어W 5/6/16 코어상한 1577/1926/4632 fclk 1603/1614/1657 uclk 1000/1000/1000 dramR 1139/31328/64117 dramW 3884/3987/4783 
+   b: n=346 gfx 2464/2619/2708 상한 2531/2688/2888 활동 74/94/97 소켓W 65/69/70 gfxW 26/30/31 코어W 2/4/10 코어상한 1573/1939/4919 fclk 1600/1600/1605 uclk 997/1000/1000 dramR 1315/19326/61995 dramW 3977/4128/4293 
+   out | none:f | 46.43 | 131.4 |  |  |
+none f bin=bin load A=0.56 B=0.26 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 46.30 tok/s (token-weighted) | srv-2node-none-bs-f-1114-094107
+   a: n=346 gfx 2352/2614/2687 상한 2461/2698/2768 활동 75/95/98 소켓W 67/70/70 gfxW 21/28/29 코어W 5/6/17 코어상한 1583/1928/4607 fclk 1603/1612/1661 uclk 1000/1000/1000 dramR 1092/34895/64186 dramW 3844/3941/4746 
+   b: n=346 gfx 2480/2626/2699 상한 2538/2689/2806 활동 74/94/98 소켓W 65/69/70 gfxW 26/30/31 코어W 3/4/10 코어상한 1580/1942/4888 fclk 1600/1600/1604 uclk 999/1000/1000 dramR 1210/21982/63068 dramW 3978/4125/4262 
+   out | none:f | 46.30 | 131.0 |  |  |
+none f bin=bin load A=0.57 B=0.17 rdma=2 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 46.39 tok/s (token-weighted) | srv-2node-none-bs-f-1114-094556
+   a: n=346 gfx 2348/2612/2681 상한 2451/2698/2773 활동 75/95/98 소켓W 67/70/70 gfxW 21/28/29 코어W 5/6/16 코어상한 1583/1926/4637 fclk 1603/1613/1658 uclk 1000/1000/1000 dramR 1143/33530/64439 dramW 3859/3959/4703 
+   b: n=346 gfx 2478/2626/2701 상한 2503/2686/2801 활동 74/95/98 소켓W 65/69/70 gfxW 26/30/31 코어W 2/3/10 코어상한 1578/1941/4895 fclk 1600/1600/1606 uclk 998/1000/1000 dramR 1132/19613/62429 dramW 3998/4139/4279 
+   out | none:f | 46.39 | 131.3 |  |  |
+mtp f bin=bin load A=0.57 B=0.16 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 63.73 tok/s (token-weighted) | srv-2node-mtp-bs-f-1114-095014
+   a: n=267 gfx 2246/2419/2487 상한 2116/2513/2674 활동 72/89/95 소켓W 67/69/70 gfxW 22/28/30 코어W 6/9/19 코어상한 1590/1929/4842 fclk 1604/1623/1665 uclk 1000/1000/1000 dramR 7411/34531/43631 dramW 7085/7652/8067 
+   b: n=264 gfx 2158/2218/2241 상한 2287/2449/2886 활동 65/78/82 소켓W 65/68/70 gfxW 25/29/30 코어W 4/6/13 코어상한 1578/1937/4966 fclk 1600/1601/1605 uclk 999/1000/1000 dramR 5917/20137/58409 dramW 6189/7220/7691 
+   out | mtp:f | 63.73 | 180.4 |  |  |
+mtp f bin=bin load A=0.56 B=0.36 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 62.72 tok/s (token-weighted) | srv-2node-mtp-bs-f-1114-095349
+   a: n=271 gfx 2271/2442/2512 상한 2275/2528/2779 활동 72/89/95 소켓W 67/69/70 gfxW 22/29/31 코어W 6/8/18 코어상한 1584/1924/4766 fclk 1604/1619/1655 uclk 1000/1000/1000 dramR 8254/33991/41854 dramW 6998/7531/7776 
+   b: n=267 gfx 2148/2207/2237 상한 2291/2442/2900 활동 64/77/81 소켓W 65/68/70 gfxW 25/29/31 코어W 4/6/13 코어상한 1583/1939/4956 fclk 1599/1600/1604 uclk 999/1000/1000 dramR 6004/19093/58693 dramW 6155/7157/7566 
+   out | mtp:f | 62.72 | 177.5 |  |  |
+mtp f bin=bin load A=0.55 B=0.32 rdma=3 trace=0 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 62.51 tok/s (token-weighted) | srv-2node-mtp-bs-f-1114-095801
+   a: n=271 gfx 2288/2445/2516 상한 2325/2539/2865 활동 72/90/95 소켓W 66/69/70 gfxW 23/29/31 코어W 6/8/17 코어상한 1584/1924/4663 fclk 1604/1619/1668 uclk 1000/1000/1000 dramR 9469/34061/42136 dramW 6974/7508/7756 
+   b: n=268 gfx 2158/2216/2244 상한 2277/2457/2900 활동 64/77/81 소켓W 65/69/70 gfxW 25/29/31 코어W 4/6/13 코어상한 1582/1939/4952 fclk 1600/1601/1604 uclk 999/1000/1000 dramR 5836/19031/58207 dramW 6174/7150/7549 
+   out | mtp:f | 62.51 | 176.9 |  |  |
+   (DRAM: 노드 A 못 잼 — amd_df·perf_event_paranoid ≤ 0·perf(B 는 감시기 사본도) 중 하나 없음, inferwatch docs/DRAM.md 1절. 그 노드 값은 비움)
+   (DRAM: 노드 B 못 잼 — amd_df·perf_event_paranoid ≤ 0·perf(B 는 감시기 사본도) 중 하나 없음, inferwatch docs/DRAM.md 1절. 그 노드 값은 비움)
+none f-w bin=bin load A=0.56 B=0.25 rdma=2 trace=1 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 46.39 tok/s (token-weighted) | srv-2node-none-bs-f-w-1114-100234
+   a: n=347 gfx 2353/2605/2688 상한 2491/2700/2783 활동 75/95/98 소켓W 67/70/70 gfxW 21/28/29 코어W 5/6/17 코어상한 1585/1928/4610 fclk 1603/1614/1660 uclk 1000/1000/1000 dramR 1226/33173/64262 dramW 3859/3980/4761 
+   b: n=347 gfx 2477/2623/2699 상한 2548/2690/2832 활동 75/95/98 소켓W 65/69/70 gfxW 26/30/31 코어W 2/4/10 코어상한 1580/1942/4871 fclk 1600/1600/1606 uclk 998/1000/1000 dramR 1222/18805/62045 dramW 4038/4139/4284 
+   out | none:f-w | 46.39 | 131.3 |  |  |
+mtp f-w bin=bin load A=0.57 B=0.16 rdma=3 trace=1 zc=ZC=3/ZC=3: TOTAL tokens 1405, decode 62.95 tok/s (token-weighted) | srv-2node-mtp-bs-f-w-1114-100658
+   a: n=272 gfx 2480/2563/2648 상한 2493/2556/2900 활동 94/100/100 소켓W 68/70/70 gfxW 25/29/31 코어W 4/6/11 코어상한 1582/1922/3969 fclk 1605/1621/1663 uclk 1000/1000/1000 dramR 7996/34276/40905 dramW 7182/7675/7894 
+   b: n=266 gfx 2135/2192/2225 상한 2273/2458/2900 활동 64/77/82 소켓W 64/68/70 gfxW 25/29/30 코어W 4/6/13 코어상한 1580/1937/4993 fclk 1600/1602/1610 uclk 999/1000/1000 dramR 5873/19392/58869 dramW 6213/7217/7588 
+   out | mtp:f-w | 62.95 | 178.1 |  |  |
+# 추론 감시 비교 (2026-11-14 10:08:45, RUNS="none:f none:f none:f mtp:f mtp:f mtp:f")
+
+기록 링을 켠 회라 tok/s 는 속도 회보다 ≈6% 낮다. 세션 폴더: runs/watch/<세션>/(report.html, receipt.md, stalls.txt).
+감시기 판: inferwatch iw-20261110-1 (reads ring format GGRPCTR1 v1..v1) (/data/parksThink/inferwatch-iw-20261110-1)
+
+| 설정 | 감시기 tok/s | ms/단계 | AR 지연 A→B 중앙 / p99 µs | B→A | 1 ms 넘는 기다림 ms/단계 | 그중 링크 / 상대 계산 (번) | 링크 늦음 1–2.5 / 2.5–3.5 / 3.5–7 / 7–12 / >12 ms (번) | 세션 |
+|---|---:|---:|---|---|---:|---|---|---|
+| none:f | 45.0 | 22.53 | 18.2 / 60.7 | 17.8 / 35.2 | 0.03 | 1 / 10 | 0 / 1 / 0 / 0 / 0 | 20261114-100240 |
+| mtp:f | 218.3 | 10.12 | 30.0 / 465.5 | 28.7 / 44.6 | 0.00 | 2 / 4 | 2 / 0 / 0 / 0 / 0 | 20261114-100703 |
+
+## 출력 토큰 기준 (tools/bench/outsum.py — MTP 는 출력 토큰으로 센 t/s, 가중치 기준 GB/s = t/s × 노드당 2.83 GB, DRAM 은 잰 노드만)
+
+| run | output t/s | weight-based GB/s per node (x 2.83 GB) | DRAM GB/s A / B | DRAM GB per output token A / B |
+|---|---:|---:|---|---|
+| none:f | 46.39 | 131.3 |  |  |
+| mtp:f | 62.95 | 178.1 |  |  |
+== hash
+srv-2node-none-bs-f-1114-093629-bench.txt: 6/6 same (ref 1112 none)
+srv-2node-none-bs-f-1114-094107-bench.txt: 6/6 same (ref 1112 none)
+srv-2node-none-bs-f-1114-094556-bench.txt: 6/6 same (ref 1112 none)
+srv-2node-mtp-bs-f-1114-095014-bench.txt: 6/6 same (ref 1112 mtp)
+srv-2node-mtp-bs-f-1114-095349-bench.txt: 6/6 same (ref 1112 mtp)
+srv-2node-mtp-bs-f-1114-095801-bench.txt: 6/6 same (ref 1112 mtp)
+ALLDONE
+exit 0

@@ -196,7 +196,7 @@ node A: llama-server (client; the MTP drafts run on A's GPU)
 |---|---|
 | Machine | HP ZBook Ultra G1a 14 — Ryzen AI MAX+ PRO 395, Radeon 8060S (gfx1151), 128 GB |
 | Memory | BIOS VRAM 4 GiB, GTT 112 GiB (`ttm.pages_limit=29360128`) |
-| Software | Ubuntu 26.04.1, kernel 7.0.0-1015-oem, ROCm 7.2.1, llama.cpp `e09a78a` + our patch |
+| Software | Ubuntu 26.04.1, kernel 7.0.0-1018-oem (since 2026-11-14; before that 7.0.0-1015-oem, same results), ROCm 7.2.1, llama.cpp `e09a78a` + our patch |
 | Link | 2 Thunderbolt cables → RDMA devices `usb4_rdma0`, `usb4_rdma5`; control IP on `thunderbolt0` (10.99.0.1 / 10.99.0.2) |
 | Transport | tbv `9a35117` or later; bundle in [zbook-thunderbolt-RDMA](https://github.com/mminggmmingg/zbook-thunderbolt-RDMA) |
 
