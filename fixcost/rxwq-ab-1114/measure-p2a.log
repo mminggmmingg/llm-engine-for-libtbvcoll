@@ -1,0 +1,43 @@
+==== p2a-104630 10:46:30
+A: srcversion=979EBFFB0F4CE450B056AC3 rx_wq_poll=2 ports_active=2
+B: srcversion=979EBFFB0F4CE450B056AC3 rx_wq_poll=2 ports_active=2
+  bw usb4_rdma0                 s=65536    q=1 단방향 합계   9.14 Gb/s | usb4_rdma0=9.14
+  bw usb4_rdma0                 s=1048576  q=1 단방향 합계   9.29 Gb/s | usb4_rdma0=9.29
+  bw usb4_rdma5                 s=65536    q=1 단방향 합계   9.15 Gb/s | usb4_rdma5=9.15
+  bw usb4_rdma5                 s=1048576  q=1 단방향 합계   9.24 Gb/s | usb4_rdma5=9.24
+  bw usb4_rdma0+usb4_rdma5      s=65536    q=1 단방향 합계  19.98 Gb/s | usb4_rdma0=9.99 usb4_rdma5=9.99
+  bw usb4_rdma0+usb4_rdma5      s=1048576  q=1 단방향 합계  20.04 Gb/s | usb4_rdma0=10.02 usb4_rdma5=10.02
+  bw usb4_rdma0                 s=65536    q=1 양방향 합계  21.19 Gb/s | usb4_rdma0=21.19
+  bw usb4_rdma0                 s=1048576  q=1 양방향 합계  21.44 Gb/s | usb4_rdma0=21.44
+  bw usb4_rdma5                 s=65536    q=1 양방향 합계  21.04 Gb/s | usb4_rdma5=21.04
+  bw usb4_rdma5                 s=1048576  q=1 양방향 합계  21.32 Gb/s | usb4_rdma5=21.32
+  bw usb4_rdma0+usb4_rdma5      s=65536    q=1 양방향 합계  42.56 Gb/s | usb4_rdma0=22.40 usb4_rdma5=20.16
+  bw usb4_rdma0+usb4_rdma5      s=1048576  q=1 양방향 합계  43.74 Gb/s | usb4_rdma0=22.67 usb4_rdma5=21.07
+  lat rxwq-p2a-104630-rdma0 n  99997 med 18.8 p99 22.0 p99.9 30.0 max 1939 | >0.2ms 14 >1ms 7 >2.5ms 0 | big: 1047 1058 1508 1519 1525 1931 1939
+  cpu == s65536_q1_usb4_rdma0 BW 9.15 Gb/s
+  cpu -- A(수신)
+  cpu %Cpu(s):  0.4 us,  3.5 sy,  0.0 ni, 96.2 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+  cpu   41253 root       0 -20       0      0      0 R  41.2   0.0   0:06.10 kworker/u132:3+tbv_ibdev
+  cpu   15046 root       0 -20       0      0      0 I  23.5   0.0   0:28.16 kworker/u132:15-tbv_ibdev
+  cpu    6974 park2     20   0    9.8g 323208 156768 S   2.9   0.3   4:04.25 gnome-shell
+  cpu    9877 park2     20   0   53.0g 169180 148904 S   2.9   0.1   2:01.25 VizCompositorTh
+  cpu   10977 park2     20   0 1459.7g 754980 142364 R   2.9   0.6   1:44.94 Compositor
+  cpu    1900 root      20   0       0      0      0 I   2.0   0.0   0:21.93 kworker/5:2-events
+  cpu    9876 park2     20   0   53.0g 169180 148904 S   2.0   0.1   0:14.03 Chrome_ChildIOT
+  cpu   10969 park2     20   0 1459.7g 754980 142364 S   2.0   0.6   1:13.68 claude-desktop
+  cpu      15 root      20   0       0      0      0 I   1.0   0.0   0:08.07 rcu_preempt
+  cpu    6990 park2      5 -15    9.8g 323208 156768 S   1.0   0.3   0:28.81 KMS thread
+  cpu    9644 park2     20   0 1448.5g 431544 188840 S   1.0   0.3   0:58.11 claude-desktop
+  cpu -- B(송신)
+  cpu %Cpu(s):  3.0 us,  1.2 sy,  0.0 ni, 95.6 id,  0.0 wa,  0.0 hi,  0.2 si,  0.0 st 
+  cpu     129 root      20   0       0      0      0 I  28.4   0.0   0:42.14 kworker/5:0-events
+  cpu   18894 root       0 -20       0      0      0 I   2.9   0.0   0:30.09 kworker/u132:6-tbv_ibdev
+  cpu    7030 root       0 -20       0      0      0 I   2.0   0.0   0:54.39 kworker/u132:14-tbv_ibdev
+  cpu    9800 parks-z+   5 -15   11.7g 328700 162984 S   2.0   0.3   0:08.20 KMS thread
+  cpu   41320 root      20   0       0      0      0 I   2.0   0.0   0:04.20 kworker/u128:1-dm_vblank_control_workqu
+  cpu   44716 root       0 -20       0      0      0 I   2.0   0.0   0:10.93 kworker/u132:1-tbv_ibdev
+  cpu     253 root      20   0       0      0      0 I   1.0   0.0   0:01.94 kworker/6:1-events
+  cpu    1698 message+  20   0   12268   9212   4864 S   1.0   0.0   0:02.21 dbus-daemon
+  cpu    9784 parks-z+  20   0   11.7g 328700 162984 S   1.0   0.3   2:15.85 gnome-shell
+  cpu   10328 parks-z+  20   0  393812   9704   8464 S   1.0   0.0   0:00.30 gvfs-afc-volume
+  cpu   47357 parks-z+  20   0   15428   6964   4188 R   1.0   0.0   0:00.03 top

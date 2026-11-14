@@ -3380,3 +3380,19 @@ attention·GDN 1.00, 활성 전문가 0.64, hyper-connection 0.61(복제), share
   10-29 기록(10.7 / 21.3 / 44.7–45.2)보다 6–16% 낮지만 그때는 옛 tbv(new3)·rx_wq_poll 없음이라 커널 탓인지 미분리(엔진 속도에는 안 나타남). 1 MiB·QP 4 는 10-28 처럼 실패.
 - 남은 것: 대역폭 차이 가르기(1015 로 부팅해 같은 행렬, 또는 1018 에서 `tools/tbv_rxwq.sh on`/`off` 번갈아 — 둘 다 sudo·실기). B 의 amdgpu 밝기 패치는 1015 전용이라 지금 원본.
 
+
+## 2026-11-14 10:30–15:10 — perftest 대역폭이 낮은 원인: rx_wq_poll=2 받기 작업이 프레임마다 인터럽트를 처리해 코어 1개 포화 → tbv `rx_wq_spin_ns`(빌드만, 설치 대기)
+자료: `fixcost/rxwq-ab-1114/`(`measure-p2a.log` 기준 측정, `irqrate.sh`·`irq-p2-143905/` 인터럽트 수, `run-rxspin.sh` 설치·A/B). 사용자 sudo 없음(외출) — 모두 sudo 없이 잼.
+- 기준(1018, rx_wq_poll=2, 10:46): 1케이블 단방향 64K/1M 9.14/9.29(rdma0), 9.15/9.24(rdma5) · 2케이블 단방향 19.98/20.04 · 1케이블 양방향 21.19/21.44 ·
+  2케이블 양방향 42.56/43.74 Gb/s · 10 KB 지연 18.8/22.0 µs. 부하가 클수록 케이블당 빠름(1케이블 9.2 < 2케이블 케이블당 10.0 < 양방향 방향당 10.6).
+- **프레임마다 인터럽트**: 1케이블 64K 단방향 9.18 Gb/s 동안 A 수신 링 벡터 271,199 회/s, 4 KiB 프레임 ≈280,151 개/s(B 송신 완료 282,463 회/s, 크레딧 ≈26 k/s 양쪽).
+  tbv `nhi_interrupt_throttle_ns=0` 이 패치한 thunderbolt 의 `tb_ring_throttling()` 으로 데이터 링 묶기를 끈다.
+- **수신 CPU**: tbv_ibdev kworker 3–4 개 합 98–105 %(경로당 work 하나라 = 코어 1개 포화). 10-28/29(rx_wq_poll 없음) 수신 events kworker 하나 26–38 %.
+  (오전 "≈60 % vs ≈1 %" 는 스레드 % 와 평균 sy % 를 섞은 잘못.) 송신 B 커널은 events kworker 27–40 % — 병목 아님.
+- 코드(추론): rx_wq_poll 1/2 는 인터럽트마다 링 가리기(ioread32+iowrite32) → 작업자 깨우기 → 프레임 1개 → `tb_ring_poll_complete`(ioread32+iowrite32)로 다시 염 →
+  프레임당 ≈3.5 µs. rx_wq_poll=0 의 `ring_work` 는 인터럽트에서 `schedule_work` 만, 쌓인 프레임 한꺼번에(≈1.2 µs/프레임).
+- 고친 것: tbv `rx_wq_spin_ns`(기본 10000 ns) — 링이 빈 뒤 그만큼 더 보고 그사이 끝난 프레임은 인터럽트를 가린 채 처리, 0 = 11-07 동작, sysfs 로 바로 바뀜.
+  소스 `experiments/lnk-1114-tbv/`(rxspin.patch), tbv 로컬 브랜치 rx-wq-spin 67b4cd3(미푸시). B 에서 1018 헤더 + 올라온 thunderbolt Module.symvers 로 빌드,
+  CRC 모두 일치: srcversion 0BCD6E0C7DE0D7470BAE74F, sha256 d47e33de….
+- 남은 것(sudo): `bash fixcost/rxwq-ab-1114/run-rxspin.sh` — 설치 → A 만 spin {0,10000,3000,30000,0} 단방향 → 두 노드 {0,10000} 단·양방향·지연·무결성(→ 끝 상태 spin 10000).
+  그 뒤 엔진 none·MTP 3회씩 + 감시기 + 해시.
