@@ -1,0 +1,268 @@
+==== 0) 확인 2026-11-14 21:05:27
+BIOS A=X89 Ver. 01.06.02 B=X89 Ver. 01.06.02 | 절전 막기 A=1
+A: srcv=979EBFFB0F4CE450B056AC3 poll=2 spin=없음 ports=2 | B: srcv=979EBFFB0F4CE450B056AC3 poll=2 spin=없음 ports=2
+== A(park2) sudo
+==== 1) 설치 21:05:39
+[sudo: [B parks-zbook 비밀번호: 설치] ] Password: *********         
+Connection to 10.99.0.2 closed.
+A: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=10000 ports=2 | B: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=10000 ports=2
+==== 2) 1단계: B spin=10000 고정, A 만 바꿈(단방향 B→A) 21:05:51
+== A spin=0 21:05:51
+A: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=0 ports=2 | B: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=10000 ports=2
+  bw usb4_rdma0                 s=65536    q=1 단방향 합계  11.16 Gb/s | usb4_rdma0=11.16
+  bw usb4_rdma0                 s=1048576  q=1 단방향 합계  11.27 Gb/s | usb4_rdma0=11.27
+  bw usb4_rdma5                 s=65536    q=1 단방향 합계  11.03 Gb/s | usb4_rdma5=11.03
+  bw usb4_rdma5                 s=1048576  q=1 단방향 합계  11.01 Gb/s | usb4_rdma5=11.01
+  bw usb4_rdma0+usb4_rdma5      s=65536    q=1 단방향 합계  22.99 Gb/s | usb4_rdma0=11.47 usb4_rdma5=11.52
+  bw usb4_rdma0+usb4_rdma5      s=1048576  q=1 단방향 합계  23.10 Gb/s | usb4_rdma0=11.55 usb4_rdma5=11.55
+  irq A irq  53 IR-PCI-MSIX-0000:c5:00.5 2-edge       31717/s  (CPU5=70508)
+  irq A irq  54 IR-PCI-MSIX-0000:c5:00.5 3-edge      286140/s  (CPU6=636105)
+  irq B irq  54 IR-PCI-MSIX-0000:c5:00.5 2-edge      341223/s  (CPU5=758559)
+  irq B irq  55 IR-PCI-MSIX-0000:c5:00.5 3-edge       31973/s  (CPU6=71077)
+  irq bw: 65536      85337            0.00               11.19  		     0.021334 (dt=2.22s)
+  irq 4 KiB 프레임/s ≈ 341,492
+  irq -- topA (수신)
+  irq %Cpu(s):  0.8 us,  3.8 sy,  0.0 ni, 95.1 id,  0.0 wa,  0.0 hi,  0.3 si,  0.0 st 
+  irq   25673 root       0 -20       0      0      0 R  91.7   0.0   0:21.80 kworker/u132:0+tbv_ibdev
+  irq     129 root      20   0       0      0      0 I   8.3   0.0   0:01.00 kworker/5:0-events
+  irq   16054 root      20   0 1297188  51416  26856 S   8.3   0.0   0:01.09 tailscaled
+  irq    7133 park2     20   0   18.9g 341244 168516 S   8.3   0.3   2:36.68 gnome-shell
+  irq   46596 park2     20   0   15792   6952   3788 R   8.3   0.0   0:00.02 top
+  irq       1 root      20   0   27168  17800  11304 S   0.0   0.0   0:02.60 systemd
+  irq       2 root      20   0       0      0      0 S   0.0   0.0   0:00.05 kthreadd
+  irq -- topB (송신)
+  irq %Cpu(s):  3.2 us,  2.4 sy,  0.0 ni, 94.4 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+  irq  103478 parks-z+  20   0    6032   4836   4236 R  99.9   0.0   0:01.47 ib_write_bw
+  irq     257 root      20   0       0      0      0 R  33.3   0.0   0:20.53 kworker/5:1-events
+  irq   89263 root       0 -20       0      0      0 I  25.0   0.0   0:03.70 kworker/u132:6-tbv_ibdev
+  irq  103672 parks-z+  20   0   16148   7444   3824 R  16.7   0.0   0:00.03 top
+  irq   49516 root       0 -20       0      0      0 I   8.3   0.0   0:03.25 kworker/u132:1-tbv_ibdev
+  irq   62199 root       0 -20       0      0      0 I   8.3   0.0   0:04.80 kworker/u132:3-tbv_ibdev
+  irq       1 root      20   0   27420  18536  11716 S   0.0   0.0   0:02.67 systemd
+  irq 자료: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/rxwq-ab-1114/irq-rxspin-210527-a0-210644
+== A spin=10000 21:06:56
+A: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=10000 ports=2 | B: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=10000 ports=2
+  bw usb4_rdma0                 s=65536    q=1 단방향 합계  11.18 Gb/s | usb4_rdma0=11.18
+  bw usb4_rdma0                 s=1048576  q=1 단방향 합계  11.27 Gb/s | usb4_rdma0=11.27
+  bw usb4_rdma5                 s=65536    q=1 단방향 합계  11.03 Gb/s | usb4_rdma5=11.03
+  bw usb4_rdma5                 s=1048576  q=1 단방향 합계  11.08 Gb/s | usb4_rdma5=11.08
+  bw usb4_rdma0+usb4_rdma5      s=65536    q=1 단방향 합계  23.00 Gb/s | usb4_rdma0=11.50 usb4_rdma5=11.50
+  bw usb4_rdma0+usb4_rdma5      s=1048576  q=1 단방향 합계  23.00 Gb/s | usb4_rdma0=11.50 usb4_rdma5=11.50
+  irq A irq  53 IR-PCI-MSIX-0000:c5:00.5 2-edge       31247/s  (CPU5=69909)
+  irq A irq  54 IR-PCI-MSIX-0000:c5:00.5 3-edge        1500/s  (CPU6=3355)
+  irq B irq  54 IR-PCI-MSIX-0000:c5:00.5 2-edge      342059/s  (CPU5=765298)
+  irq B irq  55 IR-PCI-MSIX-0000:c5:00.5 3-edge       31349/s  (CPU6=70137)
+  irq bw: 65536      85349            0.00               11.19  		     0.021337 (dt=2.24s)
+  irq 4 KiB 프레임/s ≈ 341,492
+  irq -- topA (수신)
+  irq %Cpu(s):  0.3 us,  3.5 sy,  0.0 ni, 96.2 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+  irq   41494 root       0 -20       0      0      0 I  50.0   0.0   0:20.84 kworker/u132:1-tbv_ibdev
+  irq   25673 root       0 -20       0      0      0 R  41.7   0.0   0:36.84 kworker/u132:0+tbv_ibdev
+  irq     129 root      20   0       0      0      0 I   8.3   0.0   0:01.45 kworker/5:0-events
+  irq    1251 root      20   0       0      0      0 S   8.3   0.0   0:20.17 napi/phy0-0
+  irq   47015 park2     20   0   15612   6756   3788 R   8.3   0.0   0:00.02 top
+  irq       1 root      20   0   27168  17800  11304 S   0.0   0.0   0:02.60 systemd
+  irq       2 root      20   0       0      0      0 S   0.0   0.0   0:00.05 kthreadd
+  irq -- topB (송신)
+  irq %Cpu(s):  3.2 us,  3.0 sy,  0.0 ni, 93.8 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+  irq  105175 parks-z+  20   0    6032   4840   4240 R  99.9   0.0   0:01.45 ib_write_bw
+  irq     257 root      20   0       0      0      0 R  33.3   0.0   0:32.00 kworker/5:1-events
+  irq   87810 root       0 -20       0      0      0 I  16.7   0.0   0:04.06 kworker/u132:4-tbv_ibdev
+  irq    2288 root      20   0 1296636  53904  27580 S   8.3   0.0   0:04.89 tailscaled
+  irq   87811 root       0 -20       0      0      0 I   8.3   0.0   0:05.56 kworker/u132:5-tbv_ibdev
+  irq  105360 parks-z+  20   0   16148   7460   3840 R   8.3   0.0   0:00.02 top
+  irq       1 root      20   0   27420  18536  11716 S   0.0   0.0   0:02.80 systemd
+  irq 자료: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/rxwq-ab-1114/irq-rxspin-210527-a10000-210748
+== A spin=3000 21:08:00
+A: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=3000 ports=2 | B: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=10000 ports=2
+  bw usb4_rdma0                 s=65536    q=1 단방향 합계  11.18 Gb/s | usb4_rdma0=11.18
+  bw usb4_rdma0                 s=1048576  q=1 단방향 합계  11.27 Gb/s | usb4_rdma0=11.27
+  bw usb4_rdma5                 s=65536    q=1 단방향 합계  11.03 Gb/s | usb4_rdma5=11.03
+  bw usb4_rdma5                 s=1048576  q=1 단방향 합계  11.08 Gb/s | usb4_rdma5=11.08
+  bw usb4_rdma0+usb4_rdma5      s=65536    q=1 단방향 합계  22.92 Gb/s | usb4_rdma0=11.46 usb4_rdma5=11.46
+  bw usb4_rdma0+usb4_rdma5      s=1048576  q=1 단방향 합계  22.60 Gb/s | usb4_rdma0=11.30 usb4_rdma5=11.30
+  irq A irq  53 IR-PCI-MSIX-0000:c5:00.5 2-edge       31481/s  (CPU5=70068)
+  irq A irq  54 IR-PCI-MSIX-0000:c5:00.5 3-edge        1874/s  (CPU6=4170)
+  irq B irq  54 IR-PCI-MSIX-0000:c5:00.5 2-edge      341669/s  (CPU5=760452)
+  irq B irq  55 IR-PCI-MSIX-0000:c5:00.5 3-edge       31323/s  (CPU6=69715)
+  irq bw: 65536      85180            0.00               11.16  		     0.021295 (dt=2.23s)
+  irq 4 KiB 프레임/s ≈ 340,576
+  irq -- topA (수신)
+  irq %Cpu(s):  0.5 us,  3.7 sy,  0.0 ni, 95.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+  irq   43775 root       0 -20       0      0      0 I  45.5   0.0   0:31.94 kworker/u132:15-tbv_ibdev
+  irq   43774 root       0 -20       0      0      0 I  36.4   0.0   0:23.97 kworker/u132:14-tbv_ibdev
+  irq   43737 root       0 -20       0      0      0 R  18.2   0.0   0:22.74 kworker/u132:10+tbv_ibdev
+  irq   47398 park2     20   0   15612   6736   3772 R  18.2   0.0   0:00.03 top
+  irq     129 root      20   0       0      0      0 I   9.1   0.0   0:01.98 kworker/5:0-events
+  irq   44728 root      20   0       0      0      0 I   9.1   0.0   0:00.39 kworker/u128:3-mt76
+  irq       1 root      20   0   27168  17800  11304 S   0.0   0.0   0:02.60 systemd
+  irq -- topB (송신)
+  irq %Cpu(s):  3.2 us,  2.1 sy,  0.0 ni, 94.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+  irq  106866 parks-z+  20   0    6032   4764   4164 R  91.7   0.0   0:01.43 ib_write_bw
+  irq     257 root      20   0       0      0      0 I  33.3   0.0   0:43.45 kworker/5:1-events
+  irq   87811 root       0 -20       0      0      0 I  16.7   0.0   0:08.59 kworker/u132:5-tbv_ibdev
+  irq  107048 parks-z+  20   0   16148   7456   3836 R  16.7   0.0   0:00.03 top
+  irq   87810 root       0 -20       0      0      0 R   8.3   0.0   0:05.96 kworker/u132:4-tbv_ibdev
+  irq   87850 root       0 -20       0      0      0 I   8.3   0.0   0:03.26 kworker/u132:8-tbv_ibdev
+  irq       1 root      20   0   27420  18536  11716 S   0.0   0.0   0:02.93 systemd
+  irq 자료: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/rxwq-ab-1114/irq-rxspin-210527-a3000-210853
+== A spin=30000 21:09:04
+A: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=30000 ports=2 | B: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=10000 ports=2
+  bw usb4_rdma0                 s=65536    q=1 단방향 합계  11.17 Gb/s | usb4_rdma0=11.17
+  bw usb4_rdma0                 s=1048576  q=1 단방향 합계  11.27 Gb/s | usb4_rdma0=11.27
+  bw usb4_rdma5                 s=65536    q=1 단방향 합계  11.03 Gb/s | usb4_rdma5=11.03
+  bw usb4_rdma5                 s=1048576  q=1 단방향 합계  11.08 Gb/s | usb4_rdma5=11.08
+  bw usb4_rdma0+usb4_rdma5      s=65536    q=1 단방향 합계  22.88 Gb/s | usb4_rdma0=11.44 usb4_rdma5=11.44
+  bw usb4_rdma0+usb4_rdma5      s=1048576  q=1 단방향 합계  22.96 Gb/s | usb4_rdma0=11.48 usb4_rdma5=11.48
+  irq A irq  53 IR-PCI-MSIX-0000:c5:00.5 2-edge       31337/s  (CPU5=69581)
+  irq A irq  54 IR-PCI-MSIX-0000:c5:00.5 3-edge        1571/s  (CPU6=3489)
+  irq B irq  54 IR-PCI-MSIX-0000:c5:00.5 2-edge      341565/s  (CPU5=758416)
+  irq B irq  55 IR-PCI-MSIX-0000:c5:00.5 3-edge       31301/s  (CPU6=69502)
+  irq bw: 65536      85293            0.00               11.18  		     0.021323 (dt=2.22s)
+  irq 4 KiB 프레임/s ≈ 341,187
+  irq -- topA (수신)
+  irq %Cpu(s):  0.5 us,  3.5 sy,  0.0 ni, 96.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+  irq   41494 root       0 -20       0      0      0 I  50.0   0.0   0:38.22 kworker/u132:1-tbv_ibdev
+  irq   43774 root       0 -20       0      0      0 R  41.7   0.0   0:38.81 kworker/u132:14+tbv_ibdev
+  irq     129 root      20   0       0      0      0 I   8.3   0.0   0:02.49 kworker/5:0-events
+  irq   47918 park2     20   0   15612   6768   3796 R   8.3   0.0   0:00.02 top
+  irq       1 root      20   0   27168  17800  11304 S   0.0   0.0   0:02.62 systemd
+  irq       2 root      20   0       0      0      0 S   0.0   0.0   0:00.05 kthreadd
+  irq       3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_workqueue_release
+  irq -- topB (송신)
+  irq %Cpu(s):  3.2 us,  2.4 sy,  0.0 ni, 94.4 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+  irq  108573 parks-z+  20   0    6032   4768   4172 R  91.7   0.0   0:01.45 ib_write_bw
+  irq     257 root      20   0       0      0      0 R  33.3   0.0   0:54.83 kworker/5:1-events
+  irq   49516 root       0 -20       0      0      0 I  16.7   0.0   0:04.90 kworker/u132:1-tbv_ibdev
+  irq   87811 root       0 -20       0      0      0 I  16.7   0.0   0:11.25 kworker/u132:5-tbv_ibdev
+  irq   87850 root       0 -20       0      0      0 R  16.7   0.0   0:06.14 kworker/u132:8+tbv_ibdev
+  irq  108745 parks-z+  20   0   16148   7456   3836 R  16.7   0.0   0:00.03 top
+  irq       1 root      20   0   27420  18536  11716 S   0.0   0.0   0:03.05 systemd
+  irq 자료: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/rxwq-ab-1114/irq-rxspin-210527-a30000-210957
+== A spin=0 21:10:09
+A: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=0 ports=2 | B: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=10000 ports=2
+  bw usb4_rdma0                 s=65536    q=1 단방향 합계  11.17 Gb/s | usb4_rdma0=11.17
+  bw usb4_rdma0                 s=1048576  q=1 단방향 합계  11.27 Gb/s | usb4_rdma0=11.27
+  bw usb4_rdma5                 s=65536    q=1 단방향 합계  11.01 Gb/s | usb4_rdma5=11.01
+  bw usb4_rdma5                 s=1048576  q=1 단방향 합계  11.07 Gb/s | usb4_rdma5=11.07
+  bw usb4_rdma0+usb4_rdma5      s=65536    q=1 단방향 합계  22.82 Gb/s | usb4_rdma0=11.41 usb4_rdma5=11.41
+  bw usb4_rdma0+usb4_rdma5      s=1048576  q=1 단방향 합계  22.92 Gb/s | usb4_rdma0=11.46 usb4_rdma5=11.46
+  irq A irq  53 IR-PCI-MSIX-0000:c5:00.5 2-edge       31636/s  (CPU5=70590)
+  irq A irq  54 IR-PCI-MSIX-0000:c5:00.5 3-edge      302530/s  (CPU6=675046)
+  irq B irq  54 IR-PCI-MSIX-0000:c5:00.5 2-edge      341604/s  (CPU5=762233)
+  irq B irq  55 IR-PCI-MSIX-0000:c5:00.5 3-edge       32148/s  (CPU6=71734)
+  irq bw: 65536      85183            0.00               11.17  		     0.021296 (dt=2.23s)
+  irq 4 KiB 프레임/s ≈ 340,881
+  irq -- topA (수신)
+  irq %Cpu(s):  0.6 us,  3.6 sy,  0.0 ni, 95.9 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+  irq   41494 root       0 -20       0      0      0 R  83.3   0.0   0:44.49 kworker/u132:1+tbv_ibdev
+  irq   43737 root       0 -20       0      0      0 I  16.7   0.0   0:44.52 kworker/u132:10-tbv_ibdev
+  irq   48709 park2     20   0   15612   6756   3792 R   8.3   0.0   0:00.02 top
+  irq       1 root      20   0   27168  17800  11304 S   0.0   0.0   0:02.62 systemd
+  irq       2 root      20   0       0      0      0 S   0.0   0.0   0:00.05 kthreadd
+  irq       3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_workqueue_release
+  irq       4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/R-rcu_gp
+  irq -- topB (송신)
+  irq %Cpu(s):  2.9 us,  2.4 sy,  0.0 ni, 94.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+  irq  110258 parks-z+  20   0    6032   4780   4184 R  99.9   0.0   0:01.47 ib_write_bw
+  irq     257 root      20   0       0      0      0 I  25.0   0.0   1:06.26 kworker/5:1-events
+  irq   87850 root       0 -20       0      0      0 R  16.7   0.0   0:09.14 kworker/u132:8+tbv_ibdev
+  irq   89263 root       0 -20       0      0      0 I   8.3   0.0   0:13.67 kworker/u132:6-tbv_ibdev
+  irq  102342 root       0 -20       0      0      0 I   8.3   0.0   0:10.54 kworker/u132:9-tbv_ibdev
+  irq  110441 parks-z+  20   0   16148   7472   3852 R   8.3   0.0   0:00.02 top
+  irq       1 root      20   0   27420  18536  11716 S   0.0   0.0   0:03.18 systemd
+  irq 자료: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/rxwq-ab-1114/irq-rxspin-210527-a0-211102
+==== 3) 2단계: 두 노드 같은 값 21:11:13
+[sudo: [B parks-zbook 비밀번호: spin=0] ] Password: *********         
+Connection to 10.99.0.2 closed.
+== 두 노드 spin=0 21:12:02
+A: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=0 ports=2 | B: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=0 ports=2
+  bw usb4_rdma0                 s=65536    q=1 단방향 합계  11.17 Gb/s | usb4_rdma0=11.17
+  bw usb4_rdma0                 s=1048576  q=1 단방향 합계  11.27 Gb/s | usb4_rdma0=11.27
+  bw usb4_rdma5                 s=65536    q=1 단방향 합계  11.05 Gb/s | usb4_rdma5=11.05
+  bw usb4_rdma5                 s=1048576  q=1 단방향 합계  11.00 Gb/s | usb4_rdma5=11.00
+  bw usb4_rdma0+usb4_rdma5      s=65536    q=1 단방향 합계  22.80 Gb/s | usb4_rdma0=11.40 usb4_rdma5=11.40
+  bw usb4_rdma0+usb4_rdma5      s=1048576  q=1 단방향 합계  22.88 Gb/s | usb4_rdma0=11.44 usb4_rdma5=11.44
+  bw usb4_rdma0                 s=65536    q=1 양방향 합계  22.90 Gb/s | usb4_rdma0=22.90
+  bw usb4_rdma0                 s=1048576  q=1 양방향 합계  23.12 Gb/s | usb4_rdma0=23.12
+  bw usb4_rdma5                 s=65536    q=1 양방향 합계  22.63 Gb/s | usb4_rdma5=22.63
+  bw usb4_rdma5                 s=1048576  q=1 양방향 합계  22.82 Gb/s | usb4_rdma5=22.82
+  bw usb4_rdma0+usb4_rdma5      s=65536    q=1 양방향 합계  42.12 Gb/s | usb4_rdma0=23.39 usb4_rdma5=18.73
+  bw usb4_rdma0+usb4_rdma5      s=1048576  q=1 양방향 합계  43.41 Gb/s | usb4_rdma0=23.59 usb4_rdma5=19.82
+  lat usb4_rdma0 rxspin-210527-ab0-usb4_rdma0 n  99997 med 16.6 p99 19.1 p99.9 22.6 max 146 | >0.2ms 0 >1ms 0 >2.5ms 0 | big: 
+  lat usb4_rdma5 rxspin-210527-ab0-usb4_rdma5 n  99997 med 16.1 p99 18.6 p99.9 23.4 max 152 | >0.2ms 0 >1ms 0 >2.5ms 0 | big: 
+  irq A irq  53 IR-PCI-MSIX-0000:c5:00.5 2-edge       31469/s  (CPU5=70073)
+  irq A irq  54 IR-PCI-MSIX-0000:c5:00.5 3-edge      288550/s  (CPU6=642518)
+  irq B irq  54 IR-PCI-MSIX-0000:c5:00.5 2-edge      341085/s  (CPU5=759499)
+  irq B irq  55 IR-PCI-MSIX-0000:c5:00.5 3-edge       31878/s  (CPU6=70984)
+  irq bw: 65536      84957            0.00               11.14  		     0.021239 (dt=2.23s)
+  irq 4 KiB 프레임/s ≈ 339,966
+  irq -- topA (수신)
+  irq %Cpu(s):  0.3 us,  3.5 sy,  0.0 ni, 95.7 id,  0.0 wa,  0.0 hi,  0.5 si,  0.0 st 
+  irq   43737 root       0 -20       0      0      0 R  99.9   0.0   1:06.79 kworker/u132:10+tbv_ibdev
+  irq   43774 root       0 -20       0      0      0 I  18.2   0.0   1:20.26 kworker/u132:14-tbv_ibdev
+  irq   49411 root      20   0       0      0      0 I   9.1   0.0   0:00.10 kworker/u128:2-mt76
+  irq   49660 park2     20   0   15612   6760   3792 R   9.1   0.0   0:00.02 top
+  irq       1 root      20   0   27168  17800  11304 S   0.0   0.0   0:02.63 systemd
+  irq       2 root      20   0       0      0      0 S   0.0   0.0   0:00.05 kthreadd
+  irq       3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_workqueue_release
+  irq -- topB (송신)
+  irq %Cpu(s):  2.9 us,  2.1 sy,  0.0 ni, 94.9 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+  irq  113693 parks-z+  20   0    6032   4784   4184 R  91.7   0.0   0:01.44 ib_write_bw
+  irq     257 root      20   0       0      0      0 I  33.3   0.0   1:30.31 kworker/5:1+events
+  irq  113870 parks-z+  20   0   16148   7508   3884 R  16.7   0.0   0:00.03 top
+  irq   97445 parks-z+  20   0 2877644 159088 101044 S   8.3   0.1   0:13.43 resources
+  irq       1 root      20   0   27420  18536  11716 S   0.0   0.0   0:03.43 systemd
+  irq       2 root      20   0       0      0      0 S   0.0   0.0   0:00.04 kthreadd
+  irq       3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_workqueue_release
+  irq 자료: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/rxwq-ab-1114/irq-rxspin-210527-ab0-211402
+[sudo: [B parks-zbook 비밀번호: spin=10000] ] Password: *********         
+Connection to 10.99.0.2 closed.
+== 두 노드 spin=10000 21:14:22
+A: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=10000 ports=2 | B: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=10000 ports=2
+  bw usb4_rdma0                 s=65536    q=1 단방향 합계  11.15 Gb/s | usb4_rdma0=11.15
+  bw usb4_rdma0                 s=1048576  q=1 단방향 합계  11.25 Gb/s | usb4_rdma0=11.25
+  bw usb4_rdma5                 s=65536    q=1 단방향 합계  10.99 Gb/s | usb4_rdma5=10.99
+  bw usb4_rdma5                 s=1048576  q=1 단방향 합계  11.02 Gb/s | usb4_rdma5=11.02
+  bw usb4_rdma0+usb4_rdma5      s=65536    q=1 단방향 합계  22.60 Gb/s | usb4_rdma0=11.30 usb4_rdma5=11.30
+  bw usb4_rdma0+usb4_rdma5      s=1048576  q=1 단방향 합계  22.66 Gb/s | usb4_rdma0=11.30 usb4_rdma5=11.36
+  bw usb4_rdma0                 s=65536    q=1 양방향 합계  22.71 Gb/s | usb4_rdma0=22.71
+  bw usb4_rdma0                 s=1048576  q=1 양방향 합계  22.97 Gb/s | usb4_rdma0=22.97
+  bw usb4_rdma5                 s=65536    q=1 양방향 합계  22.46 Gb/s | usb4_rdma5=22.46
+  bw usb4_rdma5                 s=1048576  q=1 양방향 합계  22.64 Gb/s | usb4_rdma5=22.64
+  bw usb4_rdma0+usb4_rdma5      s=65536    q=1 양방향 합계  46.55 Gb/s | usb4_rdma0=23.28 usb4_rdma5=23.27
+  bw usb4_rdma0+usb4_rdma5      s=1048576  q=1 양방향 합계  47.06 Gb/s | usb4_rdma0=23.53 usb4_rdma5=23.53
+  lat usb4_rdma0 rxspin-210527-ab10000-usb4_rdma0 n  99997 med 15.8 p99 17.4 p99.9 20.9 max 2352 | >0.2ms 7 >1ms 2 >2.5ms 0 | big: 1635 2352
+  lat usb4_rdma5 rxspin-210527-ab10000-usb4_rdma5 n  99997 med 15.1 p99 16.6 p99.9 22.3 max 1977 | >0.2ms 9 >1ms 2 >2.5ms 0 | big: 1059 1977
+  irq A irq  53 IR-PCI-MSIX-0000:c5:00.5 2-edge       31211/s  (CPU5=69593)
+  irq A irq  54 IR-PCI-MSIX-0000:c5:00.5 3-edge        1482/s  (CPU6=3304)
+  irq B irq  54 IR-PCI-MSIX-0000:c5:00.5 2-edge      341313/s  (CPU5=761044)
+  irq B irq  55 IR-PCI-MSIX-0000:c5:00.5 3-edge       31318/s  (CPU6=69832)
+  irq bw: 65536      85134            0.00               11.16  		     0.021283 (dt=2.23s)
+  irq 4 KiB 프레임/s ≈ 340,576
+  irq -- topA (수신)
+  irq %Cpu(s):  0.3 us,  3.5 sy,  0.0 ni, 96.2 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+  irq   48466 root       0 -20       0      0      0 R  54.5   0.0   0:27.55 kworker/u132:2+tbv_ibdev
+  irq   41494 root       0 -20       0      0      0 R  45.5   0.0   1:12.64 kworker/u132:1+tbv_ibdev
+  irq   50475 park2     20   0   15612   6724   3760 R   9.1   0.0   0:00.02 top
+  irq       1 root      20   0   27168  17800  11304 S   0.0   0.0   0:02.65 systemd
+  irq       2 root      20   0       0      0      0 S   0.0   0.0   0:00.05 kthreadd
+  irq       3 root      20   0       0      0      0 S   0.0   0.0   0:00.00 pool_workqueue_release
+  irq       4 root       0 -20       0      0      0 I   0.0   0.0   0:00.00 kworker/R-rcu_gp
+  irq -- topB (송신)
+  irq %Cpu(s):  2.9 us,  2.1 sy,  0.0 ni, 94.6 id,  0.0 wa,  0.0 hi,  0.3 si,  0.0 st 
+  irq  117085 parks-z+  20   0    6032   4756   4160 R  99.9   0.0   0:01.43 ib_write_bw
+  irq     257 root      20   0       0      0      0 I  33.3   0.0   1:52.03 kworker/5:1-events
+  irq   62199 root       0 -20       0      0      0 I  25.0   0.0   0:23.07 kworker/u132:3-tbv_ibdev
+  irq   97485 parks-z+  20   0   22308  20480   5008 S  16.7   0.0   0:21.49 resources-proce
+  irq   49543 root       0 -20       0      0      0 I   8.3   0.0   0:21.50 kworker/u132:7-tbv_ibdev
+  irq   89263 root       0 -20       0      0      0 I   8.3   0.0   0:29.69 kworker/u132:6-tbv_ibdev
+  irq  117268 parks-z+  20   0   16148   7448   3828 R   8.3   0.0   0:00.02 top
+  irq 자료: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/rxwq-ab-1114/irq-rxspin-210527-ab10000-211623
+  verify usb4_rdma0 q1: client usb4_rdma0 QP=1 회차=200: WRITE 92.0 MiB, READ 140.2 MiB, 불일치 0 B, 보호바이트 0 B → PASS | srv: PASS
+  verify usb4_rdma0 q4: client usb4_rdma0 QP=4 회차=200: WRITE 243.4 MiB, READ 263.1 MiB, 불일치 0 B, 보호바이트 0 B → PASS | srv: PASS
+  verify usb4_rdma5 q1: client usb4_rdma5 QP=1 회차=200: WRITE 123.7 MiB, READ 161.2 MiB, 불일치 0 B, 보호바이트 0 B → PASS | srv: PASS
+  verify usb4_rdma5 q4: client usb4_rdma5 QP=4 회차=200: WRITE 232.8 MiB, READ 249.7 MiB, 불일치 0 B, 보호바이트 0 B → PASS | srv: PASS
+A: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=10000 ports=2 | B: srcv=0BCD6E0C7DE0D7470BAE74F poll=2 spin=10000 ports=2
+UFW BLOCK(thunderbolt·10.99, 부팅 뒤): A 0 B 0
+ALLDONE 21:17:50  자료: /data/parksThink/macos_reversing/codex/zbook-rdma/experiments/step4-tbthroughput/raw/rxspin-210527-*_bw.sum, /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/rxwq-ab-1114/irq-rxspin-210527-*, /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/lnk-1107/out/rxspin-210527-*, /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/rxwq-ab-1114/verify-210527-*

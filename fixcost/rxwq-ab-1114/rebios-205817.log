@@ -1,0 +1,32 @@
+== 2026-11-14 20:58:17 rebios baseline: A BIOS X89 Ver. 01.06.02, tbv 979EBFFB0F4CE450B056AC3 (rxwq = spin 0 behaviour), poll 2
+usb4_rdma0                 s=65536    q=1 단방향 합계   9.20 Gb/s | usb4_rdma0=9.20
+usb4_rdma0                 s=1048576  q=1 단방향 합계   9.46 Gb/s | usb4_rdma0=9.46
+usb4_rdma5                 s=65536    q=1 단방향 합계   9.22 Gb/s | usb4_rdma5=9.22
+usb4_rdma5                 s=1048576  q=1 단방향 합계   9.37 Gb/s | usb4_rdma5=9.37
+usb4_rdma0+usb4_rdma5      s=65536    q=1 단방향 합계  19.86 Gb/s | usb4_rdma0=9.93 usb4_rdma5=9.93
+usb4_rdma0+usb4_rdma5      s=1048576  q=1 단방향 합계  20.17 Gb/s | usb4_rdma0=10.09 usb4_rdma5=10.08
+A irq  53 IR-PCI-MSIX-0000:c5:00.5 2-edge       26265/s  (CPU5=58380)
+A irq  54 IR-PCI-MSIX-0000:c5:00.5 3-edge      273702/s  (CPU6=608377)
+B irq  54 IR-PCI-MSIX-0000:c5:00.5 2-edge      285285/s  (CPU5=634123)
+B irq  55 IR-PCI-MSIX-0000:c5:00.5 3-edge       26405/s  (CPU6=58692)
+bw: 65536      70114            0.00               9.19   		     0.017528 (dt=2.22s)
+4 KiB 프레임/s ≈ 280,457
+-- topA (수신)
+%Cpu(s):  0.8 us,  3.7 sy,  0.0 ni, 95.5 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+  25673 root       0 -20       0      0      0 R  99.9   0.0   0:06.72 kworker/u132:0+tbv_ibdev
+  41494 root       0 -20       0      0      0 R  16.7   0.0   0:09.57 kworker/u132:1-tbv_ibdev
+  42997 park2     20   0   15612   6732   3792 R  16.7   0.0   0:00.03 top
+   7153 park2     20   0   18.9g 332508 160988 S   8.3   0.3   0:02.20 gnome-shel:cs0
+  29387 park2     20   0   53.0g 173352 152964 S   8.3   0.1   0:14.27 VizCompositorTh
+  29753 park2     20   0 1459.7g 742848 147612 S   8.3   0.6   0:13.08 Compositor
+      1 root      20   0   27168  17800  11304 S   0.0   0.0   0:02.56 systemd
+-- topB (송신)
+%Cpu(s):  5.1 us,  2.0 sy,  0.0 ni, 92.9 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st 
+  94728 parks-z+  20   0    6032   4772   4172 R  99.9   0.0   0:01.50 ib_write_bw
+  16915 parks-z+  20   0 1451.2g 997.3m 238500 S  38.5   0.8  10:17.55 chrome
+    257 root      20   0       0      0      0 I  30.8   0.0   0:09.26 kworker/5:1+events
+   9874 parks-z+  20   0   19.1g 433100 218180 R  23.1   0.3   5:49.01 gnome-shell
+  94906 parks-z+  20   0   17360   8616   3832 R  15.4   0.0   0:00.04 top
+  15951 parks-z+  20   0  101.3g 551988 328120 S   7.7   0.4   1:52.72 chrome
+  16057 parks-z+  20   0   52.6g 168340 122708 S   7.7   0.1   0:01.88 ThreadPoolForeg
+자료: /data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll/fixcost/rxwq-ab-1114/irq-rebios-205817-205909

@@ -16,6 +16,18 @@
 # 되돌리기: 두 노드에서 sudo install -m 644 /lib/modules/7.0.0-1018-oem/updates/thunderbolt_ibverbs.ko.pre-rxspin.bak
 #           /lib/modules/7.0.0-1018-oem/updates/thunderbolt_ibverbs.ko; sudo depmod -a; 모듈 다시 올림(또는 재부팅).
 #   또는 새 모듈 그대로 두고 두 노드에서: echo 0 | sudo tee /sys/module/thunderbolt_ibverbs/parameters/rx_wq_spin_ns (= 11-07 동작)
+# 11-14 21:0x 보안 조치(다른 세션, 18:4x) 반영:
+#   - UFW: 들어오는 IP 는 thunderbolt0·tailscale0 만. 이 스크립트가 쓰는 주소는 모두 10.99.0.1/10.99.0.2(thunderbolt0)라 그대로 됨. 끝에 UFW BLOCK 수를 찍는다.
+#   - 덮개를 닫으면 AC 에서도 절전 → A 는 systemd-inhibit 아래에서 다시 실행, B 는 ssh 로는 inhibit 권한이 없어(polkit) 덮개 열림만 확인.
+#   - unattended-upgrades(매일 06:0x–06:3x)가 도는 중이거나 40분 안에 돌 예정이면 시작하지 않는다(측정 중 dpkg·CPU 잡음 방지).
+#   - apt autoremove 금지(ROCm 등 ≈590개 지워짐) — 이 스크립트는 apt 를 부르지 않는다.
+if [ -z "${RXSPIN_INHIBITED:-}" ] && command -v systemd-inhibit > /dev/null; then
+    if systemd-inhibit --what=sleep:idle:handle-lid-switch --who=run-rxspin --why=probe true 2> /dev/null; then
+        export RXSPIN_INHIBITED=1
+        exec systemd-inhibit --what=sleep:idle:handle-lid-switch --who=run-rxspin --why="tbv rxspin A/B" bash "$0" "$@"
+    fi
+    echo "주의: A 에서 절전 막기(systemd-inhibit) 권한이 없음 — A 덮개를 열어 두세요"
+fi
 set -u
 R=/data/parksThink/macos_reversing/codex/zbook-rdma/llm-engine-for-libtbvcoll
 S4=/data/parksThink/macos_reversing/codex/zbook-rdma/experiments/step4-tbthroughput
@@ -51,6 +63,13 @@ verify() {
         wait $sp
         echo "  verify $dev q$q: $(grep -h 'PASS\|FAIL' $O/verify-$RUN-$1/${dev}_q$q.cli | tail -1) | srv: $(grep -h -o 'PASS\|FAIL' $O/verify-$RUN-$1/${dev}_q$q.srv | tail -1)"
     done; done; }
+lid_ok() {  # 두 노드 덮개 열림
+    local a b; a=$(cat /proc/acpi/button/lid/*/state 2>/dev/null | awk '{print $2}'); b=$(ssh -o BatchMode=yes $B "cat /proc/acpi/button/lid/*/state" 2>/dev/null | awk '{print $2}')
+    [ "$a" = open ] && [ "$b" = open ] || { echo "덮개 상태 A=$a B=$b — 둘 다 열어 두세요(닫으면 AC 에서도 절전)"; return 1; }; }
+apt_ok() {  # 두 노드 apt/dpkg/unattended-upgrade 안 돎 + 40분 안에 apt-daily-upgrade 예정 없음
+    local q="pgrep -f '^/usr/bin/python3 /usr/bin/unattended-upgrade( |\$)|^/usr/bin/dpkg |^/usr/bin/apt(-get)? ' > /dev/null && echo busy; t=\$(systemctl show -P NextElapseUSecRealtime --timestamp=unix apt-daily-upgrade.timer 2>/dev/null | tr -d @); [ -n \"\$t\" ] && [ \$((t - \$(date +%s))) -lt 2400 ] && echo soon; true"
+    local a b; a=$(bash -c "$q"); b=$(ssh -o BatchMode=yes $B "$q")
+    [ -z "$a$b" ] || { echo "apt: A=[$a] B=[$b] — unattended-upgrades 가 돌거나 40분 안에 돎. 끝난 뒤(보통 06:4x 이후) 다시"; return 1; }; }
 reload() {  # reload <rx_wq_poll 값 또는 빈칸=modprobe.d>
     local a=""; [ -n "$1" ] && a="rx_wq_poll=$1"
     ssh -t $B "sudo -p '[B parks-zbook 비밀번호: 다시 올림 $a] ' sh -c 'rmmod thunderbolt_ibverbs; modprobe thunderbolt_ibverbs $a'" || return 1
@@ -60,7 +79,11 @@ reload() {  # reload <rx_wq_poll 값 또는 빈칸=modprobe.d>
 echo "==== 0) 확인 $(date '+%F %T')"
 [ "$(uname -r)" = $K ] && [ "$(ssh -o BatchMode=yes $B uname -r)" = $K ] || { echo "두 노드가 $K 가 아님"; exit 1; }
 if pgrep -x llama-server > /dev/null || pgrep -x ggml-rpc-server > /dev/null || pgrep -f 'bench/node-ab.sh' > /dev/null || \
-   ssh -o BatchMode=yes $B "pgrep -x ggml-rpc-server || pgrep -x llama-server" > /dev/null; then echo "서버/벤치가 돌고 있음 — 내리고 다시"; exit 1; fi
+   pgrep -x ib_write_bw > /dev/null || pgrep -x ib_send_lat > /dev/null || \
+   ssh -o BatchMode=yes $B "pgrep -x ggml-rpc-server || pgrep -x rpc-server || pgrep -x llama-server || pgrep -x ib_write_bw" > /dev/null; then echo "서버/벤치가 돌고 있음 — 끝난 뒤 다시"; exit 1; fi
+lid_ok || exit 1
+apt_ok || exit 1
+echo "BIOS A=$(cat /sys/class/dmi/id/bios_version) B=$(ssh -o BatchMode=yes $B cat /sys/class/dmi/id/bios_version) | 절전 막기 A=${RXSPIN_INHIBITED:-없음}"
 [ "$(sha256sum $NEW_A | cut -d' ' -f1)" = $SHA ] || { echo "A 새 모듈 sha256 불일치"; exit 1; }
 [ "$(ssh -o BatchMode=yes $B sha256sum $NEW_B | cut -d' ' -f1)" = $SHA ] || { echo "B 새 모듈 sha256 불일치"; exit 1; }
 st
@@ -103,4 +126,6 @@ if [ "${P0:-0}" = 1 ]; then
     echo "== rx_wq_poll=2(modprobe.d)로 되돌림"; reload "" || exit 1
 fi
 st
+ufw_q="journalctl -k -b --no-pager 2>/dev/null | grep 'UFW BLOCK' | grep -cE 'IN=thunder|SRC=10\.99'"
+echo "UFW BLOCK(thunderbolt·10.99, 부팅 뒤): A $(bash -c "$ufw_q") B $(ssh -o BatchMode=yes $B "$ufw_q")"
 echo "ALLDONE $(date '+%T')  자료: $S4/raw/rxspin-$RUN-*_bw.sum, $O/irq-rxspin-$RUN-*, $R/fixcost/lnk-1107/out/rxspin-$RUN-*, $O/verify-$RUN-*"
